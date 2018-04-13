@@ -1,4 +1,4 @@
-
+﻿
 #include <thread>
 
 #include "agv.h"
@@ -129,13 +129,13 @@ void Agv::excutePath(std::vector<AgvLine *> lines)
 
         else if(now->mapChangeStation && next->mapChangeStation){
             //下一站是地图切换点，下下站还是，例如下一站是三楼电梯点，而下下站是1楼电梯点
-            goStation(now);//进电梯
+            goStation(now,true);//进电梯
             callMapChange(next);//呼叫到1楼
         }
 
         else if(now->mapChangeStation && !next->mapChangeStation){
             //下一站是电梯内，但是下下站不是
-            goStation(now);
+            goStation(now,true);
             callMapChange(next);//开门
         }
 

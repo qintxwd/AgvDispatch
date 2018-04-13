@@ -1,13 +1,17 @@
-#ifndef AGVTASKNODEDOTHING_H
+﻿#ifndef AGVTASKNODEDOTHING_H
 #define AGVTASKNODEDOTHING_H
 #include "agv.h"
 //agv到达一个地方后要执行的多个事情中的一个
+//做成插件模式
 class AgvTaskNodeDoThing
 {
 public:
 
     AgvTaskNodeDoThing()
     {
+    }
+
+    virtual ~AgvTaskNodeDoThing(){
     }
 
     //三个虚函数，由基类去实现

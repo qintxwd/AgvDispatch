@@ -1,4 +1,4 @@
-#include "taskmanager.h"
+﻿#include "taskmanager.h"
 #include "Common.h"
 #include "mapmanager.h"
 #include "agvmanager.h"
@@ -78,6 +78,14 @@ bool TaskManager::init()
                                             bestAgv = agv;
                                             result = result_temp;
                                         }
+                                    }else{
+                                        int tempDis;
+                                        std::vector<AgvLine *> result_temp = MapManager::getInstance()->getBestPath(agv,agv->lastStation,agv->nextStation,aimStation,tempDis,CAN_CHANGE_DIRECTION);
+                                        if(result_temp.size()>0 && tempDis<minDis){
+                                            minDis = tempDis;
+                                            bestAgv = agv;
+                                            result = result_temp;
+                                        }
                                     }
                                 });
 
@@ -140,30 +148,35 @@ bool TaskManager::addTask(AgvTask *task)
         toDistributeTasks.insert(std::make_pair(task->getPriority(),vs));
     }
     toDisMtx.unlock();
+    return true;
 }
 
 //查询未执行的任务
 AgvTask *TaskManager::queryUndoTask(int taskId)
 {
 
+    return nullptr;
 }
 
 //查询正在执行的任务
 AgvTask *TaskManager::queryDoingTask(int taskId)
 {
 
+    return nullptr;
 }
 
 //查询完成执行的任务
 AgvTask *TaskManager::queryDoneTask(int taskId)
 {
 
+    return nullptr;
 }
 
 //返回task的状态。
 int TaskManager::queryTaskStatus(int taskId)
 {
 
+    return 0;
 }
 
 //保存到数据库
@@ -259,6 +272,8 @@ int TaskManager::cancelTask(int taskId)
         }
         delete task;
     }
+
+    return 0;
 }
 
 //完成了一个任务

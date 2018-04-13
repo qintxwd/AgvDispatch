@@ -20,7 +20,8 @@ SOURCES += main.cpp \
     sqlite3/CppSQLite3.cpp \
     agvmanager.cpp \
     Common.cpp \
-    qyhtcpclient.cpp
+    qyhtcpclient.cpp \
+    agvtasknodedothingmanager.cpp
 
 HEADERS += \
     agv.h \
@@ -36,7 +37,8 @@ HEADERS += \
     Common.h \
     threadpool.h \
     agvmanager.h \
-    qyhtcpclient.h
+    qyhtcpclient.h \
+    agvtasknodedothingmanager.h
 
 unix{
 #LIBS=-ldl
@@ -50,14 +52,9 @@ LIBS += /usr/lib/x86_64-linux-gnu/libsqlite3.so
 win32{
 win32:DEFINES += _CRT_SECURE_NO_WARNINGS
 INCLUDEPATH+=D:\thirdparty\sqlite\include
-INCLUDEPATH+=D:\thirdparty\opencv3.3\include
-INCLUDEPATH+=D:\thirdparty\opencv3.3\include\opencv
-INCLUDEPATH+=D:\thirdparty\opencv3.3\include\opencv2
-LIBS += D:\thirdparty\sqlite\lib\sqlite3.lib
-LIBS += D:\thirdparty\opencv3.3\lib\opencv_highgui.lib
-LIBS += D:\thirdparty\opencv3.3\lib\opencv_imgproc.lib
-LIBS += D:\thirdparty\opencv3.3\lib\opencv_core.lib
-LIBS += D:\thirdparty\opencv3.3\lib\opencv_imgcodecs.lib
+INCLUDEPATH+=D:\thirdparty\opencv\opencv3.3\include
+LIBS+=D:\thirdparty\sqlite\lib\Debug\sqlite3.lib
+LIBS+=D:\thirdparty\opencv\opencv3.3\lib\opencv_world330d.lib
 }
 
 

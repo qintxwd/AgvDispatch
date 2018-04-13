@@ -1,4 +1,4 @@
-#include "mapmanager.h"
+﻿#include "mapmanager.h"
 #include "sqlite3/CppSQLite3.h"
 #include <iostream>
 
@@ -392,7 +392,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
 void MapManager::getImgColors(cv::Mat &gridmap) throw (std::exception)
 {
     if(gridmap.cols<=0||gridmap.rows<0){
-        throw std::runtime_error("空图像");
+        throw std::runtime_error(std::string("空图像"));
     }
     imageGridColumn    = gridmap.cols / imageGridSize;
     imageGridRow    = gridmap.rows / imageGridSize;
