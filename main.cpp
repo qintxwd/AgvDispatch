@@ -1,6 +1,7 @@
 #include "taskmanager.h"
 #include "mapmanager.h"
 #include "agvmanager.h"
+#include "network/sessionmanager.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,9 +18,11 @@ int main(int argc, char *argv[])
         return -3;
 
     //4.初始化tcp/ip接口
-
+    qyhnetwork::SessionManager::getRef().start();
     //TODO:
 
-
+    while(true){
+        qyhnetwork::SessionManager::getRef().run();
+    }
     return 0;
 }

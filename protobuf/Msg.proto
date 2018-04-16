@@ -1,0 +1,576 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+enum Msg_Todo{
+	USER_LOGIN = 0;
+	USER_LOGOUT = 1
+	USER_CHANGE_PASSWARD = 2;
+	USER_LIST = 3;
+	USER_DELTE = 4;
+	USER_ADD = 5;
+	USER_MODIFY = 6;
+	MAP_CREATE_START = 7;
+	MAP_CREATE_ADD_STATION = 8;
+	MAP_CREATE_ADD_LINE = 9;
+	MAP_CREATE_ADD_ARC = 10;
+	MAP_CREATE_FINISH = 11;
+	MAP_LIST_LINE = 12;
+	MAP_LIST_ARC = 13;
+	MAP_LIST_STATION = 14;
+	HAND_REQUEST = 15;
+	HAND_RELEASE = 16;
+	HAND_FORWARD = 17;
+	HAND_BACKWARD = 18;
+	HAND_TURN_LEFT = 19;
+	HAND_TURN_RIGHT = 20;
+	AGV_LIST = 21;
+	AGV_ADD = 22;
+	AGV_DELETE = 23;
+	AGV_MODIFY = 24;
+	TASK_CREATE_X = 25;
+	TASK_CREATE_AGV_X = 26;
+	TASK_CREATE_Y_X = 27;
+	TASK_CREATE_AGV_Y_X = 28;
+	TASK_QUERY_STATUS = 29;
+	TASK_LIST_UNDO = 30;
+	TASK_LIST_DOING = 31;
+	TASK_LIST_DONE_TODAY = 32;
+	TASK_LIST_DURING = 33;
+	LOG_LIST_DURING = 34;
+	SUB_AGV_POSITION = 35;
+	CANCEL_SUB_AGV_POSITION = 36;
+	SUB_AGV_STATUS = 37;
+	CANCEL_SUB_AGV_STATUS = 38;
+	SUB_LOG = 39;
+	CANCEL_SUB_LOG = 40;
+	SUB_TASK = 41;
+	CANCEL_SUB_TASK = 42;
+	PUB_AGV_POSITION = 43;
+	PUB_AGV_STATUS = 44;
+	PUB_LOG = 45;
+	PUB_TASK = 46;
+	NOTIFY_MAP_UPDATE = 47;
+}
+
+message USER_LOGIN_REQUEST{
+	required string username = 1;
+	required string password = 2;
+}
+
+message USER_LOGIN_RESPONSE{
+	required int32 id = 1;
+	required int32 role = 2;
+}
+
+message USER_LOGOUT_REQUEST{
+	required int32 id = 1;
+}
+
+message USER_LOGOUT_RESPONSE{
+	required int32 id = 1;
+}
+
+message USER_CHANGE_PASSWARD_REQUEST{
+	required int id = 1;
+	required string password = 2;
+	required string newpassword = 3;
+}
+
+message USER_CHANGE_PASSWARD_RESPONSE{
+	required int id = 1;
+}
+
+message USER_LIST_REQUEST{
+	required int id = 1;
+	required int role = 1;
+}
+
+message USER_INFO{
+	required int id = 1;
+	required string username = 2;
+	optional string password = 3;
+	optional bool online = 4;
+}
+
+message USER_LIST_RESPONSE{
+	repeated USER_INFO user_info = 1;
+}
+
+message USER_DELTE_REQUEST{
+	required int32 id = 1;
+}
+
+message USER_DELTE_RESPONSE{
+	required int32 id = 1;
+}
+
+message USER_ADD_REQUEST{
+	required string username = 1;
+	required string password = 2;
+}
+
+message USER_ADD_RESPONSE{
+	required int32 id = 1;
+}
+
+message USER_MODIFY_REQUEST{
+	required int32 id = 1;
+	required string name = 2;
+	required string password = 3;
+}
+
+message USER_MODIFY_RESPONSE{
+	required int32 id = 1;
+}
+
+message MAP_CREATE_START_REQUEST{
+	required int32 role = 1;
+}
+
+message MAP_CREATE_START_RESPONSE{
+	required bool result = 1;
+}
+
+message STATION_INFO{
+	required int32 id = 1;
+	required int32 x = 2;
+	required int32 y = 3;
+	required int32 name = 4;
+	required bool mapChangeStation = 5;
+	required int32 mapId = 6;
+}
+
+message MAP_CREATE_ADD_STATION_REQUEST{
+	required STATION_INFO station = 1;
+}
+
+message MAP_CREATE_ADD_STATION_RESPONSE{
+	required bool result = 1;
+}
+
+message LINE_INFO{
+	required bool isline = 1;
+	required int32 id = 2;
+	required int32 startstation = 3;
+	required int32 endstation = 4;
+	required int32 length = 5;
+}
+
+message MAP_CREATE_ADD_LINE_REQUEST{
+	required LINE_INFO line = 1;
+}
+
+message MAP_CREATE_ADD_LINE_RESPONSE{
+	required bool result = 1;
+}
+
+message MAP_CREATE_FINISH_REQUEST{
+	required int32 id = 1;
+}
+
+message MAP_CREATE_FINISH_RESPONSE{
+	required int32 id = 1;
+}
+
+message MAP_LIST_LINE_REQUEST{
+	required int32 id = 1;
+}
+
+message MAP_LIST_LINE_RESPONSE{
+	repeated LINE_INFO lines = 1;
+}
+
+message MAP_LIST_ARC_REQUEST{
+
+}
+
+message MAP_LIST_ARC_RESPONSE{
+
+}
+
+message MAP_LIST_STATION_REQUEST{
+
+}
+
+message MAP_LIST_STATION_RESPONSE{
+
+}
+
+message HAND_REQUEST_REQUEST{
+
+}
+
+message HAND_REQUEST_RESPONSE{
+
+}
+
+message HAND_RELEASE_REQUEST{
+
+}
+
+message HAND_RELEASE_RESPONSE{
+
+}
+
+message HAND_FORWARD_REQUEST{
+
+}
+
+message HAND_FORWARD_RESPONSE{
+
+}
+
+message HAND_BACKWARD_REQUEST{
+
+}
+
+message HAND_BACKWARD_RESPONSE{
+
+}
+
+message HAND_TURN_LEFT_REQUEST{
+
+}
+
+message HAND_TURN_LEFT_RESPONSE{
+
+}
+
+message HAND_TURN_RIGHT_REQUEST{
+
+}
+
+message HAND_TURN_RIGHT_RESPONSE{
+
+}
+
+message AGV_LIST_REQUEST{
+
+}
+
+message AGV_LIST_RESPONSE{
+
+}
+
+message AGV_ADD_REQUEST{
+
+}
+
+message AGV_ADD_RESPONSE{
+
+}
+
+message AGV_DELETE_REQUEST{
+
+}
+
+message AGV_DELETE_RESPONSE{
+
+}
+
+message AGV_MODIFY_REQUEST{
+
+}
+
+message AGV_MODIFY_RESPONSE{
+
+}
+
+message TASK_CREATE_X_REQUEST{
+
+}
+
+message TASK_CREATE_X_RESPONSE{
+
+}
+
+message TASK_CREATE_AGV_X_REQUEST{
+
+}
+
+message TASK_CREATE_AGV_X_RESPONSE{
+
+}
+
+message TASK_CREATE_Y_X_REQUEST{
+
+}
+
+message TASK_CREATE_Y_X_RESPONSE{
+
+}
+
+message TASK_CREATE_AGV_Y_X_REQUEST{
+
+}
+
+message TASK_CREATE_AGV_Y_X_RESPONSE{
+
+}
+
+message TASK_QUERY_STATUS_REQUEST{
+
+}
+
+message TASK_QUERY_STATUS_RESPONSE{
+
+}
+
+message TASK_LIST_UNDO_REQUEST{
+
+}
+
+message TASK_LIST_UNDO_RESPONSE{
+
+}
+
+message TASK_LIST_DOING_REQUEST{
+
+}
+
+message TASK_LIST_DOING_RESPONSE{
+
+}
+
+message TASK_LIST_DONE_TODAY_REQUEST{
+
+}
+
+message TASK_LIST_DONE_TODAY_RESPONSE{
+
+}
+
+message TASK_LIST_DURING_REQUEST{
+
+}
+
+message TASK_LIST_DURING_RESPONSE{
+
+}
+
+message LOG_LIST_DURING_REQUEST{
+
+}
+
+message LOG_LIST_DURING_RESPONSE{
+
+}
+
+message SUB_AGV_POSITION_REQUEST{
+
+}
+
+message SUB_AGV_POSITION_RESPONSE{
+
+}
+
+message CANCEL_SUB_AGV_POSITION_REQUEST{
+
+}
+
+message CANCEL_SUB_AGV_POSITION_RESPONSE{
+
+}
+
+message SUB_AGV_STATUS_REQUEST{
+
+}
+
+message SUB_AGV_STATUS_RESPONSE{
+
+}
+
+message CANCEL_SUB_AGV_STATUS_REQUEST{
+
+}
+
+message CANCEL_SUB_AGV_STATUS_RESPONSE{
+
+}
+
+message SUB_LOG_REQUEST{
+
+}
+
+message SUB_LOG_RESPONSE{
+
+}
+
+message CANCEL_SUB_LOG_REQUEST{
+
+}
+
+message CANCEL_SUB_LOG_RESPONSE{
+
+}
+
+message SUB_TASK_REQUEST{
+
+}
+
+message SUB_TASK_RESPONSE{
+
+}
+
+message CANCEL_SUB_TASK_REQUEST{
+
+}
+
+message CANCEL_SUB_TASK_RESPONSE{
+
+}
+
+message PUB_AGV_POSITION_REQUEST{
+
+}
+
+message PUB_AGV_POSITION_RESPONSE{
+
+}
+
+message PUB_AGV_STATUS_REQUEST{
+
+}
+
+message PUB_AGV_STATUS_RESPONSE{
+
+}
+
+message PUB_LOG_REQUEST{
+
+}
+
+message PUB_LOG_RESPONSE{
+
+}
+
+message PUB_TASK_REQUEST{
+
+}
+
+message PUB_TASK_RESPONSE{
+
+}
+
+message NOTIFY_MAP_UPDATE_REQUEST{
+
+}
+
+message NOTIFY_MAP_UPDATE_RESPONSE{
+
+}
+
+
+//所有的请求消息
+message Request{
+	optional USER_LOGIN_REQUEST user_login_request = 1;
+	optional USER_LOGOUT_REQUEST user_logout_request = 2;
+	optional USER_CHANGE_PASSWARD_REQUEST user_change_passward_request = 3;
+	optional USER_LIST_REQUEST user_list_request = 4;
+	optional USER_DELTE_REQUEST user_delte_request = 5;
+	optional USER_ADD_REQUEST user_add_request = 6;
+	optional USER_MODIFY_REQUEST user_modify_request = 7;
+	optional MAP_CREATE_START_REQUEST map_create_start_request = 8;
+	optional MAP_CREATE_ADD_STATION_REQUEST map_create_add_station_request = 9;
+	optional MAP_CREATE_ADD_LINE_REQUEST map_create_add_line_request = 10;
+	optional MAP_CREATE_ADD_ARC_REQUEST map_create_add_arc_request = 11;
+	optional MAP_CREATE_FINISH_REQUEST map_create_finish_request = 12;
+	optional MAP_LIST_LINE_REQUEST map_list_line_request = 13;
+	optional MAP_LIST_ARC_REQUEST map_list_arc_request = 14;
+	optional MAP_LIST_STATION_REQUEST map_list_station_request = 15;
+	optional HAND_REQUEST_REQUEST hand_request_request = 16;
+	optional HAND_RELEASE_REQUEST hand_release_request = 17;
+	optional HAND_FORWARD_REQUEST hand_forward_request = 18;
+	optional HAND_BACKWARD_REQUEST hand_backward_request = 19;
+	optional HAND_TURN_LEFT_REQUEST hand_turn_left_request = 20;
+	optional HAND_TURN_RIGHT_REQUEST hand_turn_right_request = 21;
+	optional AGV_LIST_REQUEST agv_list_request = 22;
+	optional AGV_ADD_REQUEST agv_add_request = 23;
+	optional AGV_DELETE_REQUEST agv_delete_request = 24;
+	optional AGV_MODIFY_REQUEST agv_modify_request = 25;
+	optional TASK_CREATE_X_REQUEST task_create_x_request = 26;
+	optional TASK_CREATE_AGV_X_REQUEST task_create_agv_x_request = 27;
+	optional TASK_CREATE_Y_X_REQUEST task_create_y_x_request = 28;
+	optional TASK_CREATE_AGV_Y_X_REQUEST task_create_agv_y_x_request = 29;
+	optional TASK_QUERY_STATUS_REQUEST task_query_status_request = 30;
+	optional TASK_LIST_UNDO_REQUEST task_list_undo_request = 31;
+	optional TASK_LIST_DOING_REQUEST task_list_doing_request = 32;
+	optional TASK_LIST_DONE_TODAY_REQUEST task_list_done_today_request = 33;
+	optional TASK_LIST_DURING_REQUEST task_list_during_request = 34;
+	optional LOG_LIST_DURING_REQUEST log_list_during_request = 35;
+	optional SUB_AGV_POSITION_REQUEST sub_agv_position_request = 36;
+	optional CANCEL_SUB_AGV_POSITION_REQUEST cancel_sub_agv_position_request = 37;
+	optional SUB_AGV_STATUS_REQUEST sub_agv_status_request = 38;
+	optional CANCEL_SUB_AGV_STATUS_REQUEST cancel_sub_agv_status_request = 39;
+	optional SUB_LOG_REQUEST sub_log_request = 40;
+	optional CANCEL_SUB_LOG_REQUEST cancel_sub_log_request = 41;
+	optional SUB_TASK_REQUEST sub_task_request = 42;
+	optional CANCEL_SUB_TASK_REQUEST cancel_sub_task_request = 43;
+	optional PUB_AGV_POSITION_REQUEST pub_agv_position_request = 44;
+	optional PUB_AGV_STATUS_REQUEST pub_agv_status_request = 45;
+	optional PUB_LOG_REQUEST pub_log_request = 46;
+	optional PUB_TASK_REQUEST pub_task_request = 47;
+	optional NOTIFY_MAP_UPDATE_REQUEST notify_map_update_request = 48; 
+}
+
+//所有的响应消息
+message Response{
+	required bool result = 1;
+	required int32 error_code = 2;
+	required string error_info = 3;
+	optional USER_LOGIN_RESPONSE user_login_response = 4;
+	optional USER_LOGOUT_RESPONSE user_logout_response = 5;
+	optional USER_CHANGE_PASSWARD_RESPONSE user_change_passward_response = 6;
+	optional USER_LIST_RESPONSE user_list_response = 7;
+	optional USER_DELTE_RESPONSE user_delte_response = 8;
+	optional USER_ADD_RESPONSE user_add_response = 9;
+	optional USER_MODIFY_RESPONSE user_modify_response = 10;
+	optional MAP_CREATE_START_RESPONSE map_create_start_response = 11;
+	optional MAP_CREATE_ADD_STATION_RESPONSE map_create_add_station_response = 12;
+	optional MAP_CREATE_ADD_LINE_RESPONSE map_create_add_line_response = 13;
+	optional MAP_CREATE_ADD_ARC_RESPONSE map_create_add_arc_response = 14;
+	optional MAP_CREATE_FINISH_RESPONSE map_create_finish_response = 15;
+	optional MAP_LIST_LINE_RESPONSE map_list_line_response = 16;
+	optional MAP_LIST_ARC_RESPONSE map_list_arc_response = 17;
+	optional MAP_LIST_STATION_RESPONSE map_list_station_response = 18;
+	optional HAND_RESPONSE_RESPONSE hand_response_response = 19;
+	optional HAND_RELEASE_RESPONSE hand_release_response = 20;
+	optional HAND_FORWARD_RESPONSE hand_forward_response = 21;
+	optional HAND_BACKWARD_RESPONSE hand_backward_response = 22;
+	optional HAND_TURN_LEFT_RESPONSE hand_turn_left_response = 23;
+	optional HAND_TURN_RIGHT_RESPONSE hand_turn_right_response = 24;
+	optional AGV_LIST_RESPONSE agv_list_response = 25;
+	optional AGV_ADD_RESPONSE agv_add_response = 26;
+	optional AGV_DELETE_RESPONSE agv_delete_response = 27;
+	optional AGV_MODIFY_RESPONSE agv_modify_response = 28;
+	optional TASK_CREATE_X_RESPONSE task_create_x_response = 29;
+	optional TASK_CREATE_AGV_X_RESPONSE task_create_agv_x_response = 30;
+	optional TASK_CREATE_Y_X_RESPONSE task_create_y_x_response = 31;
+	optional TASK_CREATE_AGV_Y_X_RESPONSE task_create_agv_y_x_response = 32;
+	optional TASK_QUERY_STATUS_RESPONSE task_query_status_response = 33;
+	optional TASK_LIST_UNDO_RESPONSE task_list_undo_response = 34;
+	optional TASK_LIST_DOING_RESPONSE task_list_doing_response = 35;
+	optional TASK_LIST_DONE_TODAY_RESPONSE task_list_done_today_response = 36;
+	optional TASK_LIST_DURING_RESPONSE task_list_during_response = 37;
+	optional LOG_LIST_DURING_RESPONSE log_list_during_response = 38;
+	optional SUB_AGV_POSITION_RESPONSE sub_agv_position_response = 39;
+	optional CANCEL_SUB_AGV_POSITION_RESPONSE cancel_sub_agv_position_response = 40;
+	optional SUB_AGV_STATUS_RESPONSE sub_agv_status_response = 41;
+	optional CANCEL_SUB_AGV_STATUS_RESPONSE cancel_sub_agv_status_response = 42;
+	optional SUB_LOG_RESPONSE sub_log_response = 43;
+	optional CANCEL_SUB_LOG_RESPONSE cancel_sub_log_response = 44;
+	optional SUB_TASK_RESPONSE sub_task_response = 45;
+	optional CANCEL_SUB_TASK_RESPONSE cancel_sub_task_response = 46;
+	optional PUB_AGV_POSITION_RESPONSE pub_agv_position_response = 47;
+	optional PUB_AGV_STATUS_RESPONSE pub_agv_status_response = 48;
+	optional PUB_LOG_RESPONSE pub_log_response = 49;
+	optional PUB_TASK_RESPONSE pub_task_response = 50;
+	optional NOTIFY_MAP_UPDATE_RESPONSE notify_map_update_response = 51 
+}
+
+message Message{
+	required Msg_Todo todo= 1;
+	required int32 queuenumber = 2;
+	optional Request request = 3;
+	optional Response response = 4;
+}
