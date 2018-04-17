@@ -9,6 +9,9 @@ using namespace qyhnetwork;
 #pragma comment(lib, "Mswsock")
 #endif
 
+namespace qyhnetwork
+{
+
 NetworkEnvironment::NetworkEnvironment()
 {
 #ifdef WIN32
@@ -29,12 +32,7 @@ NetworkEnvironment::~NetworkEnvironment()
 #endif
 }
 
-//server environment.
-
-namespace qyhnetwork
-{
-
-NetworkEnvironment g_appEnvig_networkEnvironmentronment;
+NetworkEnvironment g_networkEnvironment;
 
 std::string getHostByName(const std::string & name)
 {

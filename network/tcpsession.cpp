@@ -1,4 +1,4 @@
-#include "tcpsession.h"
+﻿#include "tcpsession.h"
 #include "sessionmanager.h"
 
 using namespace qyhnetwork;
@@ -245,7 +245,8 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
         OnBlockCheckResult ret;
         try
         {
-            ret = _options._onBlockCheck(_recving->begin + usedIndex, _recving->len - usedIndex, _recving->bound - usedIndex, _recving->bound);
+            //TODO:
+            //ret = _options._onBlockCheck(_recving->begin + usedIndex, _recving->len - usedIndex, _recving->bound - usedIndex, _recving->bound);
         }
         catch (const std::exception & e)
         {
@@ -427,11 +428,6 @@ void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
                 {
                     break;
                 }
-                if (!_options._joinSmallBlock)
-                {
-                    break;
-                }
-
             } while (true);
 
             SessionManager::getRef()._statInfo[STAT_SEND_COUNT]++;

@@ -34,12 +34,13 @@
  * (end of COPYRIGHT)
  */
 
-
+#include "common_impl.h"
+#include "iocp_impl.h"
+#include "tcpaccept_impl.h"
 #include "tcpsocket_impl.h"
 
-using namespace qyhnetwork;
-
 #ifdef WIN32
+namespace qyhnetwork {
 
 TcpSocket::TcpSocket()
 {
@@ -463,6 +464,8 @@ bool TcpSocket::doClose()
         return true;
     }
     return true;
+}
+
 }
 
 #endif

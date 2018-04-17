@@ -10,7 +10,6 @@ namespace qyhnetwork
 const int MAX_EPOLL_WAIT = 5000;
 class TcpSocket;
 class TcpAccept;
-class UdpSocket;
 const int InvalidFD = -1;
 struct EventData
 {
@@ -20,7 +19,6 @@ struct EventData
         REG_ZSUMMER,
         REG_TCP_SOCKET,
         REG_TCP_ACCEPT,
-        REG_UDP_SOCKET
     };
 
     epoll_event   _event; //event, auto set
@@ -29,7 +27,6 @@ struct EventData
     int              _fd = InvalidFD;   //file descriptor
     std::shared_ptr<TcpSocket> _tcpSocketPtr;
     std::shared_ptr<TcpAccept> _tcpacceptPtr;
-    std::shared_ptr<UdpSocket> _udpsocketPtr;
 };
 
 template <class T>

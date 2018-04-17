@@ -3,7 +3,7 @@ import "google/protobuf/timestamp.proto";
 
 enum Msg_Todo{
 	USER_LOGIN = 0;
-	USER_LOGOUT = 1
+	USER_LOGOUT = 1;
 	USER_CHANGE_PASSWARD = 2;
 	USER_LIST = 3;
 	USER_DELTE = 4;
@@ -73,21 +73,21 @@ message USER_LOGOUT_REQUEST{
 }
 
 message USER_CHANGE_PASSWARD_REQUEST{
-	required int id = 1;
+	required int32 id = 1;
 	required string password = 2;
 	required string newpassword = 3;
 }
 
 message USER_LIST_REQUEST{
-	required int id = 1;
-	required int role = 1;
+	required int32 id = 1;
+	required int32 role = 2;
 }
 
 message USER_INFO{
-	required int id = 1;
+	required int32 id = 1;
 	required string username = 2;
-	optional string password = 3;
-	optional bool online = 4;
+	string password = 3;
+	bool online = 4;
 }
 
 message USER_LIST_RESPONSE{
@@ -202,15 +202,14 @@ message TASK_BASE_INFO{
 	required int32 id = 1;
 	required int32 priority = 2;
 	required AGV_TASK_STATUS status = 3; 
-	optional string produceTime = 4;
-	optional string doTime = 5;
-	optional string doneTime = 6;
-	optional AGV_BASE_INFO agv = 7;
-	optional string produceTime = 8;
-	optional string cancelTime = 9;
-	optional string errorTime = 10;
-	optional int32 errorCode = 11;
-	optional string errorinfo = 12;
+	string produceTime = 4;
+	string doTime = 5;
+	string doneTime = 6;
+	AGV_BASE_INFO agv = 7;
+	string cancelTime = 8;
+	string errorTime = 9;
+	int32 errorCode = 10;
+	string errorinfo = 11;
 }
 
 message TASK_LIST_UNDO_RESPONSE{
@@ -286,41 +285,41 @@ message AGV_STATUS_INFO{
 	////其他各种传感器传上来的参数
 }
 
-message PUB_AGV_POSITION{
+message PUB_AGV_POSITION_RESPONSE{
 	repeated AGV_POSITION_INFO agv_positions = 1;
 }
 
-message PUB_AGV_STATUS{
+message PUB_AGV_STATUS_RESPONSE{
 	repeated AGV_STATUS_INFO agv_status = 1;
 }
 
-message PUB_LOG{
+message PUB_LOG_RESPONSE{
 	repeated LOG_INFO logs = 1;
 }
 
-message PUB_TASK{
+message PUB_TASK_RESPONSE{
 	repeated TASK_BASE_INFO tasks = 1;
 }
 
 //所有的请求消息
 message Request{
-	optional USER_LOGIN_REQUEST user_login_request = 1;
-	optional USER_LOGOUT_REQUEST user_logout_request = 2;
-	optional USER_CHANGE_PASSWARD_REQUEST user_change_passward_request = 3;
-	optional USER_LIST_REQUEST user_list_request = 4;
-	optional USER_DELTE_REQUEST user_delte_request = 5;
-	optional USER_ADD_REQUEST user_add_request = 6;
-	optional USER_MODIFY_REQUEST user_modify_request = 7;
-	optional HAND_FORWARD_REQUEST hand_forward_request = 18;
-	optional HAND_BACKWARD_REQUEST hand_backward_request = 19;
-	optional HAND_TURN_LEFT_REQUEST hand_turn_left_request = 20;
-	optional HAND_TURN_RIGHT_REQUEST hand_turn_right_request = 21;
-	optional AGV_ADD_REQUEST agv_add_request = 23;
-	optional AGV_DELETE_REQUEST agv_delete_request = 24;
-	optional AGV_MODIFY_REQUEST agv_modify_request = 25;
-	optional TASK_CREATE_REQUEST task_create_request = 26;
-	optional TASK_LIST_DURING_REQUEST task_list_during_request = 27;
-	optional LOG_LIST_DURING_REQUEST log_list_during_request = 35;
+	USER_LOGIN_REQUEST user_login_request = 1;
+	USER_LOGOUT_REQUEST user_logout_request = 2;
+	USER_CHANGE_PASSWARD_REQUEST user_change_passward_request = 3;
+	USER_LIST_REQUEST user_list_request = 4;
+	USER_DELTE_REQUEST user_delte_request = 5;
+	USER_ADD_REQUEST user_add_request = 6;
+	USER_MODIFY_REQUEST user_modify_request = 7;
+	HAND_FORWARD_REQUEST hand_forward_request = 8;
+	HAND_BACKWARD_REQUEST hand_backward_request = 9;
+	HAND_TURN_LEFT_REQUEST hand_turn_left_request = 10;
+	HAND_TURN_RIGHT_REQUEST hand_turn_right_request = 11;
+	AGV_ADD_REQUEST agv_add_request = 12;
+	AGV_DELETE_REQUEST agv_delete_request = 13;
+	AGV_MODIFY_REQUEST agv_modify_request = 14;
+	TASK_CREATE_REQUEST task_create_request = 15;
+	TASK_LIST_DURING_REQUEST task_list_during_request = 16;
+	LOG_LIST_DURING_REQUEST log_list_during_request = 17;
 }
 
 enum ERROR_CODE{
@@ -342,28 +341,26 @@ message Response{
 	required bool result = 1;
 	required ERROR_CODE error_code = 2;
 	required string error_info = 3;
-	optional USER_LOGIN_RESPONSE user_login_response = 4;
-	optional USER_LOGOUT_RESPONSE user_logout_response = 5;
-	optional USER_CHANGE_PASSWARD_RESPONSE user_change_passward_response = 6;
-	optional USER_LIST_RESPONSE user_list_response = 7;
-	optional MAP_LIST_LINE_RESPONSE map_list_line_response = 16;
-	optional MAP_LIST_STATION_RESPONSE map_list_station_response = 18;
-	optional AGV_LIST_RESPONSE agv_list_response = 25;
-	optional TASK_CREATE_RESPONSE task_create_x_response = 29;
-	optional TASK_QUERY_STATUS_RESPONSE task_query_status_response = 33;
-	optional TASK_LIST_UNDO_RESPONSE task_list_undo_response = 34;
-	optional TASK_LIST_DOING_RESPONSE task_list_doing_response = 35;
-	optional TASK_LIST_DONE_TODAY_RESPONSE task_list_done_today_response = 36;
-	optional TASK_LIST_DURING_RESPONSE task_list_during_response = 37;
-	optional PUB_AGV_POSITION pub_agv_position = 47;
-	optional PUB_AGV_STATUS pub_agv_status = 48;
-	optional PUB_LOG pub_log = 49;
-	optional PUB_TASK pub_task = 50;
+	USER_LOGIN_RESPONSE user_login_response = 4;
+	USER_LIST_RESPONSE user_list_response = 5;
+	MAP_LIST_LINE_RESPONSE map_list_line_response = 6;
+	MAP_LIST_STATION_RESPONSE map_list_station_response = 7;
+	AGV_LIST_RESPONSE agv_list_response = 8;
+	TASK_CREATE_RESPONSE task_create_x_response = 9;
+	TASK_QUERY_STATUS_RESPONSE task_query_status_response = 10;
+	TASK_LIST_UNDO_RESPONSE task_list_undo_response = 11;
+	TASK_LIST_DOING_RESPONSE task_list_doing_response = 12;
+	TASK_LIST_DONE_TODAY_RESPONSE task_list_done_today_response = 13;
+	TASK_LIST_DURING_RESPONSE task_list_during_response = 14;
+	PUB_AGV_POSITION_RESPONSE pub_agv_position_response = 15;
+	PUB_AGV_STATUS_RESPONSE pub_agv_status_response = 16;
+	PUB_LOG_RESPONSE pub_log_response = 17;
+	PUB_TASK_RESPONSE pub_task_response = 18;
 }
 
 message Message{
 	required Msg_Todo todo= 1;
 	required int32 queuenumber = 2;
-	optional Request request = 3;
-	optional Response response = 4;
+	Request request = 3;
+	Response response = 4;
 }

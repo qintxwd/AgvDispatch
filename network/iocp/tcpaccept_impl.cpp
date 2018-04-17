@@ -34,12 +34,13 @@
  * (end of COPYRIGHT)
  */
 
-
+#include "common_impl.h"
 #include "iocp_impl.h"
 #include "tcpaccept_impl.h"
-using namespace qyhnetwork;
-
+#include "tcpsocket_impl.h"
 #ifdef WIN32
+namespace qyhnetwork
+{
 
 TcpAccept::TcpAccept()
 {
@@ -306,6 +307,8 @@ bool TcpAccept::onIOCPMessage(BOOL bSuccess)
         onAccept(NEC_ERROR, _client);
     }
     return true;
+}
+
 }
 
 #endif

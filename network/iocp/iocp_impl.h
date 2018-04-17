@@ -1,13 +1,20 @@
-#ifndef IOCP_IMPL_H_
+﻿#ifndef IOCP_IMPL_H_
 #define IOCP_IMPL_H_
 
-
-#include "common_impl.h"
 #include "../timer/timer.h"
 
 #ifdef WIN32
 namespace qyhnetwork
 {
+
+//! post callback
+using _OnPostHandler = std::function<void()>;
+
+enum POST_COM_KEY
+{
+    PCK_USER_DATA,
+};
+
 class EventLoop :public std::enable_shared_from_this<EventLoop>
 {
 public:

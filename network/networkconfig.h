@@ -14,17 +14,15 @@
 #pragma warning(disable:4200)
 #include "iocp/iocp_impl.h"
 #include "iocp/tcpsocket_impl.h"
-#include "iocp/udpsocket_impl.h"
 #include "iocp/tcpaccept_impl.h"
+#include "iocp/common_impl.h"
 #elif defined(__APPLE__) || defined(__SELECT__)
 #include "../select/select_impl.h"
-#include "../select/udpsocket_impl.h"
 #include "../select/tcpsocket_impl.h"
 #include "../select/tcpaccept_impl.h"
 #else
 #include "epoll/epoll_impl.h"
 #include "epoll/tcpsocket_impl.h"
-#include "epoll/udpsocket_impl.h"
 #include "epoll/tcpaccept_impl.h"
 #endif
 
@@ -138,10 +136,7 @@ void(TcpSessionPtr /*session*/, const std::string& /*method*/, const std::string
 
 struct SessionOptions
 {
-    bool            _openFlashPolicy = false; //check falsh client
     bool            _setNoDelay = true;
-    bool            _floodSendOptimize = true;
-    bool            _joinSmallBlock = true; //merge small block
     unsigned int    _sessionPulseInterval = 30000;
     unsigned int    _connectPulseInterval = 5000;
     unsigned int    _reconnects = 0; // can reconnect count
@@ -185,8 +180,7 @@ enum TupleParamType
 
 inline zsummer::log4z::Log4zStream & operator << (zsummer::log4z::Log4zStream &os, const SessionOptions & traits)
 {
-    os << "{ " << ", _openFlashPolicy=" << traits._openFlashPolicy
-       << ", _setNoDelay=" << traits._setNoDelay
+    os << ", _setNoDelay=" << traits._setNoDelay
        << ", _sessionPulseInterval=" << traits._sessionPulseInterval
        << ", _connectPulseInterval=" << traits._connectPulseInterval
        << ", _reconnects=" << traits._reconnects

@@ -1,12 +1,18 @@
-#ifndef TCPACCEPT_IMPL_H_
+﻿#ifndef TCPACCEPT_IMPL_H_
 #define TCPACCEPT_IMPL_H_
 
 #include "common_impl.h"
 #include "iocp_impl.h"
-#include "tcpsocket_impl.h"
+
 #ifdef WIN32
 namespace qyhnetwork
 {
+
+class TcpSocket;
+using TcpSocketPtr = std::shared_ptr<TcpSocket>;
+//accept callback
+using _OnAcceptHandler = std::function<void(NetErrorCode, TcpSocketPtr)>;
+
 class TcpAccept : public std::enable_shared_from_this<TcpAccept>
 {
 public:

@@ -1,4 +1,4 @@
-#include "sessionmanager.h"
+﻿#include "sessionmanager.h"
 #include "tcpsession.h"
 
 using namespace qyhnetwork;
@@ -380,7 +380,8 @@ SessionID SessionManager::addConnecter(const std::string & remoteHost, unsigned 
     _lastConnectID = nextConnectID(_lastConnectID);
     TcpSessionPtr & session = _mapTcpSessionPtr[_lastConnectID];
     session = std::make_shared<TcpSession>();
-    session->getOptions()._onBlockDispatch = DefaultBlockDispatch;
+    //TODO:
+    //session->getOptions()._onBlockDispatch = DefaultBlockDispatch;
     session->getOptions()._createBlock = DefaultCreateBlock;
     session->getOptions()._freeBlock = DefaultFreeBlock;
 
@@ -436,30 +437,5 @@ void SessionManager::sendSessionData(SessionID sID, const char * orgData, unsign
     iter->second->send(orgData, orgDataLen);
 }
 
-void SessionManager::fakeSessionData(SessionID sID, const char * orgData, unsigned int orgDataLen)
-{
-    auto fake = [&](SessionID ssID, std::string data)
-    {
-        auto iter = _mapTcpSessionPtr.find(ssID);
-        if (iter == _mapTcpSessionPtr.end())
-        {
-            LCW("sendSessionData NOT FOUND SessionID.  SessionID=" << sID);
-            return;
-        }
-        try
-        {
-            iter->second->getOptions()._onBlockDispatch(iter->second, data.c_str(), (unsigned int)data.length());
-        }
-        catch (const std::exception & e)
-        {
-            LOGE("fakeSessionData error. e=" << e.what());
-        }
-        catch (...)
-        {
-            LCW("fakeSessionData catch one unknown exception.");
-        }
-    };
-    post(std::bind(fake, sID, std::string(orgData, orgDataLen)));
-}
 
 

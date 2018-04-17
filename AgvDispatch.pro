@@ -24,19 +24,18 @@ SOURCES += main.cpp \
     network/epoll/epoll_impl.cpp \
     network/epoll/tcpaccept_impl.cpp \
     network/epoll/tcpsocket_impl.cpp \
-    network/epoll/udpsocket_impl.cpp \
     network/timer/timer.cpp \
     network/common/networkcommon.cpp \
     network/epoll/epoll_impl.cpp \
     network/epoll/tcpaccept_impl.cpp \
     network/epoll/tcpsocket_impl.cpp \
-    network/epoll/udpsocket_impl.cpp \
     network/tcpsession.cpp \
     network/sessionmanager.cpp \
     network/iocp/iocp_impl.cpp \
     network/iocp/tcpaccept_impl.cpp \
     network/iocp/tcpsocket_impl.cpp \
-    network/iocp/udpsocket_impl.cpp
+    network/iocp/tcpsocket_impl.cpp \
+    utils/log4z/log4z.cpp
 
 HEADERS += \
     agv.h \
@@ -57,14 +56,12 @@ HEADERS += \
     network/epoll/epoll_impl.h \
     network/epoll/tcpaccept_impl.h \
     network/epoll/tcpsocket_impl.h \
-    network/epoll/udpsocket_impl.h \
     network/timer/timer.h \
     network/common/networkcommon.h \
     network/epoll/common_impl.h \
     network/epoll/epoll_impl.h \
     network/epoll/tcpaccept_impl.h \
     network/epoll/tcpsocket_impl.h \
-    network/epoll/udpsocket_impl.h \
     network/networkconfig.h \
     network/tcpsession.h \
     network/sessionmanager.h \
@@ -72,7 +69,8 @@ HEADERS += \
     network/iocp/iocp_impl.h \
     network/iocp/tcpaccept_impl.h \
     network/iocp/tcpsocket_impl.h \
-    network/iocp/udpsocket_impl.h
+    network/iocp/tcpsocket_impl.h \
+    utils/log4z/log4z.h
 
 unix{
 #LIBS=-ldl

@@ -1,4 +1,4 @@
-/*
+﻿/*
 * zsummerX License
 * -----------
 * 
@@ -42,6 +42,10 @@
 #ifdef WIN32
 namespace qyhnetwork
 {
+using _OnSendHandler = std::function<void(NetErrorCode, int)>;
+using _OnRecvHandler = std::function<unsigned int(NetErrorCode, int)>;
+using _OnConnectHandler = std::function<void(NetErrorCode)>;
+
 class TcpSocket : public std::enable_shared_from_this<TcpSocket>
 {
 public:
@@ -109,7 +113,7 @@ public:
     int _linkStatus = LS_UNINITIALIZE;
 };
 using TcpSocketPtr = std::shared_ptr<TcpSocket>;
-
+using TcpSocketPtr = std::shared_ptr<TcpSocket>;
 }
 
 #endif

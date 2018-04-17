@@ -1,7 +1,6 @@
-#include "epoll_impl.h"
+﻿#include "epoll_impl.h"
 #include "tcpsocket_impl.h"
 #include "tcpaccept_impl.h"
-#include "udpsocket_impl.h"
 
 using namespace qyhnetwork;
 
@@ -144,13 +143,6 @@ void EventLoop::runOnce(bool isImmediately)
             if (pEvent->_tcpSocketPtr)
             {
                 pEvent->_tcpSocketPtr->onEPOLLMessage(_events[i].events);
-            }
-        }
-        else if (pEvent->_type == EventData::REG_UDP_SOCKET)
-        {
-            if (pEvent->_udpsocketPtr)
-            {
-                pEvent->_udpsocketPtr->onEPOLLMessage(_events[i].events);
             }
         }
         else

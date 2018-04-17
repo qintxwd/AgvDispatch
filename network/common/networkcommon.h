@@ -49,29 +49,6 @@ namespace qyhnetwork
         NEC_REMOTE_CLOSED,
     };
 
-    class TcpSocket;
-    using TcpSocketPtr = std::shared_ptr<TcpSocket>;
-
-    //! post callback
-    using _OnPostHandler = std::function<void()>;
-    //timer callback
-    using _OnTimerHandler = std::function<void()>;
-    //accept callback
-    using _OnAcceptHandler = std::function<void(NetErrorCode, TcpSocketPtr)>;
-    //connect callback
-    using _OnConnectHandler = std::function<void(NetErrorCode)>;
-    //send or recv callback  @int : translate bytes.
-    using _OnSendHandler = std::function<void(NetErrorCode, int)>;
-    //return the offset that the first call doRecv with param daemon mod.
-    using _OnRecvHandler = std::function<unsigned int(NetErrorCode, int)>;
-
-    //udp callback
-    //! @const char *: remote ip
-    //! @unsigned short: remote port
-    //! @int : translate bytes
-    using _OnRecvFromHandler = std::function<void(NetErrorCode, const char*, unsigned short, int)>;
-
-
     enum LINK_STATUS
     {
         LS_UNINITIALIZE, //socket default status

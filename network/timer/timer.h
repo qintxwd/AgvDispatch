@@ -1,4 +1,4 @@
-/*
+﻿/*
 * zsummerX License
 * -----------
 * 
@@ -37,12 +37,16 @@
 
 #ifndef _ZSUMMERX_TIMER_H_
 #define _ZSUMMERX_TIMER_H_
-#include "../common/networkcommon.h"
+
 #include <math.h>
 
+#include "../common/networkcommon.h"
 
 namespace qyhnetwork
 {
+
+using _OnTimerHandler = std::function<void()>;
+
 using TimerID = unsigned long long;
 const unsigned long long   InvalidTimerID = 0;
 
@@ -51,22 +55,18 @@ class Timer
 public:
     Timer();
     ~Timer();
-    //get current time tick. unit is millisecond.
     unsigned long long getSteadyTick();
     unsigned long long getSystemTick();
     TimerID makeTimeID(bool useSystemTick, unsigned int delayTick);
     std::pair<bool, unsigned long long> resolveTimeID(TimerID timerID);
-    //get next expire time  be used to set timeout when calling select / epoll_wait / GetQueuedCompletionStatus.
     unsigned int getNextExpireTime();
 
     TimerID createTimer(unsigned int delayTick, _OnTimerHandler &&handle, bool useSysTime = true);
     TimerID createTimer(unsigned int delayTick,const _OnTimerHandler &handle, bool useSysTime = true);
     bool cancelTimer(TimerID timerID);
-    // if have expired timer. the timer will trigger.
     void checkTimer();
     inline std::map<TimerID, _OnTimerHandler* >::size_type getTimersCount(){ return _sysQue.size() + _steadyQue.size(); }
 private:
-    //! timer queue
     std::map<TimerID, _OnTimerHandler* > _sysQue;
     std::map<TimerID, _OnTimerHandler* > _steadyQue;
     unsigned long long _queSeq = 0; //! single sequence . assure timer ID is global single.
