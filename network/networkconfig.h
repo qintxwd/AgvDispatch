@@ -1,4 +1,4 @@
-#ifndef NETWORKCONFIG_H
+﻿#ifndef NETWORKCONFIG_H
 #define NETWORKCONFIG_H
 
 #include <iostream>
@@ -12,10 +12,10 @@
 #ifdef WIN32
 #pragma warning(disable:4503)
 #pragma warning(disable:4200)
-#include "../iocp/iocp_impl.h"
-#include "../iocp/tcpsocket_impl.h"
-#include "../iocp/udpsocket_impl.h"
-#include "../iocp/tcpaccept_impl.h"
+#include "iocp/iocp_impl.h"
+#include "iocp/tcpsocket_impl.h"
+#include "iocp/udpsocket_impl.h"
+#include "iocp/tcpaccept_impl.h"
 #elif defined(__APPLE__) || defined(__SELECT__)
 #include "../select/select_impl.h"
 #include "../select/udpsocket_impl.h"

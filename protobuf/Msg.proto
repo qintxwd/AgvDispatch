@@ -57,16 +57,18 @@ message USER_LOGIN_REQUEST{
 	required string password = 2;
 }
 
+enum USER_ROLE{
+	USER_ROLE_NORMAL_USER = 1;
+	USER_ROLE_ADMIN = 2;
+	USER_ROLE_SUPER_ADMIN = 3;
+}
+
 message USER_LOGIN_RESPONSE{
 	required int32 id = 1;
-	required int32 role = 2;
+	required USER_ROLE role = 2;
 }
 
 message USER_LOGOUT_REQUEST{
-	required int32 id = 1;
-}
-
-message USER_LOGOUT_RESPONSE{
 	required int32 id = 1;
 }
 
@@ -74,10 +76,6 @@ message USER_CHANGE_PASSWARD_REQUEST{
 	required int id = 1;
 	required string password = 2;
 	required string newpassword = 3;
-}
-
-message USER_CHANGE_PASSWARD_RESPONSE{
-	required int id = 1;
 }
 
 message USER_LIST_REQUEST{
@@ -100,35 +98,15 @@ message USER_DELTE_REQUEST{
 	required int32 id = 1;
 }
 
-message USER_DELTE_RESPONSE{
-	required int32 id = 1;
-}
-
 message USER_ADD_REQUEST{
 	required string username = 1;
 	required string password = 2;
-}
-
-message USER_ADD_RESPONSE{
-	required int32 id = 1;
 }
 
 message USER_MODIFY_REQUEST{
 	required int32 id = 1;
 	required string name = 2;
 	required string password = 3;
-}
-
-message USER_MODIFY_RESPONSE{
-	required int32 id = 1;
-}
-
-message MAP_CREATE_START_REQUEST{
-	required int32 role = 1;
-}
-
-message MAP_CREATE_START_RESPONSE{
-	required bool result = 1;
 }
 
 message STATION_INFO{
@@ -140,14 +118,6 @@ message STATION_INFO{
 	required int32 mapId = 6;
 }
 
-message MAP_CREATE_ADD_STATION_REQUEST{
-	required STATION_INFO station = 1;
-}
-
-message MAP_CREATE_ADD_STATION_RESPONSE{
-	required bool result = 1;
-}
-
 message LINE_INFO{
 	required bool isline = 1;
 	required int32 id = 2;
@@ -156,310 +126,181 @@ message LINE_INFO{
 	required int32 length = 5;
 }
 
-message MAP_CREATE_ADD_LINE_REQUEST{
-	required LINE_INFO line = 1;
-}
-
-message MAP_CREATE_ADD_LINE_RESPONSE{
-	required bool result = 1;
-}
-
-message MAP_CREATE_FINISH_REQUEST{
-	required int32 id = 1;
-}
-
-message MAP_CREATE_FINISH_RESPONSE{
-	required int32 id = 1;
-}
-
-message MAP_LIST_LINE_REQUEST{
-	required int32 id = 1;
-}
-
 message MAP_LIST_LINE_RESPONSE{
 	repeated LINE_INFO lines = 1;
 }
 
-message MAP_LIST_ARC_REQUEST{
-
-}
-
-message MAP_LIST_ARC_RESPONSE{
-
-}
-
-message MAP_LIST_STATION_REQUEST{
-
-}
-
 message MAP_LIST_STATION_RESPONSE{
-
-}
-
-message HAND_REQUEST_REQUEST{
-
-}
-
-message HAND_REQUEST_RESPONSE{
-
-}
-
-message HAND_RELEASE_REQUEST{
-
-}
-
-message HAND_RELEASE_RESPONSE{
-
+	repeated STATION_INFO stations = 1;
 }
 
 message HAND_FORWARD_REQUEST{
-
-}
-
-message HAND_FORWARD_RESPONSE{
-
+	required int32 speed = 1;
 }
 
 message HAND_BACKWARD_REQUEST{
-
-}
-
-message HAND_BACKWARD_RESPONSE{
-
+	required int32 speed = 1;
 }
 
 message HAND_TURN_LEFT_REQUEST{
-
-}
-
-message HAND_TURN_LEFT_RESPONSE{
-
+	required int32 speed = 1;
 }
 
 message HAND_TURN_RIGHT_REQUEST{
-
+	required int32 speed = 1;
 }
 
-message HAND_TURN_RIGHT_RESPONSE{
-
-}
-
-message AGV_LIST_REQUEST{
-
+message AGV_BASE_INFO{
+	required int32 id = 1;
+	required string name = 2;
+	required string ip = 3;
+	required int32 port = 4;
 }
 
 message AGV_LIST_RESPONSE{
-
+	repeated AGV_BASE_INFO agv_bases = 1;
 }
 
 message AGV_ADD_REQUEST{
-
-}
-
-message AGV_ADD_RESPONSE{
-
+	required AGV_BASE_INFO agv_base = 1;
 }
 
 message AGV_DELETE_REQUEST{
-
-}
-
-message AGV_DELETE_RESPONSE{
-
+	required int32 id = 1;
 }
 
 message AGV_MODIFY_REQUEST{
+	required AGV_BASE_INFO agv_base = 1;
+}
+
+message TASK_CREATE_REQUEST{
 
 }
 
-message AGV_MODIFY_RESPONSE{
+message TASK_CREATE_RESPONSE{
 
 }
 
-message TASK_CREATE_X_REQUEST{
-
-}
-
-message TASK_CREATE_X_RESPONSE{
-
-}
-
-message TASK_CREATE_AGV_X_REQUEST{
-
-}
-
-message TASK_CREATE_AGV_X_RESPONSE{
-
-}
-
-message TASK_CREATE_Y_X_REQUEST{
-
-}
-
-message TASK_CREATE_Y_X_RESPONSE{
-
-}
-
-message TASK_CREATE_AGV_Y_X_REQUEST{
-
-}
-
-message TASK_CREATE_AGV_Y_X_RESPONSE{
-
+enum AGV_TASK_STATUS{
+	AGV_TASK_STATUS_UNEXIST = -3;
+	AGV_TASK_STATUS_UNEXCUTE = -2;
+	AGV_TASK_STATUS_EXCUTING = -1;
+	AGV_TASK_STATUS_DONE = 0;
+	AGV_TASK_STATUS_FAIL = 1;
+	AGV_TASK_STATUS_CANCEL = 2;
 }
 
 message TASK_QUERY_STATUS_REQUEST{
-
+	required int32 id = 1;
 }
 
 message TASK_QUERY_STATUS_RESPONSE{
-
+	required AGV_TASK_STATUS status = 1;
 }
 
-message TASK_LIST_UNDO_REQUEST{
-
+message TASK_BASE_INFO{
+	required int32 id = 1;
+	required int32 priority = 2;
+	required AGV_TASK_STATUS status = 3; 
+	optional string produceTime = 4;
+	optional string doTime = 5;
+	optional string doneTime = 6;
+	optional AGV_BASE_INFO agv = 7;
+	optional string produceTime = 8;
+	optional string cancelTime = 9;
+	optional string errorTime = 10;
+	optional int32 errorCode = 11;
+	optional string errorinfo = 12;
 }
 
 message TASK_LIST_UNDO_RESPONSE{
-
-}
-
-message TASK_LIST_DOING_REQUEST{
-
+	repeated TASK_BASE_INFO tasks = 1;
 }
 
 message TASK_LIST_DOING_RESPONSE{
-
-}
-
-message TASK_LIST_DONE_TODAY_REQUEST{
-
+	repeated TASK_BASE_INFO tasks = 1;
 }
 
 message TASK_LIST_DONE_TODAY_RESPONSE{
-
+	repeated TASK_BASE_INFO tasks = 1;
 }
 
 message TASK_LIST_DURING_REQUEST{
-
+	required google.protobuf.Timestamp from = 1;
+	required google.protobuf.Timestamp to = 2;
 }
 
 message TASK_LIST_DURING_RESPONSE{
+	repeated TASK_BASE_INFO tasks = 1;
+}
 
+enum AGV_LOG_LEVEL{
+    AGV_LOG_LEVEL_TRACE = 0;
+    AGV_LOG_LEVEL_DEBUG = 1;
+    AGV_LOG_LEVEL_INFO = 2;
+    AGV_LOG_LEVEL_WARN = 3;
+    AGV_LOG_LEVEL_ERROR = 4;
+    AGV_LOG_LEVEL_FATAL = 5;
+}
+
+message LOG_INFO{
+	required google.protobuf.Timestamp timestamp = 1;
+	required AGV_LOG_LEVEL level = 2;
+	required string msg = 3;
 }
 
 message LOG_LIST_DURING_REQUEST{
-
+	required google.protobuf.Timestamp from = 1;
+	required google.protobuf.Timestamp to = 2;
 }
 
 message LOG_LIST_DURING_RESPONSE{
-
+	repeated LOG_INFO logs = 1;
 }
 
-message SUB_AGV_POSITION_REQUEST{
-
+enum AGV_STATUS{
+	AGV_STATUS_HANDING = -1;//手动模式中，不可用
+	AGV_STATUS_IDLE=0;//空闲可用
+	AGV_STATUS_UNCONNECT=1;//未连接
+	AGV_STATUS_TASKING=2;//正在执行任务
+	AGV_STATUS_POWER_LOW=3;//电量低
+	AGV_STATUS_ERROR=4;//故障
+	AGV_STATUS_GO_CHARGING = 5;//返回充电中
+	AGV_STATUS_CHARGING=6;//正在充电
 }
 
-message SUB_AGV_POSITION_RESPONSE{
-
+message AGV_POSITION_INFO{
+	required int32 id = 1;
+	required int32 x = 2;
+	required int32 y = 3;
+	required int32 angle = 4;
+	required string name = 5;
+	required AGV_STATUS status = 6;
 }
 
-message CANCEL_SUB_AGV_POSITION_REQUEST{
-
+message AGV_STATUS_INFO{
+	required int32 id = 1;
+	required string name = 2;
+	required string ip  = 3;
+	required int32 port = 4;
+	////其他各种传感器传上来的参数
 }
 
-message CANCEL_SUB_AGV_POSITION_RESPONSE{
-
+message PUB_AGV_POSITION{
+	repeated AGV_POSITION_INFO agv_positions = 1;
 }
 
-message SUB_AGV_STATUS_REQUEST{
-
+message PUB_AGV_STATUS{
+	repeated AGV_STATUS_INFO agv_status = 1;
 }
 
-message SUB_AGV_STATUS_RESPONSE{
-
+message PUB_LOG{
+	repeated LOG_INFO logs = 1;
 }
 
-message CANCEL_SUB_AGV_STATUS_REQUEST{
-
+message PUB_TASK{
+	repeated TASK_BASE_INFO tasks = 1;
 }
-
-message CANCEL_SUB_AGV_STATUS_RESPONSE{
-
-}
-
-message SUB_LOG_REQUEST{
-
-}
-
-message SUB_LOG_RESPONSE{
-
-}
-
-message CANCEL_SUB_LOG_REQUEST{
-
-}
-
-message CANCEL_SUB_LOG_RESPONSE{
-
-}
-
-message SUB_TASK_REQUEST{
-
-}
-
-message SUB_TASK_RESPONSE{
-
-}
-
-message CANCEL_SUB_TASK_REQUEST{
-
-}
-
-message CANCEL_SUB_TASK_RESPONSE{
-
-}
-
-message PUB_AGV_POSITION_REQUEST{
-
-}
-
-message PUB_AGV_POSITION_RESPONSE{
-
-}
-
-message PUB_AGV_STATUS_REQUEST{
-
-}
-
-message PUB_AGV_STATUS_RESPONSE{
-
-}
-
-message PUB_LOG_REQUEST{
-
-}
-
-message PUB_LOG_RESPONSE{
-
-}
-
-message PUB_TASK_REQUEST{
-
-}
-
-message PUB_TASK_RESPONSE{
-
-}
-
-message NOTIFY_MAP_UPDATE_REQUEST{
-
-}
-
-message NOTIFY_MAP_UPDATE_RESPONSE{
-
-}
-
 
 //所有的请求消息
 message Request{
@@ -470,102 +311,54 @@ message Request{
 	optional USER_DELTE_REQUEST user_delte_request = 5;
 	optional USER_ADD_REQUEST user_add_request = 6;
 	optional USER_MODIFY_REQUEST user_modify_request = 7;
-	optional MAP_CREATE_START_REQUEST map_create_start_request = 8;
-	optional MAP_CREATE_ADD_STATION_REQUEST map_create_add_station_request = 9;
-	optional MAP_CREATE_ADD_LINE_REQUEST map_create_add_line_request = 10;
-	optional MAP_CREATE_ADD_ARC_REQUEST map_create_add_arc_request = 11;
-	optional MAP_CREATE_FINISH_REQUEST map_create_finish_request = 12;
-	optional MAP_LIST_LINE_REQUEST map_list_line_request = 13;
-	optional MAP_LIST_ARC_REQUEST map_list_arc_request = 14;
-	optional MAP_LIST_STATION_REQUEST map_list_station_request = 15;
-	optional HAND_REQUEST_REQUEST hand_request_request = 16;
-	optional HAND_RELEASE_REQUEST hand_release_request = 17;
 	optional HAND_FORWARD_REQUEST hand_forward_request = 18;
 	optional HAND_BACKWARD_REQUEST hand_backward_request = 19;
 	optional HAND_TURN_LEFT_REQUEST hand_turn_left_request = 20;
 	optional HAND_TURN_RIGHT_REQUEST hand_turn_right_request = 21;
-	optional AGV_LIST_REQUEST agv_list_request = 22;
 	optional AGV_ADD_REQUEST agv_add_request = 23;
 	optional AGV_DELETE_REQUEST agv_delete_request = 24;
 	optional AGV_MODIFY_REQUEST agv_modify_request = 25;
-	optional TASK_CREATE_X_REQUEST task_create_x_request = 26;
-	optional TASK_CREATE_AGV_X_REQUEST task_create_agv_x_request = 27;
-	optional TASK_CREATE_Y_X_REQUEST task_create_y_x_request = 28;
-	optional TASK_CREATE_AGV_Y_X_REQUEST task_create_agv_y_x_request = 29;
-	optional TASK_QUERY_STATUS_REQUEST task_query_status_request = 30;
-	optional TASK_LIST_UNDO_REQUEST task_list_undo_request = 31;
-	optional TASK_LIST_DOING_REQUEST task_list_doing_request = 32;
-	optional TASK_LIST_DONE_TODAY_REQUEST task_list_done_today_request = 33;
-	optional TASK_LIST_DURING_REQUEST task_list_during_request = 34;
+	optional TASK_CREATE_REQUEST task_create_request = 26;
+	optional TASK_LIST_DURING_REQUEST task_list_during_request = 27;
 	optional LOG_LIST_DURING_REQUEST log_list_during_request = 35;
-	optional SUB_AGV_POSITION_REQUEST sub_agv_position_request = 36;
-	optional CANCEL_SUB_AGV_POSITION_REQUEST cancel_sub_agv_position_request = 37;
-	optional SUB_AGV_STATUS_REQUEST sub_agv_status_request = 38;
-	optional CANCEL_SUB_AGV_STATUS_REQUEST cancel_sub_agv_status_request = 39;
-	optional SUB_LOG_REQUEST sub_log_request = 40;
-	optional CANCEL_SUB_LOG_REQUEST cancel_sub_log_request = 41;
-	optional SUB_TASK_REQUEST sub_task_request = 42;
-	optional CANCEL_SUB_TASK_REQUEST cancel_sub_task_request = 43;
-	optional PUB_AGV_POSITION_REQUEST pub_agv_position_request = 44;
-	optional PUB_AGV_STATUS_REQUEST pub_agv_status_request = 45;
-	optional PUB_LOG_REQUEST pub_log_request = 46;
-	optional PUB_TASK_REQUEST pub_task_request = 47;
-	optional NOTIFY_MAP_UPDATE_REQUEST notify_map_update_request = 48; 
+}
+
+enum ERROR_CODE{
+	MSG_ERROR_NO_ERROR = 0;//没有错误
+	MSG_ERROR_UNKNOW = 1;//未知错误
+	MSG_ERROR_LENGTH = 2;//数据长度有问题
+	MSG_ERROR_CODE_USERNAME_NOT_EXIST = 3;//登陆用户名不存在
+	MSG_ERROR_CODE_PASSWORD_ERROR = 4;//登陆密码错误
+	MSG_ERROR_CODE_NOT_LOGIN = 5;//用户未登录
+	MSG_ERROR_CODE_SAVE_SQL_FAIL = 6;//保存数据库失败
+	MSG_ERROR_CODE_TASKING = 7;//有任务正在执行
+	MSG_ERROR_CODE_NOT_CTREATING = 8;//不是正在创建地图的时候添加 站点啊、直线、曲线
+	MSG_ERROR_CODE_CTREATING = 9;//正在创建地图的时候获取地图
+	MSG_ERROR_CODE_PERMISSION_DENIED = 10;//没有权限
 }
 
 //所有的响应消息
 message Response{
 	required bool result = 1;
-	required int32 error_code = 2;
+	required ERROR_CODE error_code = 2;
 	required string error_info = 3;
 	optional USER_LOGIN_RESPONSE user_login_response = 4;
 	optional USER_LOGOUT_RESPONSE user_logout_response = 5;
 	optional USER_CHANGE_PASSWARD_RESPONSE user_change_passward_response = 6;
 	optional USER_LIST_RESPONSE user_list_response = 7;
-	optional USER_DELTE_RESPONSE user_delte_response = 8;
-	optional USER_ADD_RESPONSE user_add_response = 9;
-	optional USER_MODIFY_RESPONSE user_modify_response = 10;
-	optional MAP_CREATE_START_RESPONSE map_create_start_response = 11;
-	optional MAP_CREATE_ADD_STATION_RESPONSE map_create_add_station_response = 12;
-	optional MAP_CREATE_ADD_LINE_RESPONSE map_create_add_line_response = 13;
-	optional MAP_CREATE_ADD_ARC_RESPONSE map_create_add_arc_response = 14;
-	optional MAP_CREATE_FINISH_RESPONSE map_create_finish_response = 15;
 	optional MAP_LIST_LINE_RESPONSE map_list_line_response = 16;
-	optional MAP_LIST_ARC_RESPONSE map_list_arc_response = 17;
 	optional MAP_LIST_STATION_RESPONSE map_list_station_response = 18;
-	optional HAND_RESPONSE_RESPONSE hand_response_response = 19;
-	optional HAND_RELEASE_RESPONSE hand_release_response = 20;
-	optional HAND_FORWARD_RESPONSE hand_forward_response = 21;
-	optional HAND_BACKWARD_RESPONSE hand_backward_response = 22;
-	optional HAND_TURN_LEFT_RESPONSE hand_turn_left_response = 23;
-	optional HAND_TURN_RIGHT_RESPONSE hand_turn_right_response = 24;
 	optional AGV_LIST_RESPONSE agv_list_response = 25;
-	optional AGV_ADD_RESPONSE agv_add_response = 26;
-	optional AGV_DELETE_RESPONSE agv_delete_response = 27;
-	optional AGV_MODIFY_RESPONSE agv_modify_response = 28;
-	optional TASK_CREATE_X_RESPONSE task_create_x_response = 29;
-	optional TASK_CREATE_AGV_X_RESPONSE task_create_agv_x_response = 30;
-	optional TASK_CREATE_Y_X_RESPONSE task_create_y_x_response = 31;
-	optional TASK_CREATE_AGV_Y_X_RESPONSE task_create_agv_y_x_response = 32;
+	optional TASK_CREATE_RESPONSE task_create_x_response = 29;
 	optional TASK_QUERY_STATUS_RESPONSE task_query_status_response = 33;
 	optional TASK_LIST_UNDO_RESPONSE task_list_undo_response = 34;
 	optional TASK_LIST_DOING_RESPONSE task_list_doing_response = 35;
 	optional TASK_LIST_DONE_TODAY_RESPONSE task_list_done_today_response = 36;
 	optional TASK_LIST_DURING_RESPONSE task_list_during_response = 37;
-	optional LOG_LIST_DURING_RESPONSE log_list_during_response = 38;
-	optional SUB_AGV_POSITION_RESPONSE sub_agv_position_response = 39;
-	optional CANCEL_SUB_AGV_POSITION_RESPONSE cancel_sub_agv_position_response = 40;
-	optional SUB_AGV_STATUS_RESPONSE sub_agv_status_response = 41;
-	optional CANCEL_SUB_AGV_STATUS_RESPONSE cancel_sub_agv_status_response = 42;
-	optional SUB_LOG_RESPONSE sub_log_response = 43;
-	optional CANCEL_SUB_LOG_RESPONSE cancel_sub_log_response = 44;
-	optional SUB_TASK_RESPONSE sub_task_response = 45;
-	optional CANCEL_SUB_TASK_RESPONSE cancel_sub_task_response = 46;
-	optional PUB_AGV_POSITION_RESPONSE pub_agv_position_response = 47;
-	optional PUB_AGV_STATUS_RESPONSE pub_agv_status_response = 48;
-	optional PUB_LOG_RESPONSE pub_log_response = 49;
-	optional PUB_TASK_RESPONSE pub_task_response = 50;
-	optional NOTIFY_MAP_UPDATE_RESPONSE notify_map_update_response = 51 
+	optional PUB_AGV_POSITION pub_agv_position = 47;
+	optional PUB_AGV_STATUS pub_agv_status = 48;
+	optional PUB_LOG pub_log = 49;
+	optional PUB_TASK pub_task = 50;
 }
 
 message Message{

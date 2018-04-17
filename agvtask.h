@@ -1,4 +1,4 @@
-#ifndef AGVTASK_H
+﻿#ifndef AGVTASK_H
 #define AGVTASK_H
 
 #include <vector>
@@ -16,7 +16,7 @@ public:
         AGV_TASK_STATUS_EXCUTING = -1,//正在执行
         AGV_TASK_STATUS_DONE = 0,//完成
         AGV_TASK_STATUS_FAIL = 1,//失败
-        AGV_TASK_STATSU_CANCEL = 2//取消
+        AGV_TASK_STATUS_CANCEL = 2//取消
     };
 
     ///////////任务优先级

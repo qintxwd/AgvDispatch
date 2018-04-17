@@ -1,4 +1,4 @@
-#ifndef COMMON_IMPL_H
+﻿#ifndef COMMON_IMPL_H
 #define COMMON_IMPL_H
 
 #include "../common/networkcommon.h"
@@ -32,7 +32,6 @@ T & operator <<(T &t, const ExtendHandle & h)
     t << (unsigned int)h._type;
     return t;
 }
-//! 完成键
 enum POST_COM_KEY
 {
     PCK_USER_DATA,
