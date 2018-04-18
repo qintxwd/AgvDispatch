@@ -1,8 +1,10 @@
-﻿
-#include "iocp_impl.h"
-#include "common_impl.h"
-#include "tcpaccept_impl.h"
-#include "tcpsocket_impl.h"
+﻿#include "iocp.h"
+#include "iocp_common.h"
+#include "iocpaccept.h"
+#include "iocpsocket.h"
+
+#include "utils/Log/easylogging.h"
+
 using namespace qyhnetwork;
 
 #ifdef WIN32
@@ -11,13 +13,13 @@ bool EventLoop::initialize()
 {
     if (_io != NULL)
     {
-        LCF("iocp already craeted !  " << logSection());
+        LOG(FATAL)<<"iocp already craeted !  " << logSection();
         return false;
     }
     _io = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 1);
     if (!_io)
     {
-        LCF("CreateIoCompletionPort false!  " );
+        LOG(FATAL)<<"CreateIoCompletionPort false!  " ;
         return false;
     }
     return true;
@@ -42,7 +44,7 @@ void EventLoop::runOnce(bool isImmediately)
 {
     if (_io == NULL)
     {
-        LCF("iocp handle not initialize. " <<logSection());
+        LOG(FATAL)<<"iocp handle not initialize. " <<logSection();
         return;
     }
 
@@ -63,7 +65,7 @@ void EventLoop::runOnce(bool isImmediately)
         //TIMEOUT
         return;
     }
-    
+
     //! user post
     if (uComKey == PCK_USER_DATA)
     {
@@ -74,16 +76,16 @@ void EventLoop::runOnce(bool isImmediately)
         }
         catch (const std::exception & e)
         {
-            LCW("when call [post] callback throw one runtime_error. err=" << e.what());
+            LOG(WARNING)<<"when call [post] callback throw one runtime_error. err=" << e.what();
         }
         catch (...)
         {
-            LCW("when call [post] callback throw one unknown exception.");
+            LOG(WARNING)<<"when call [post] callback throw one unknown exception.";
         }
         delete func;
         return;
     }
-    
+
     //! net data
     ExtendHandle & req = *(HandlerFromOverlaped(pOverlapped));
     switch (req._type)
@@ -107,9 +109,9 @@ void EventLoop::runOnce(bool isImmediately)
     }
         break;
     default:
-        LCE("GetQueuedCompletionStatus undefined type=" << req._type << logSection());
+        LOG(ERROR)<<"GetQueuedCompletionStatus undefined type=" << req._type << logSection();
     }
-    
+
 }
 
 

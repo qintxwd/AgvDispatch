@@ -1,8 +1,9 @@
-﻿#ifndef TCPSOCKET_IMPL_H
-#define TCPSOCKET_IMPL_H
+﻿#ifndef EPOLLSOCKET_H
+#define EPOLLSOCKET_H
 
-#include "common_impl.h"
-#include "epoll_impl.h"
+#include "epoll_common.h"
+#include "epoll.h"
+
 #ifndef WIN32
 namespace qyhnetwork
 {
@@ -61,4 +62,5 @@ using TcpSocketPtr = std::shared_ptr<TcpSocket>;
 
 }
 #endif
-#endif // TCPSOCKET_IMPL_H
+
+#endif // EPOLLSOCKET_H

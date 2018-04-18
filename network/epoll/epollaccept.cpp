@@ -1,5 +1,5 @@
-#include "tcpaccept_impl.h"
-#include "tcpsocket_impl.h"
+﻿#include "epollaccept.h"
+#include "epollsocket.h"
 
 using namespace qyhnetwork;
 
@@ -41,7 +41,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 {
     if (!_summer || _eventData._linkstat != LS_WAITLINK)
     {
-        LCE("TcpAccept::openAccept[this0x" << this << "]  not initialize!" );
+        LOG(ERROR)<<"TcpAccept::openAccept[this0x" << this << "]  not initialize!";
         return false;
     }
     _listenIP = listenIP;
@@ -59,7 +59,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 
     if (_eventData._fd == InvalidFD)
     {
-        LCF("TcpAccept::openAccept[this0x" << this << "] listen socket create err errno =" << strerror(errno));
+        LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket create err errno =" << strerror(errno));
         return false;
     }
 
@@ -83,7 +83,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
         }
         addr.sin6_port = htons(listenPort);
         if (bind(_eventData._fd, (sockaddr *)&addr, sizeof(addr)) != 0) {
-            LCF("TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno = " << strerror(errno) );
+            LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno = " << strerror(errno) );
             ::close(_eventData._fd);
             _eventData._fd = InvalidFD;
             return false;
@@ -101,7 +101,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
         }
         addr.sin_port = htons(listenPort);
         if (bind(_eventData._fd, (sockaddr *)&addr, sizeof(addr)) != 0) {
-            LCF("TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno=" << strerror(errno));
+            LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno=" << strerror(errno));
             ::close(_eventData._fd);
             _eventData._fd = InvalidFD;
             return false;
@@ -110,7 +110,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 
     if (listen(_eventData._fd, 200) != 0)
     {
-        LCF("TcpAccept::openAccept[this0x" << this << "] listen socket listen err, errno=" << strerror(errno) );
+        LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket listen err, errno=" << strerror(errno) );
         ::close(_eventData._fd);
         _eventData._fd = InvalidFD;
         return false;
@@ -126,12 +126,12 @@ bool TcpAccept::doAccept(const TcpSocketPtr &s, _OnAcceptHandler &&handle)
 {
     if (_onAcceptHandler)
     {
-        LCF("TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection());
+        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection());
         return false;
     }
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LCF("TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state");
+        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state");
         return false;
     }
 
@@ -146,12 +146,12 @@ void TcpAccept::onEPOLLMessage(uint32_t event)
     //
     if (!_onAcceptHandler)
     {
-        LCF("TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection());
+        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection());
         return ;
     }
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LCF("TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state" );
+        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state" );
         return ;
     }
 
@@ -162,7 +162,7 @@ void TcpAccept::onEPOLLMessage(uint32_t event)
 
     if (event &  EPOLLERR || event & EPOLLHUP)
     {
-        LCE("TcpAccept::doAccept[this0x" << this << "]  EPOLLERR, errno=" << strerror(errno) );
+        LOG(ERROR)<<"TcpAccept::doAccept[this0x" << this << "]  EPOLLERR, errno=" << strerror(errno);
         auto guard = shared_from_this();
         close();
         onAccept(NEC_ERROR, ps);
@@ -196,7 +196,7 @@ void TcpAccept::onEPOLLMessage(uint32_t event)
         {
             if (errno != EAGAIN && errno != EWOULDBLOCK)
             {
-                LCE("TcpAccept::doAccept[this0x" << this << "] ERR: accept return -1, errno=" << strerror(errno));
+                LOG(ERROR)<<"TcpAccept::doAccept[this0x" << this << "] ERR: accept return -1, errno=" << strerror(errno);
             }
             auto guard = shared_from_this();
             close();
@@ -216,7 +216,7 @@ bool TcpAccept::close()
     auto guard = shared_from_this();
     if (_eventData._linkstat != LS_CLOSED)
     {
-        LCI("TcpAccept::close. socket=" << _eventData._fd);
+        LOG(INFO)<<"TcpAccept::close. socket=" << _eventData._fd);
         _eventData._linkstat = LS_CLOSED;
         _summer->registerEvent(EPOLL_CTL_DEL, _eventData);
         _onAcceptHandler = nullptr;

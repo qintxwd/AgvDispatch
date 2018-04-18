@@ -16,24 +16,48 @@ TaskManager::TaskManager():
 {
 }
 
+void TaskManager::checkTable()
+{
+    try{
+        CppSQLite3DB db;
+        db.open(DB_File);
+        if(!db.tableExists("agv_task")){
+            db.execDML("create table agv_task(id int,produce_time char[64],do_time char[64],done_time char[64],cancel_time char[64],error_time char[64],error_info char[256],error_code int,agv int,status int,priority int,dongindex int) ;");
+        }
+        if(!db.tableExists("agv_task_node")){
+            db.execDML("create table agv_task_node(id int,taskId int,aimstation int);");
+        }
+        if(!db.tableExists("agv_task_node_thing")){
+            db.execDML("create table agv_task_node_thing(id int,task_node_id int,discribe char[256]);");
+        }
+    }catch(CppSQLite3Exception &e){
+        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        return ;
+    }catch(std::exception e){
+        std::cerr << e.what()  << std::endl;
+        return ;
+    }
+}
+
 bool TaskManager::init()
 {
     //check table
-    CppSQLite3DB db;
-    db.open(DB_File);
-    if(!db.tableExists("agv_task")){
-        db.execDML("create table agv_task(id int,produce_time char[64],do_time char[64],done_time char[64],cancel_time char[64],error_time char[64],error_info char[256],error_code int,agv int,status int,priority int,dongindex int) ;");
+    checkTable();
+    task_id = 1;
+    node_id = 1;
+    thing_id = 1;
+    try{
+        CppSQLite3DB db;
+        db.open(DB_File);
+        //找到最小的ID
+        task_id = db.execScalar("select max(id) from agv_task;");
+        node_id = db.execScalar("select max(id) from agv_task_node;");
+        thing_id = db.execScalar("select max(id) from agv_task_node_thing;");
+    }catch(CppSQLite3Exception &e){
+        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+    }catch(std::exception e){
+        std::cerr << e.what()  << std::endl;
     }
-    if(!db.tableExists("agv_task_node")){
-        db.execDML("create table agv_task_node(id int,taskId int,aimstation int);");
-    }
-    if(!db.tableExists("agv_task_node_thing")){
-        db.execDML("create table agv_task_node_thing(id int,task_node_id int,discribe char[256]);");
-    }
-    //找到最小的ID
-    task_id = db.execScalar("select max(id) from agv_task;");
-    node_id = db.execScalar("select max(id) from agv_task_node;");
-    thing_id = db.execScalar("select max(id) from agv_task_node_thing;");
 
     //启动一个分配任务的线程
     pool.enqueue([&]{

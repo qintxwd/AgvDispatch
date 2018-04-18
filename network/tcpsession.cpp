@@ -1,14 +1,18 @@
 ﻿#include "tcpsession.h"
 #include "sessionmanager.h"
+#include "../Common.h"
 
 using namespace qyhnetwork;
 using std::min;
 using std::max;
 
+namespace qyhnetwork {
+
+
 TcpSession::TcpSession()
 {
     SessionManager::getRef()._statInfo[STAT_SESSION_CREATED]++;
-    _recving = (SessionBlock*)malloc(sizeof(SessionBlock)+SESSION_BLOCK_SIZE);
+    _recving = (SessionBlock*)malloc(sizeof(SessionBlock)+SESSION_BLOCK_SIZE);//每个连接要20K的内存,要修改一下
     _recving->len = 0;
     _recving->bound = SESSION_BLOCK_SIZE;
     _sending = (SessionBlock*)malloc(sizeof(SessionBlock)+SESSION_BLOCK_SIZE);
@@ -48,7 +52,7 @@ void TcpSession::connect()
     }
     else
     {
-        LCE("can't connect on a old session.  please use addConnect try again.");
+        LOG(ERROR)<<"can't connect on a old session.  please use addConnect try again.";
     }
 }
 
@@ -62,7 +66,7 @@ void TcpSession::reconnect()
     _sockptr = std::make_shared<TcpSocket>();
     if (!_sockptr->initialize(_eventLoop))
     {
-        LCE("connect init error");
+        LOG(ERROR)<<"connect init error";
         return;
     }
     _recving->len = 0;
@@ -78,7 +82,7 @@ void TcpSession::reconnect()
 
     if (!_sockptr->doConnect(_remoteIP, _remotePort, std::bind(&TcpSession::onConnected, shared_from_this(), std::placeholders::_1)))
     {
-        LCE("connect error");
+        LOG(ERROR)<<"connect error";
         return;
     }
 }
@@ -108,11 +112,11 @@ bool TcpSession::attatch(const TcpSocketPtr &sockptr, AccepterID aID, SessionID 
         }
         catch (const std::exception & e)
         {
-            LOGE("TcpSession::attatch _onSessionLinked error. e=" << e.what());
+            LOG(ERROR)<<"TcpSession::attatch _onSessionLinked error. e=" << e.what();
         }
         catch (...)
         {
-            LCW("TcpSession::attatch _onSessionLinked catch one unknown exception.");
+            LOG(WARNING)<<"TcpSession::attatch _onSessionLinked catch one unknown exception.";
         }
     }
 
@@ -128,10 +132,10 @@ void TcpSession::onConnected(qyhnetwork::NetErrorCode ec)
 {
     if (ec)
     {
-        LCW("onConnected error. ec=" << ec << ",  cID=" << _sessionID);
+        LOG(WARNING)<<"onConnected error. ec=" << ec << ",  cID=" << _sessionID;
         return;
     }
-    LCI("onConnected success. sessionID=" << _sessionID);
+    LOG(INFO)<<"onConnected success. sessionID=" << _sessionID;
 
     if (!doRecv())
     {
@@ -154,11 +158,11 @@ void TcpSession::onConnected(qyhnetwork::NetErrorCode ec)
         }
         catch (const std::exception & e)
         {
-            LOGE("TcpSession::onConnected error. e=" << e.what());
+            LOG(ERROR)<<"TcpSession::onConnected error. e=" << e.what();
         }
         catch (...)
         {
-            LCW("TcpSession::onConnected catch one unknown exception.");
+            LOG(WARNING)<<"TcpSession::onConnected catch one unknown exception.";
         }
     }
     SessionManager::getRef()._statInfo[STAT_SESSION_LINKED]++;
@@ -170,7 +174,7 @@ void TcpSession::onConnected(qyhnetwork::NetErrorCode ec)
 
 bool TcpSession::doRecv()
 {
-    LCT("TcpSession::doRecv sessionID=" << getSessionID() );
+    LOG(TRACE)<<"TcpSession::doRecv sessionID=" << getSessionID() ;
     if (!_sockptr)
     {
         return false;
@@ -191,7 +195,7 @@ void TcpSession::close()
             _sockptr->doClose();
             _sockptr.reset();
         }
-        LCD("TcpSession to close socket. sID= " << _sessionID);
+        LOG(DEBUG)<<"TcpSession to close socket. sID= " << _sessionID;
         if (_status == 2)
         {
             SessionManager::getRef()._statInfo[STAT_SESSION_CLOSED]++;
@@ -204,32 +208,32 @@ void TcpSession::close()
         if (isConnectID(_sessionID) && _reconnects < _options._reconnects)
         {
             _status = 1;
-            LCD("TcpSession already closed. try reconnect ... sID= " << _sessionID);
+            LOG(DEBUG)<<"TcpSession already closed. try reconnect ... sID= " << _sessionID;
         }
         else
         {
             _status = 3;
             SessionManager::getRef().post(std::bind(&SessionManager::removeSession, SessionManager::getPtr(), shared_from_this()));
-            LCI("TcpSession remove self from manager. sID= " << _sessionID);
+            LOG(INFO)<<"TcpSession remove self from manager. sID= " << _sessionID;
         }
         return;
     }
-    LCW("TcpSession::close closing. sID=" << _sessionID);
+    LOG(WARNING)<<"TcpSession::close closing. sID=" << _sessionID;
 }
 
 unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 {
-    LCT("TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received);
+    LOG(TRACE)<<"TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
     if (ec)
     {
         _lastRecvError = ec;
         if (_lastRecvError == NEC_REMOTE_CLOSED)
         {
-            LCI("socket closed.  remote close. sID=" << _sessionID);
+            LOG(INFO)<<"socket closed.  remote close. sID=" << _sessionID;
         }
         else
         {
-            LCI("socket closed.  socket error(or win rst). sID=" << _sessionID);
+            LOG(INFO)<<"socket closed.  socket error(or win rst). sID=" << _sessionID;
         }
         close();
         return 0 ;
@@ -250,25 +254,25 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
         }
         catch (const std::exception & e)
         {
-            LCW("MessageEntry _onBlockCheck catch one exception: " << e.what()  << ",  offset = " << usedIndex << ", len = " << _recving->len << ", bound = " << _recving->bound
+            LOG(WARNING)<<"MessageEntry _onBlockCheck catch one exception: " << e.what()  << ",  offset = " << usedIndex << ", len = " << _recving->len << ", bound = " << _recving->bound
                 << ", bindata(max 500byte) :"
-                << zsummer::log4z::Log4zBinary(_recving->begin+usedIndex, min(_recving->len - usedIndex, (unsigned int)500)));
+                << toHexString(_recving->begin+usedIndex, min(_recving->len - usedIndex, (unsigned int)500));
             close();
             return 0;
         }
         catch (...)
         {
-            LCW("MessageEntry _onBlockCheck catch one unknown exception.  offset=" << usedIndex << ",  len=" << _recving->len << ", bound=" << _recving->bound
+            LOG(WARNING)<<"MessageEntry _onBlockCheck catch one unknown exception.  offset=" << usedIndex << ",  len=" << _recving->len << ", bound=" << _recving->bound
                 << "bindata(max 500byte) :"
-                << zsummer::log4z::Log4zBinary(_recving->begin + usedIndex, min(_recving->len - usedIndex, (unsigned int)500)));
+                << toHexString(_recving->begin + usedIndex, min(_recving->len - usedIndex, (unsigned int)500));
             close();
             return 0;
         }
         if (ret.first == BCT_CORRUPTION)
         {
-            LCW("killed socket: _onBlockCheck error.  offset=" << usedIndex << ",  len=" << _recving->len << ", bound=" << _recving->bound
+            LOG(WARNING)<<"killed socket: _onBlockCheck error.  offset=" << usedIndex << ",  len=" << _recving->len << ", bound=" << _recving->bound
                 << "bindata(max 500byte) :"
-                << zsummer::log4z::Log4zBinary(_recving->begin + usedIndex, min(_recving->len - usedIndex, (unsigned int)500)));
+                << toHexString(_recving->begin + usedIndex, min(_recving->len - usedIndex, (unsigned int)500));
             close();
             return 0;
         }
@@ -279,19 +283,19 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
         try
         {
             SessionManager::getRef()._statInfo[STAT_RECV_PACKS]++;
-            LCT("TcpSession::onRecv _onBlockDispatch(sessionID=" << getSessionID() << ", offset=" << usedIndex
-                <<", len=" << ret.second);
+            LOG(TRACE)<<"TcpSession::onRecv _onBlockDispatch(sessionID=" << getSessionID() << ", offset=" << usedIndex
+                <<", len=" << ret.second;
             _options._onBlockDispatch(shared_from_this(), _recving->begin + usedIndex, ret.second);
         }
         catch (const std::exception & e)
         {
-            LCW("MessageEntry _onBlockDispatch catch one exception: " << e.what() << ", bindata(max 500byte) :"
-                << zsummer::log4z::Log4zBinary(_recving->begin + usedIndex, min(ret.second, (unsigned int)500)));
+            LOG(WARNING)<<"MessageEntry _onBlockDispatch catch one exception: " << e.what() << ", bindata(max 500byte) :"
+                << toHexString(_recving->begin + usedIndex, min(ret.second, (unsigned int)500));
         }
         catch (...)
         {
-            LCW("MessageEntry _onBlockDispatch catch one unknown exception, bindata(max 500byte) :"
-                << zsummer::log4z::Log4zBinary(_recving->begin + usedIndex, min(ret.second, (unsigned int)500)));
+            LOG(WARNING)<<"MessageEntry _onBlockDispatch catch one unknown exception, bindata(max 500byte) :"
+                << toHexString(_recving->begin + usedIndex, min(ret.second, (unsigned int)500));
         }
         usedIndex += ret.second;
 
@@ -320,10 +324,10 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 
 void TcpSession::send(const char *buf, unsigned int len)
 {
-    LCT("TcpSession::send sessionID=" << getSessionID() << ", len=" << len);
+    LOG(TRACE)<<"TcpSession::send sessionID=" << getSessionID() << ", len=" << len;
     if (len > _sending->bound)
     {
-        LCE("send error.  too large block than sending block bound.  len=" << len);
+        LOG(ERROR)<<"send error.  too large block than sending block bound.  len=" << len;
         return;
     }
 
@@ -339,7 +343,7 @@ void TcpSession::send(const char *buf, unsigned int len)
             bool sendRet = _sockptr->doSend(_sending->begin, _sending->len, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
             if (!sendRet)
             {
-                LCE("send error from first connect to send dirty block");
+                LOG(ERROR)<<"send error from first connect to send dirty block";
             }
         }
         return;
@@ -358,7 +362,7 @@ void TcpSession::send(const char *buf, unsigned int len)
         if (sb->bound < len)
         {
             _options._freeBlock(sb);
-            LCE("send error.  too large block than session block.  len=" << len);
+            LOG(ERROR)<<"send error.  too large block than session block.  len=" << len;
             return;
         }
         memcpy(sb->begin, buf, len);
@@ -376,7 +380,7 @@ void TcpSession::send(const char *buf, unsigned int len)
         bool sendRet = _sockptr->doSend(_sending->begin, _sending->len, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
         if (!sendRet)
         {
-            LCW("send error ");
+            LOG(WARNING)<<"send error ";
         }
     }
 }
@@ -385,10 +389,10 @@ void TcpSession::send(const char *buf, unsigned int len)
 void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
 {
 
-    LCT("TcpSession::onSend session id=" << getSessionID() << ", sent=" << sent);
+    LOG(TRACE)<<"TcpSession::onSend session id=" << getSessionID() << ", sent=" << sent;
     if (ec)
     {
-        LCD("remote socket closed");
+        LOG(DEBUG)<<"remote socket closed";
         return ;
     }
 
@@ -400,7 +404,7 @@ void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
         bool sendRet = _sockptr->doSend(_sending->begin + _sendingLen, _sending->len - _sendingLen, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
         if (!sendRet)
         {
-            LCW("send error from onSend");
+            LOG(WARNING)<<"send error from onSend";
             return;
         }
         return;
@@ -434,7 +438,7 @@ void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
             bool sendRet = _sockptr->doSend(_sending->begin, _sending->len, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
             if (!sendRet)
             {
-                LCW("send error from next queue block.");
+                LOG(WARNING)<<"send error from next queue block.";
                 return;
             }
             return;
@@ -461,11 +465,11 @@ void TcpSession::onPulse()
                 }
                 catch (const std::exception & e)
                 {
-                    LCE("_options._onReconnectEnd catch excetion=" << e.what());
+                    LOG(ERROR)<<"_options._onReconnectEnd catch excetion=" << e.what();
                 }
                 catch (...)
                 {
-                    LCE("_options._onReconnectEnd catch excetion");
+                    LOG(ERROR)<<"_options._onReconnectEnd catch excetion";
                 }
             }
             close();
@@ -487,11 +491,11 @@ void TcpSession::onPulse()
             }
             catch (const std::exception & e)
             {
-                LCW("TcpSession::onPulse catch one exception: " << e.what());
+                LOG(WARNING)<<"TcpSession::onPulse catch one exception: " << e.what();
             }
             catch (...)
             {
-                LCW("TcpSession::onPulse catch one unknown exception: ");
+                LOG(WARNING)<<"TcpSession::onPulse catch one unknown exception: ";
             }
         }
         _pulseTimerID = SessionManager::getRef().createTimer(isConnectID(_sessionID) ? _options._connectPulseInterval : _options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
@@ -505,7 +509,7 @@ TupleParam & TcpSession::autoTupleParamImpl(size_t index)
 {
     if (index > 100)
     {
-        LOGW("user param is too many.");
+        LOG(WARNING)<<"user param is too many.";
     }
     if (_param.size() <= index)
     {
@@ -519,12 +523,14 @@ const TupleParam & TcpSession::peekTupleParamImpl(size_t index) const
     const static TupleParam _invalid = std::make_tuple( false, 0.0, 0, "" );
     if (index > 100)
     {
-        LOGW("user param is too many. " );
+        LOG(WARNING)<<"user param is too many. " ;
     }
     if (_param.size() <= index )
     {
-        LOGW("get user param error. not inited. ");
+        LOG(WARNING)<<"get user param error. not inited. ";
         return _invalid;
     }
     return _param.at(index);
+}
+
 }

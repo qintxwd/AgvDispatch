@@ -1,6 +1,8 @@
 ﻿#include  "timer.h"
 #include <algorithm>
 
+#include "utils/Log/easylogging.h"
+
 using namespace qyhnetwork;
 
 
@@ -128,16 +130,16 @@ void Timer::checkTimer()
             _steadyQue.erase(_steadyQue.begin());
             try
             {
-                //LCD("call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
+                //LOG(DEBUG)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
                 (*handler)();
             }
             catch (const std::exception & e)
             {
-                LCW("OnTimerHandler have runtime_error exception. timerID=" << timerID << ", err=" << e.what());
+                LOG(WARNING)<<"OnTimerHandler have runtime_error exception. timerID=" << timerID << ", err=" << e.what();
             }
             catch (...)
             {
-                LCW("OnTimerHandler have unknown exception. timerID=" << timerID);
+                LOG(WARNING)<<"OnTimerHandler have unknown exception. timerID=" << timerID;
             }
             delete handler;
         }
@@ -153,16 +155,16 @@ void Timer::checkTimer()
             _sysQue.erase(_sysQue.begin());
             try
             {
-                //LCD("call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
+                //LOG(DEBUG)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
                 (*handler)();
             }
             catch (const std::exception & e)
             {
-                LCW("OnTimerHandler have runtime_error exception. timerID=" << timerID << ", err=" << e.what());
+                LOG(WARNING)<<"OnTimerHandler have runtime_error exception. timerID=" << timerID << ", err=" << e.what();
             }
             catch (...)
             {
-                LCW("OnTimerHandler have unknown exception. timerID=" << timerID);
+                LOG(WARNING)<<"OnTimerHandler have unknown exception. timerID=" << timerID;
             }
             delete handler;
         }

@@ -1,53 +1,20 @@
-﻿/*
- * zsummerX License
- * -----------
- * 
- * zsummerX is licensed under the terms of the MIT license reproduced below.
- * This means that zsummerX is free software and can be used for both academic
- * and commercial purposes at absolutely no cost.
- * 
- * 
- * ===============================================================================
- * 
- * Copyright (C) 2010-2015 YaweiZhang <yawei.zhang@foxmail.com>.
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- * 
- * ===============================================================================
- * 
- * (end of COPYRIGHT)
- */
+﻿#include "iocpaccept.h"
+#include "iocp_common.h"
+#include "iocpsocket.h"
+#include "iocp.h"
 
-#include "common_impl.h"
-#include "iocp_impl.h"
-#include "tcpaccept_impl.h"
-#include "tcpsocket_impl.h"
+#include "utils/Log/easylogging.h"
+
 #ifdef WIN32
-namespace qyhnetwork
-{
+using namespace qyhnetwork;
+
 
 TcpAccept::TcpAccept()
 {
     //listen
     memset(&_handle._overlapped, 0, sizeof(_handle._overlapped));
     _server = INVALID_SOCKET;
-    
+
     _handle._type = ExtendHandle::HANDLE_ACCEPT;
 
     //client
@@ -79,7 +46,7 @@ bool TcpAccept::initialize(EventLoopPtr& summer)
 {
     if (_summer)
     {
-        LCF("TcpAccept already initialize! " << logSection());
+        LOG(FATAL)<<"TcpAccept already initialize! " << logSection();
         return false;
     }
     _summer = summer;
@@ -90,13 +57,13 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
 {
     if (!_summer)
     {
-        LCF("TcpAccept not inilialize!  ip=" << ip << ", port=" << port << logSection());
+        LOG(FATAL)<<"TcpAccept not inilialize!  ip=" << ip << ", port=" << port << logSection();
         return false;
     }
 
     if (_server != INVALID_SOCKET)
     {
-        LCF("TcpAccept already opened!  ip=" << ip << ", port=" << port << logSection());
+        LOG(FATAL)<<"TcpAccept already opened!  ip=" << ip << ", port=" << port << logSection();
         return false;
     }
     _ip = ip;
@@ -113,7 +80,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
     }
     if (_server == INVALID_SOCKET)
     {
-        LCF("create socket error! ");
+        LOG(FATAL)<<"create socket error! ";
         return false;
     }
 
@@ -122,7 +89,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
     {
         setReuse(_server);
     }
-    
+
     if (_isIPV6)
     {
         SOCKADDR_IN6 addr;
@@ -137,7 +104,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
             auto ret = inet_pton(AF_INET6, ip.c_str(), &addr.sin6_addr);
             if (ret <= 0)
             {
-                LCF("bind ipv6 error, ipv6 format error" << ip);
+                LOG(FATAL)<<"bind ipv6 error, ipv6 format error" << ip;
                 closesocket(_server);
                 _server = INVALID_SOCKET;
                 return false;
@@ -147,7 +114,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
         auto ret = bind(_server, (sockaddr *)&addr, sizeof(addr));
         if (ret != 0)
         {
-            LCF("bind ipv6 error, ERRCODE=" << WSAGetLastError());
+            LOG(FATAL)<<"bind ipv6 error, ERRCODE=" << WSAGetLastError();
             closesocket(_server);
             _server = INVALID_SOCKET;
             return false;
@@ -162,34 +129,34 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
         addr.sin_port = htons(port);
         if (bind(_server, (sockaddr *)&addr, sizeof(addr)) != 0)
         {
-            LCF("bind error, ERRCODE=" << WSAGetLastError());
+            LOG(FATAL)<<"bind error, ERRCODE=" << WSAGetLastError();
             closesocket(_server);
             _server = INVALID_SOCKET;
             return false;
         }
-        
-    }
-	if (true)
-	{
-		int OptionValue = 1;
-		DWORD NumberOfBytesReturned = 0;
-		DWORD SIO_LOOPBACK_FAST_PATH_A = 0x98000010;
 
-		WSAIoctl(
-			_server,
-			SIO_LOOPBACK_FAST_PATH_A,
-			&OptionValue,
-			sizeof(OptionValue),
-			NULL,
-			0,
-			&NumberOfBytesReturned,
-			0,
-			0);
-	}
+    }
+    if (true)
+    {
+        int OptionValue = 1;
+        DWORD NumberOfBytesReturned = 0;
+        DWORD SIO_LOOPBACK_FAST_PATH_A = 0x98000010;
+
+        WSAIoctl(
+            _server,
+            SIO_LOOPBACK_FAST_PATH_A,
+            &OptionValue,
+            sizeof(OptionValue),
+            NULL,
+            0,
+            &NumberOfBytesReturned,
+            0,
+            0);
+    }
 
     if (listen(_server, SOMAXCONN) != 0)
     {
-        LCF("listen error, ERRCODE=" << WSAGetLastError() );
+        LOG(FATAL)<<"listen error, ERRCODE=" << WSAGetLastError();
         closesocket(_server);
         _server = INVALID_SOCKET;
         return false;
@@ -197,7 +164,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
 
     if (CreateIoCompletionPort((HANDLE)_server, _summer->_io, (ULONG_PTR)this, 1) == NULL)
     {
-        LCF("bind to iocp error, ERRCODE=" << WSAGetLastError() );
+        LOG(FATAL)<<"bind to iocp error, ERRCODE=" << WSAGetLastError();
         closesocket(_server);
         _server = INVALID_SOCKET;
         return false;
@@ -209,7 +176,7 @@ bool TcpAccept::close()
 {
     if (_server != INVALID_SOCKET)
     {
-        LCI("TcpAccept::close. socket=" << _server);
+        LOG(INFO)<<"TcpAccept::close. socket=" << _server;
         closesocket(_server);
         _server = INVALID_SOCKET;
     }
@@ -220,15 +187,15 @@ bool TcpAccept::doAccept(const TcpSocketPtr & s, _OnAcceptHandler&& handler)
 {
     if (_onAcceptHandler)
     {
-        LCF("duplicate operation error." << logSection());
+        LOG(FATAL)<<"duplicate operation error." << logSection();
         return false;
     }
     if (!_summer || _server == INVALID_SOCKET)
     {
-        LCF("TcpAccept not initialize." << logSection());
+        LOG(FATAL)<<"TcpAccept not initialize." << logSection();
         return false;
     }
-    
+
     _client = s;
     _socket = INVALID_SOCKET;
     memset(_recvBuf, 0, sizeof(_recvBuf));
@@ -246,7 +213,7 @@ bool TcpAccept::doAccept(const TcpSocketPtr & s, _OnAcceptHandler&& handler)
     }
     if (_socket == INVALID_SOCKET)
     {
-        LCF("TcpAccept::doAccept create client socket error! error code=" << WSAGetLastError() );
+        LOG(FATAL)<<"TcpAccept::doAccept create client socket error! error code=" << WSAGetLastError();
         return false;
     }
     setNoDelay(_socket);
@@ -254,7 +221,7 @@ bool TcpAccept::doAccept(const TcpSocketPtr & s, _OnAcceptHandler&& handler)
     {
         if (WSAGetLastError() != ERROR_IO_PENDING)
         {
-            LCE("TcpAccept::doAccept do AcceptEx error, error code =" << WSAGetLastError() );
+            LOG(ERROR)<<"TcpAccept::doAccept do AcceptEx error, error code =" << WSAGetLastError();
             closesocket(_socket);
             _socket = INVALID_SOCKET;
             return false;
@@ -273,7 +240,7 @@ bool TcpAccept::onIOCPMessage(BOOL bSuccess)
 
         if (setsockopt(_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&_server, sizeof(_server)) != 0)
         {
-            LCW("setsockopt SO_UPDATE_ACCEPT_CONTEXT fail!  last error=" << WSAGetLastError() );
+            LOG(WARNING)<<"setsockopt SO_UPDATE_ACCEPT_CONTEXT fail!  last error=" << WSAGetLastError();
         }
         if (_isIPV6)
         {
@@ -303,12 +270,12 @@ bool TcpAccept::onIOCPMessage(BOOL bSuccess)
     {
         closesocket(_socket);
         _socket = INVALID_SOCKET;
-        LCW("AcceptEx failed ... , lastError=" << GetLastError() );
+        LOG(WARNING)<<"AcceptEx failed ... , lastError=" << GetLastError();
         onAccept(NEC_ERROR, _client);
     }
     return true;
 }
 
-}
 
 #endif
+

@@ -1,8 +1,8 @@
-﻿#ifndef TCPACCEPT_IMPL_H_
-#define TCPACCEPT_IMPL_H_
+﻿#ifndef IOCPACCEPT_H
+#define IOCPACCEPT_H
 
-#include "common_impl.h"
-#include "iocp_impl.h"
+#include "iocp_common.h"
+#include "iocp.h"
 
 #ifdef WIN32
 namespace qyhnetwork
@@ -51,4 +51,5 @@ using TcpAcceptPtr = std::shared_ptr<TcpAccept>;
 }
 
 #endif
-#endif
+
+#endif // IOCPACCEPT_H

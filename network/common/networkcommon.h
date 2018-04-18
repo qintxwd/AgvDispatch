@@ -37,7 +37,6 @@
 #include <mutex>
 #include <algorithm>
 #include <atomic>
-#include "utils/log4z/log4z.h"
 
 namespace qyhnetwork
 {
@@ -67,11 +66,9 @@ namespace qyhnetwork
         inline void addClosedSocketCount(){ _totalClosedCTcpSocketObjs++; }
         inline unsigned int getCreatedSocketCount(){ return _totalCreatedCTcpSocketObjs; }
         inline unsigned int getClosedSocketCount(){ return _totalClosedCTcpSocketObjs; }
-        inline LoggerId getNetCoreLogger(){ return _netLoggerID; }
     private:
         std::atomic_uint _totalCreatedCTcpSocketObjs;
         std::atomic_uint _totalClosedCTcpSocketObjs;
-        LoggerId _netLoggerID = 0;
     };
 
     extern NetworkEnvironment g_networkEnvironment;
@@ -90,13 +87,5 @@ namespace qyhnetwork
     inline bool setIPV6Only(SOCKET s, bool only){DWORD ipv6only = only ? 1: 0;return setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char*)&ipv6only, sizeof(ipv6only)) == 0;}
 #endif
 }
-
-#define LCT( log ) LOG_TRACE(qyhnetwork::g_networkEnvironment.getNetCoreLogger(), log )
-#define LCD( log ) LOG_DEBUG(qyhnetwork::g_networkEnvironment.getNetCoreLogger(), log )
-#define LCI( log ) LOG_INFO(qyhnetwork::g_networkEnvironment.getNetCoreLogger(),  log )
-#define LCW( log ) LOG_WARN(qyhnetwork::g_networkEnvironment.getNetCoreLogger(),  log )
-#define LCE( log ) LOG_ERROR(qyhnetwork::g_networkEnvironment.getNetCoreLogger(), log )
-#define LCA( log ) LOG_ALARM(qyhnetwork::g_networkEnvironment.getNetCoreLogger(), log )
-#define LCF( log ) LOG_FATAL(qyhnetwork::g_networkEnvironment.getNetCoreLogger(), log )
 
 #endif // NETWORKCOMMON_H

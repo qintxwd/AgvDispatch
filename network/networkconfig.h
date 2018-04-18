@@ -7,23 +7,19 @@
 #include <string.h>
 #include <signal.h>
 #include <unordered_map>
-#include "utils/log4z/log4z.h"
+#include "utils/log/easylogging.h"
 
 #ifdef WIN32
 #pragma warning(disable:4503)
 #pragma warning(disable:4200)
-#include "iocp/iocp_impl.h"
-#include "iocp/tcpsocket_impl.h"
-#include "iocp/tcpaccept_impl.h"
-#include "iocp/common_impl.h"
-#elif defined(__APPLE__) || defined(__SELECT__)
-#include "../select/select_impl.h"
-#include "../select/tcpsocket_impl.h"
-#include "../select/tcpaccept_impl.h"
+#include "iocp/iocp.h"
+#include "iocp/iocpsocket.h"
+#include "iocp/iocpaccept.h"
+#include "iocp/iocp_common.h"
 #else
-#include "epoll/epoll_impl.h"
-#include "epoll/tcpsocket_impl.h"
-#include "epoll/tcpaccept_impl.h"
+#include "epoll/epoll.h"
+#include "epoll/epollsocket.h"
+#include "epoll/epollaccept.h"
 #endif
 
 
@@ -134,7 +130,7 @@ void(TcpSessionPtr /*session*/, const std::string& /*method*/, const std::string
 
 
 
-struct SessionOptions
+struct SessionOptions: public el::Loggable
 {
     bool            _setNoDelay = true;
     unsigned int    _sessionPulseInterval = 30000;
@@ -151,9 +147,18 @@ struct SessionOptions
     CreateBlock _createBlock ;
     FreeBlock _freeBlock;
 
+    virtual void log(el::base::type::ostream_t& os) const{
+        os << ", _setNoDelay=" << _setNoDelay
+           << ", _sessionPulseInterval=" << _sessionPulseInterval
+           << ", _connectPulseInterval=" << _connectPulseInterval
+           << ", _reconnects=" << _reconnects
+           << ", _reconnectClean=" << _reconnectClean
+           << "}";
+    }
+
 };
 
-struct AccepterOptions
+struct AccepterOptions : public el::Loggable
 {
     AccepterID _aID = InvalidAccepterID;
     TcpAcceptPtr _accepter;
@@ -166,6 +171,25 @@ struct AccepterOptions
     unsigned long long _currentLinked = 0;
     bool _closed = false;
     SessionOptions _sessionOptions;
+    virtual void log(el::base::type::ostream_t& os) const
+    {
+        os << "{"
+           << "_aID=" << _aID
+           << ", _listenIP=" << _listenIP
+           << ", _listenPort=" << _listenPort
+           << ", _maxSessions=" << _maxSessions
+           << ",_totalAcceptCount=" << _totalAcceptCount
+           << ", _currentLinked=" << _currentLinked
+           << ",_whitelistIP={";
+
+        for (auto str : _whitelistIP)
+        {
+            os << str << ",";
+        }
+        os << "}";
+        os << ", SessionOptions=" << _sessionOptions;
+        os << "}";
+    }
 };
 
 using TupleParam = std::tuple<bool, double, unsigned long long, std::string>;
@@ -178,38 +202,6 @@ enum TupleParamType
     TupleParamString = 3,
 };
 
-inline zsummer::log4z::Log4zStream & operator << (zsummer::log4z::Log4zStream &os, const SessionOptions & traits)
-{
-    os << ", _setNoDelay=" << traits._setNoDelay
-       << ", _sessionPulseInterval=" << traits._sessionPulseInterval
-       << ", _connectPulseInterval=" << traits._connectPulseInterval
-       << ", _reconnects=" << traits._reconnects
-       << ", _reconnectClean=" << traits._reconnectClean
-       << "}";
-    return os;
-}
-
-
-inline zsummer::log4z::Log4zStream & operator << (zsummer::log4z::Log4zStream &os, const AccepterOptions & extend)
-{
-    os << "{"
-       << "_aID=" << extend._aID
-       << ", _listenIP=" << extend._listenIP
-       << ", _listenPort=" << extend._listenPort
-       << ", _maxSessions=" << extend._maxSessions
-       << ",_totalAcceptCount=" << extend._totalAcceptCount
-       << ", _currentLinked=" << extend._currentLinked
-       << ",_whitelistIP={";
-
-    for (auto str : extend._whitelistIP)
-    {
-        os << str << ",";
-    }
-    os << "}";
-    os << ", SessionOptions=" << extend._sessionOptions;
-    os << "}";
-    return os;
-}
 }
 
 #endif

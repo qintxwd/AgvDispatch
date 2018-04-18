@@ -27,6 +27,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "CppSQLite3.h"
 #include <cstdlib>
+#include <string>
 
 
 // Named constant for passing to CppSQLite3Exception when passing it a string
@@ -733,7 +734,7 @@ int CppSQLite3Table::getIntField(int nField, int nNullValue/*=0*/)
 	}
 	else
 	{
-		return atoi(fieldValue(nField));
+        return atoi(fieldValue(nField));
 	}
 }
 
@@ -746,7 +747,7 @@ int CppSQLite3Table::getIntField(const char* szField, int nNullValue/*=0*/)
 	}
 	else
 	{
-		return atoi(fieldValue(szField));
+        return atoi(fieldValue(szField));
 	}
 }
 
@@ -1211,14 +1212,14 @@ int CppSQLite3DB::execScalar(const char* szSQL)
 {
 	CppSQLite3Query q = execQuery(szSQL);
 
-	if (q.eof() || q.numFields() < 1)
+    if (q.eof() || q.numFields() < 1 || q.fieldValue(0) == nullptr)
 	{
 		throw CppSQLite3Exception(CPPSQLITE_ERROR,
                                 (char *)"Invalid scalar query",
 								DONT_DELETE_MSG);
 	}
 
-	return atoi(q.fieldValue(0));
+    return atoi(q.fieldValue(0));
 }
 
 

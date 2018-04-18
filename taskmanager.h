@@ -1,4 +1,4 @@
-#ifndef TASKMANAGER_H
+﻿#ifndef TASKMANAGER_H
 #define TASKMANAGER_H
 #include <mutex>
 #include <map>
@@ -41,6 +41,8 @@ public:
 protected:
     TaskManager();
 private:
+    void checkTable();
+
     static TaskManager* p;
     //未分配的任务[优先级/任务列表]
     std::map<int, std::vector<AgvTask *> ,std::greater<int> > toDistributeTasks;

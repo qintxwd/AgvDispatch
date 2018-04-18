@@ -1,4 +1,4 @@
-#include "Common.h"
+﻿#include "Common.h"
 
 std::string getTimeStrNow()
 {
@@ -18,4 +18,14 @@ std::string getTimeStrNow()
     ss << std::put_time(std::localtime(&tt), "%Y-%m-%d %H:%M:%S") << "." << ms;
 
     return ss.str();
+}
+
+std::string toHexString(char *data,int len)
+{
+    std::ostringstream out;
+    out<<std::hex<<std::setw(2)<<std::setfill('0');
+    for(int i=0;i<len;++i){
+        out<<" "<<(0xff &(data[i]));
+    }
+    return out.str();
 }

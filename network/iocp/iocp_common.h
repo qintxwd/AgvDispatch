@@ -1,5 +1,5 @@
-﻿#ifndef COMMON_IMPL_H
-#define COMMON_IMPL_H
+﻿#ifndef IOCP_COMMON_H
+#define IOCP_COMMON_H
 
 #include "../common/networkcommon.h"
 
@@ -36,4 +36,6 @@ T & operator <<(T &t, const ExtendHandle & h)
 }
 
 #endif
-#endif // COMMON_IMPL_H
+
+
+#endif // IOCP_COMMON_H

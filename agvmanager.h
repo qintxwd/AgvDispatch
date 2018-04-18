@@ -1,4 +1,4 @@
-#ifndef AGVMANAGER_H
+﻿#ifndef AGVMANAGER_H
 #define AGVMANAGER_H
 
 #include <vector>
@@ -27,6 +27,8 @@ public:
 protected:
     AgvManager();
 private:
+    void checkTable();
+
     static AgvManager* p;
 
     std::mutex mtx;

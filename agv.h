@@ -1,4 +1,4 @@
-#ifndef AGV_H
+﻿#ifndef AGV_H
 #define AGV_H
 #include <string>
 #include <vector>
@@ -45,7 +45,7 @@ public:
 
     //回调
     void onRead(const char *data,int len);
-    void onConnect(std::string _ip,int _port);
+    void onConnect();
     void onDisconnect();
 private:
     AgvTask *currentTask;

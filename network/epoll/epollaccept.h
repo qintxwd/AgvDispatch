@@ -1,9 +1,11 @@
-#ifndef TCPACCEPT_IMPL_H
-#define TCPACCEPT_IMPL_H
+﻿#ifndef EPOLLACCEPT_H
+#define EPOLLACCEPT_H
 
-#include "common_impl.h"
-#include "epoll_impl.h"
-#include "tcpsocket_impl.h"
+
+#include "epoll_common.h"
+#include "epoll.h"
+#include "epollsocket.h"
+
 #ifndef WIN32
 
 namespace qyhnetwork
@@ -38,4 +40,6 @@ using TcpAcceptPtr = std::shared_ptr<TcpAccept>;
 }
 
 #endif
-#endif // TCPACCEPT_IMPL_H
+
+
+#endif // EPOLLACCEPT_H

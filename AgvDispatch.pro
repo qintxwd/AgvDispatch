@@ -13,65 +13,6 @@ CONFIG += c++11
 TEMPLATE = app
 
 
-SOURCES += main.cpp \
-    agv.cpp \
-    mapmanager.cpp \
-    taskmanager.cpp \
-    sqlite3/CppSQLite3.cpp \
-    agvmanager.cpp \
-    Common.cpp \
-    qyhtcpclient.cpp \
-    network/epoll/epoll_impl.cpp \
-    network/epoll/tcpaccept_impl.cpp \
-    network/epoll/tcpsocket_impl.cpp \
-    network/timer/timer.cpp \
-    network/common/networkcommon.cpp \
-    network/epoll/epoll_impl.cpp \
-    network/epoll/tcpaccept_impl.cpp \
-    network/epoll/tcpsocket_impl.cpp \
-    network/tcpsession.cpp \
-    network/sessionmanager.cpp \
-    network/iocp/iocp_impl.cpp \
-    network/iocp/tcpaccept_impl.cpp \
-    network/iocp/tcpsocket_impl.cpp \
-    network/iocp/tcpsocket_impl.cpp \
-    utils/log4z/log4z.cpp
-
-HEADERS += \
-    agv.h \
-    agvstation.h \
-    agvline.h \
-    mapmanager.h \
-    agvtask.h \
-    agvtasknode.h \
-    agvtasknodedothing.h \
-    taskmanager.h \
-    sqlite3/CppSQLite3.h \
-    sqlite3/sqlite3.h \
-    Common.h \
-    threadpool.h \
-    agvmanager.h \
-    qyhtcpclient.h \
-    network/epoll/common_impl.h \
-    network/epoll/epoll_impl.h \
-    network/epoll/tcpaccept_impl.h \
-    network/epoll/tcpsocket_impl.h \
-    network/timer/timer.h \
-    network/common/networkcommon.h \
-    network/epoll/common_impl.h \
-    network/epoll/epoll_impl.h \
-    network/epoll/tcpaccept_impl.h \
-    network/epoll/tcpsocket_impl.h \
-    network/networkconfig.h \
-    network/tcpsession.h \
-    network/sessionmanager.h \
-    network/iocp/common_impl.h \
-    network/iocp/iocp_impl.h \
-    network/iocp/tcpaccept_impl.h \
-    network/iocp/tcpsocket_impl.h \
-    network/iocp/tcpsocket_impl.h \
-    utils/log4z/log4z.h
-
 unix{
 #LIBS=-ldl
 LIBS += /usr/local/lib/libopencv_core.so
@@ -83,10 +24,61 @@ LIBS += /usr/lib/x86_64-linux-gnu/libsqlite3.so
 
 win32{
 win32:DEFINES += _CRT_SECURE_NO_WARNINGS
+win32:DEFINES += _WINSOCK_DEPRECATED_NO_WARNINGS
 INCLUDEPATH+=D:\thirdparty\sqlite\include
 INCLUDEPATH+=D:\thirdparty\opencv\opencv3.3\include
 LIBS+=D:\thirdparty\sqlite\lib\Debug\sqlite3.lib
 LIBS+=D:\thirdparty\opencv\opencv3.3\lib\opencv_world330d.lib
 }
+
+HEADERS += \
+    agv.h \
+    agvline.h \
+    agvmanager.h \
+    agvstation.h \
+    agvtask.h \
+    agvtasknode.h \
+    agvtasknodedothing.h \
+    Common.h \
+    mapmanager.h \
+    qyhtcpclient.h \
+    taskmanager.h \
+    threadpool.h \
+    sqlite3/CppSQLite3.h \
+    network/networkconfig.h \
+    network/sessionmanager.h \
+    network/tcpsession.h \
+    network/timer/timer.h \
+    network/common/networkcommon.h \
+    network/epoll/epoll_common.h \
+    network/epoll/epoll.h \
+    network/epoll/epollaccept.h \
+    network/epoll/epollsocket.h \
+    network/iocp/iocp_common.h \
+    network/iocp/iocp.h \
+    network/iocp/iocpsocket.h \
+    network/iocp/iocpaccept.h \
+    utils/Log/easylogging.h
+
+SOURCES += \
+    agv.cpp \
+    agvmanager.cpp \
+    Common.cpp \
+    main.cpp \
+    mapmanager.cpp \
+    qyhtcpclient.cpp \
+    taskmanager.cpp \
+    sqlite3/CppSQLite3.cpp \
+    network/sessionmanager.cpp \
+    network/tcpsession.cpp \
+    network/timer/timer.cpp \
+    network/common/networkcommon.cpp \
+    network/epoll/epoll.cpp \
+    network/epoll/epollaccept.cpp \
+    network/epoll/epollsocket.cpp \
+    network/iocp/iocp.cpp \
+    network/iocp/iocpsocket.cpp \
+    network/iocp/iocpaccept.cpp \
+    utils/Log/easylogging.cpp
 
 

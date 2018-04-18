@@ -1,4 +1,4 @@
-#ifndef COMMON_H
+﻿#ifndef COMMON_H
 #define COMMON_H
 #include <iostream>
 #include <vector>
@@ -7,6 +7,7 @@
 #include <ratio>
 #include <sstream>
 #include <iomanip>
+#include "utils/Log/easylogging.h"
 
 #define  CAN_CHANGE_DIRECTION  false
 
@@ -25,5 +26,8 @@ enum {
     AGV_LINE_COLOR_GRAY,       //已经计算出一定的值，在Q队列中，但是尚未计算出最小值
     AGV_LINE_COLOR_BLACK,      //已算出路径最小值
 };
+
 std::string getTimeStrNow();
+
+std::string toHexString(char *data, int len);
 #endif // COMMON_H

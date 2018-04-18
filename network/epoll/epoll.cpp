@@ -1,6 +1,6 @@
-﻿#include "epoll_impl.h"
-#include "tcpsocket_impl.h"
-#include "tcpaccept_impl.h"
+﻿#include "epoll.h"
+#include "epollsocket.h"
+#include "epollaccept.h"
 
 using namespace qyhnetwork;
 
@@ -10,20 +10,20 @@ bool EventLoop::initialize()
 {
     if (_epoll != InvalidFD)
     {
-        LCF("EventLoop::initialize[this0x"<<this <<"] epoll is created ! " );
+        LOG(FATAL)<<"EventLoop::initialize[this0x"<<this <<"] epoll is created ! " );
         return false;
     }
     const int IGNORE_ENVENTS = 100;
     _epoll = epoll_create(IGNORE_ENVENTS);
     if (_epoll == InvalidFD)
     {
-        LCF("EventLoop::initialize[this0x" << this << "] create epoll err errno=" << strerror(errno));
+        LOG(FATAL)<<"EventLoop::initialize[this0x" << this << "] create epoll err errno=" << strerror(errno));
         return false;
     }
 
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, _sockpair) != 0)
     {
-        LCF("EventLoop::initialize[this0x" << this << "] create socketpair.  errno=" << strerror(errno));
+        LOG(FATAL)<<"EventLoop::initialize[this0x" << this << "] create socketpair.  errno=" << strerror(errno));
         return false;
     }
     setNonBlock(_sockpair[0]);
@@ -44,7 +44,7 @@ bool EventLoop::registerEvent(int op, EventData & ed)
 {
     if (epoll_ctl(_epoll, op, ed._fd, &ed._event) != 0)
     {
-        LCW("EventLoop::registerEvent error. op=" << op << ", event=" << ed._event.events);
+        LOG(WARNING)<<"EventLoop::registerEvent error. op=" << op << ", event=" << ed._event.events);
         return false;
     }
     return true;
@@ -84,7 +84,7 @@ void EventLoop::runOnce(bool isImmediately)
     {
         if (errno != EINTR)
         {
-            LCW("EventLoop::runOnce[this0x" << this << "]  epoll_wait err!  errno=" << strerror(errno) << logSection());
+            LOG(WARNING)<<"EventLoop::runOnce[this0x" << this << "]  epoll_wait err!  errno=" << strerror(errno) << logSection());
             return; //! error
         }
         return;
@@ -122,11 +122,11 @@ void EventLoop::runOnce(bool isImmediately)
                 }
                 catch (const std::exception & e)
                 {
-                    LCW("OnPostHandler have runtime_error exception. err=" << e.what());
+                    LOG(WARNING)<<"OnPostHandler have runtime_error exception. err=" << e.what());
                 }
                 catch (...)
                 {
-                    LCW("OnPostHandler have unknown exception.");
+                    LOG(WARNING)<<"OnPostHandler have unknown exception.");
                 }
                 delete p;
             }
@@ -147,7 +147,7 @@ void EventLoop::runOnce(bool isImmediately)
         }
         else
         {
-            LCE("EventLoop::runOnce[this0x" << this << "] check register event type failed !!  type=" << pEvent->_type << logSection());
+            LOG(ERROR)<<"EventLoop::runOnce[this0x" << this << "] check register event type failed !!  type=" << pEvent->_type << logSection();
         }
 
     }

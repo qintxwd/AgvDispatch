@@ -1,4 +1,4 @@
-#include "qyhtcpclient.h"
+﻿#include "qyhtcpclient.h"
 #include <iostream>
 
 #ifdef WIN32
@@ -55,7 +55,7 @@ QyhTcpClient::QyhTcpClient(std::string ip,int _port, QyhClientReadCallback _read
                 continue;
             }
 
-            connectcallback(myIp,myPort);
+            connectcallback();
 
             //接收
             while(!quit && socketFd>0)
@@ -220,23 +220,6 @@ bool QyhTcpClient::initConnect()
         socketFd = 0;
         return false;
     }
-
-    struct sockaddr local_addr;
-    socklen_t len = sizeof(sockaddr);
-    if (getsockname(socketFd, &local_addr, &len) == 0)
-    {
-        local_addr.sa_data;//头两位是PORT 后面4位是IP地址
-        int high = local_addr.sa_data[0];
-        int low = local_addr.sa_data[1];
-        myPort = ((high<<8)|(low & 0xFF))& 0xFFFF;
-
-        struct sockaddr_in* sin = (struct sockaddr_in*)(&local_addr);
-        char addr_buffer[INET_ADDRSTRLEN];
-        void *tmp = &(sin->sin_addr);
-        if (inet_ntop(AF_INET, tmp, addr_buffer, INET_ADDRSTRLEN) != NULL)
-            myIp = std::string(addr_buffer);
-    }
-    std::cout<<"client local ip:"<<myIp<<":"<<myPort;
 
     return true;
 }

@@ -1,4 +1,4 @@
-#include "agvmanager.h"
+﻿#include "agvmanager.h"
 #include "agv.h"
 #include "sqlite3/CppSQLite3.h"
 #include "Common.h"
@@ -9,14 +9,33 @@ AgvManager::AgvManager()
 {
 }
 
-bool AgvManager::init()
+void AgvManager::checkTable()
 {
+    //检查表
     try{
         CppSQLite3DB db;
-        std::cout << "SQLite Version: " << db.SQLiteVersion() << std::endl;
+        db.open(DB_File);
+        if(!db.tableExists("agv_agv")){
+            db.execDML("create table agv_agv(id int, name char(64),ip char(64),port int);");
+        }
+    }catch(CppSQLite3Exception e){
+        std::cerr<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage()<<std::endl;
+        return ;
+    }catch(std::exception e){
+        std::cerr<<"sqlerr code:"<<e.what()<<std::endl;
+        return ;
+    }
+}
+
+
+bool AgvManager::init()
+{
+    checkTable();
+    try{
+        CppSQLite3DB db;
         db.open(DB_File);
         CppSQLite3Table table_agv = db.getTable("select id,name,ip,port from agv_agv;");
-        if(table_agv.numFields()!=4)return false;
+        if(table_agv.numRows()>0 && table_agv.numFields()!=4)return false;
         std::unique_lock<std::mutex> lck(mtx);
         for (int row = 0; row < table_agv.numRows(); row++)
         {

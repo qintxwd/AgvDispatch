@@ -1,5 +1,5 @@
-﻿#ifndef COMMON_IMPL_H
-#define COMMON_IMPL_H
+﻿#ifndef EPOLL_COMMON_H
+#define EPOLL_COMMON_H
 
 #include "../common/networkcommon.h"
 
@@ -41,4 +41,4 @@ T& operator <<(T &t, const EventData & reg)
 
 #endif
 
-#endif // COMMON_IMPL_H
+#endif // EPOLL_COMMON_H

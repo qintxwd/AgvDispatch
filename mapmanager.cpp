@@ -13,13 +13,21 @@ MapManager::MapManager():image_colors(NULL),mapModifying(false)
 void MapManager::checkTable()
 {
     //检查表
-    CppSQLite3DB db;
-    db.open(DB_File);
-    if(!db.tableExists("agv_station")){
-        db.execDML("create table agv_station(id int, x int,y int,name char(64));");
-    }
-    if(!db.tableExists("agv_line")){
-        db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+    try{
+        CppSQLite3DB db;
+        db.open(DB_File);
+        if(!db.tableExists("agv_station")){
+            db.execDML("create table agv_station(id int, x int,y int,name char(64));");
+        }
+        if(!db.tableExists("agv_line")){
+            db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+        }
+    }catch(CppSQLite3Exception &e){
+        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        return ;
+    }catch(std::exception e){
+        std::cerr << e.what()  << std::endl;
+        return ;
     }
 }
 
@@ -34,10 +42,10 @@ bool MapManager::load()
         mapModifying = false;
         return false;
     }
-//        if(!loadFromImg()){
-//            mapModifying = false;
-//            return false;
-//        }
+    //        if(!loadFromImg()){
+    //            mapModifying = false;
+    //            return false;
+    //        }
     mapModifying = false;
     return true;
 }
@@ -85,22 +93,17 @@ bool MapManager::loadFromDb()
 {
     try{
         CppSQLite3DB db;
-        std::cout << "SQLite Version: " << db.SQLiteVersion() << std::endl;
         db.open(DB_File);
 
         if(!db.tableExists("agv_station")){
             db.execDML("create table agv_station(id int, x int,y int,name char(64));");
-        }else{
-            db.execDML("delete from agv_station;");
         }
         if(!db.tableExists("agv_line")){
             db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
-        }else{
-            db.execDML("delete from agv_line;");
         }
 
         CppSQLite3Table table_station = db.getTable("select id,x,y,name from agv_station;");
-        if(table_station.numFields()!=4)return false;
+        if(table_station.numRows()>0 && table_station.numFields()!=4)return false;
         for (int row = 0; row < table_station.numRows(); row++)
         {
             table_station.setRow(row);
@@ -116,7 +119,7 @@ bool MapManager::loadFromDb()
         }
 
         CppSQLite3Table table_line = db.getTable("select id,startStation,endStation,length from agv_line;");
-        if(table_line.numFields()!=4)return false;
+        if(table_line.numRows()>0 && table_line.numFields()!=4)return false;
         for (int row = 0; row < table_line.numRows(); row++)
         {
             table_line.setRow(row);
@@ -180,7 +183,7 @@ bool MapManager::loadFromImg(std::string imgfile, int _gridsize)
         //保存到数据库
         save();
     }catch(std::exception e){
-        std::cout<<e.what()<<std::endl;
+        LOG(ERROR)<<e.what();
         return false;
     }
 }
@@ -468,7 +471,7 @@ void MapManager::getImgStations()
     }
 
     for(auto station:m_stations){
-        std::cout<<"x="<<station->x<<" y="<<station->y<<" id="<<station->id<<std::endl;
+        LOG(DEBUG)<<"x="<<station->x<<" y="<<station->y<<" id="<<station->id<<std::endl;
     }
 }
 

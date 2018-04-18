@@ -1,4 +1,4 @@
-#ifndef QYHTCPCLIENT_H
+﻿#ifndef QYHTCPCLIENT_H
 #define QYHTCPCLIENT_H
 
 #include <functional>
@@ -14,7 +14,7 @@ public:
     };
 
     typedef std::function<void (const char *data,int len)> QyhClientReadCallback;
-    typedef std::function<void (std::string _ip,int _port)> QyhClientConnectCallback;
+    typedef std::function<void ()> QyhClientConnectCallback;
     typedef std::function<void ()> QyhClientDisconnectCallback;
 
     QyhTcpClient(std::string ip, int _port, QyhClientReadCallback _readcallback, QyhClientConnectCallback _connectcallback, QyhClientDisconnectCallback _disconnectcallback);
@@ -36,10 +36,6 @@ private:
     std::string serverip;
 
     int port;
-
-    std::string myIp;
-
-    int myPort;
 
     QyhClientReadCallback readcallback;
 

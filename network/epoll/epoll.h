@@ -1,28 +1,23 @@
-﻿#ifndef IOCP_IMPL_H_
-#define IOCP_IMPL_H_
+﻿#ifndef EPOLL_H
+#define EPOLL_H
 
+#include "epoll_common.h"
 #include "../timer/timer.h"
+#ifndef WIN32
 
-#ifdef WIN32
-namespace qyhnetwork
-{
+namespace qyhnetwork{
 
-//! post callback
-using _OnPostHandler = std::function<void()>;
-
-enum POST_COM_KEY
-{
-    PCK_USER_DATA,
-};
-
-class EventLoop :public std::enable_shared_from_this<EventLoop>
+class EventLoop : public std::enable_shared_from_this<EventLoop>
 {
 public:
-    EventLoop(){_io = NULL;}
+    using MessageStack = std::vector<void*>;
+    EventLoop(){}
     ~EventLoop(){}
-
     bool initialize();
     void runOnce(bool isImmediately = false);
+
+    template <typename handle>
+    inline void post(handle &&h){PostMessage(std::move(h));}
     inline unsigned long long createTimer(unsigned int delayms, _OnTimerHandler &&handle, bool useSystemTime = true)
     {
         return _timer.createTimer(delayms, std::move(handle), useSystemTime);
@@ -35,18 +30,25 @@ public:
     {
         return _timer.cancelTimer(timerID);
     }
-
-    //handle: std::function<void()>
-    //switch initiative, in the multi-thread it's switch call thread simultaneously.
-    void post(_OnPostHandler &&h);
+public:
+    bool registerEvent(int op, EventData &ed);
+    void PostMessage(_OnPostHandler &&handle);
 private:
     std::string logSection();
-public:
-    HANDLE _io;
+private:
+    int    _epoll = InvalidFD;
+    epoll_event _events[MAX_EPOLL_WAIT] = {};
+    int        _sockpair[2] = {};
+    EventData _eventData;
+    MessageStack _postQueue;
+    std::mutex     _postQueueLock;
     Timer _timer;
 };
-using EventLoopPtr = std::shared_ptr<EventLoop>;
-}
 
+using EventLoopPtr = std::shared_ptr<EventLoop>;
+
+}
 #endif
-#endif
+
+
+#endif // EPOLL_H

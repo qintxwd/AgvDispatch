@@ -28,7 +28,7 @@ Agv::~Agv()
 
 void Agv::init(){
     QyhTcpClient::QyhClientReadCallback onread = std::bind(&Agv::onRead,this,std::placeholders::_1,std::placeholders::_2);
-    QyhTcpClient::QyhClientConnectCallback onconnect = std::bind(&Agv::onConnect,this,std::placeholders::_1,std::placeholders::_2);
+    QyhTcpClient::QyhClientConnectCallback onconnect = std::bind(&Agv::onConnect,this);
     QyhTcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&Agv::onDisconnect,this);
     tcpClient = new QyhTcpClient(ip,port,onread,onconnect,ondisconnect);
 }
@@ -38,7 +38,7 @@ void Agv::onRead(const char *data,int len)
     //TODO:
 }
 
-void Agv::onConnect(std::string _ip,int _port)
+void Agv::onConnect()
 {
     //TODO
 }
