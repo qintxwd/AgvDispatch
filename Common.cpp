@@ -23,9 +23,9 @@ std::string getTimeStrNow()
 std::string toHexString(char *data,int len)
 {
     std::ostringstream out;
-    out<<std::hex<<std::setw(2)<<std::setfill('0');
+    out<<std::hex<<std::setfill('0');
     for(int i=0;i<len;++i){
-        out<<" "<<(0xff &(data[i]));
+        out<<std::setw(2)<<(0xff &(data[i]))<<std::setw(1)<<" ";
     }
     return out.str();
 }

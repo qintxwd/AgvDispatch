@@ -1,6 +1,8 @@
 ﻿#include "sessionmanager.h"
 #include "tcpsession.h"
 
+#include "../Protocol.h"
+
 using namespace qyhnetwork;
 
 namespace qyhnetwork {
@@ -78,8 +80,6 @@ AccepterID SessionManager::addAccepter(const std::string & listenIP, unsigned sh
     extend._aID = _lastAcceptID;
     extend._listenIP = listenIP;
     extend._listenPort = listenPort;
-    extend._sessionOptions._createBlock = DefaultCreateBlock;
-    extend._sessionOptions._freeBlock = DefaultFreeBlock;
     return _lastAcceptID;
 }
 
@@ -246,51 +246,6 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
     accepter->doAccept(std::make_shared<qyhnetwork::TcpSocket>(), std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, aID));
 }
 
-
-SessionBlock * SessionManager::CreateBlock()
-{
-    unsigned int timestamp = (unsigned int)time(NULL);
-    unsigned int timetick = (unsigned int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    SessionBlock * sb = nullptr;
-    if (_freeBlock.empty())
-    {
-        sb = (SessionBlock*)malloc(sizeof(SessionBlock)+SESSION_BLOCK_SIZE);
-        sb->bound = SESSION_BLOCK_SIZE;
-        sb->len = 0;
-        sb->createTime = timestamp;
-        sb->reused = 0;
-        sb->timestamp = timestamp;
-        sb->timetick = timetick;
-        sb->type = 0;
-        _statInfo[STAT_EXIST_BLOCKS]++;
-    }
-    else
-    {
-        sb = _freeBlock.front();
-        _freeBlock.pop_front();
-        sb->len = 0;
-        sb->reused ++;
-        sb->timestamp = timestamp;
-        sb->timetick = timetick;
-        _statInfo[STAT_FREE_BLOCKS] = _freeBlock.size();
-    }
-    return sb;
-}
-void SessionManager::FreeBlock(SessionBlock * sb)
-{
-    if (_freeBlock.size() > 10000)
-    {
-        free(sb);
-        _statInfo[STAT_EXIST_BLOCKS]--;
-    }
-    else
-    {
-        _freeBlock.push_back(sb);
-        _statInfo[STAT_FREE_BLOCKS] = _freeBlock.size();
-    }
-
-}
-
 std::string SessionManager::getRemoteIP(SessionID sID)
 {
     auto founder = _mapTcpSessionPtr.find(sID);
@@ -383,10 +338,6 @@ SessionID SessionManager::addConnecter(const std::string & remoteHost, unsigned 
     _lastConnectID = nextConnectID(_lastConnectID);
     TcpSessionPtr & session = _mapTcpSessionPtr[_lastConnectID];
     session = std::make_shared<qyhnetwork::TcpSession>();
-    //TODO:
-    //session->getOptions()._onBlockDispatch = DefaultBlockDispatch;
-    session->getOptions()._createBlock = DefaultCreateBlock;
-    session->getOptions()._freeBlock = DefaultFreeBlock;
 
     session->setEventLoop(_summer);
     session->setSessionID(_lastConnectID);
@@ -429,7 +380,7 @@ TcpSessionPtr SessionManager::getTcpSession(SessionID sID)
 
 
 
-void SessionManager::sendSessionData(SessionID sID, const char * orgData, unsigned int orgDataLen)
+void SessionManager::sendSessionData(SessionID sID, const MSG_Response &msg)
 {
     auto iter = _mapTcpSessionPtr.find(sID);
     if (iter == _mapTcpSessionPtr.end())
@@ -437,7 +388,7 @@ void SessionManager::sendSessionData(SessionID sID, const char * orgData, unsign
         LOG(WARNING)<<"sendSessionData NOT FOUND SessionID.  SessionID=" << sID;
         return;
     }
-    iter->second->send(orgData, orgDataLen);
+    iter->second->send(msg);
 }
 
 }

@@ -6,7 +6,7 @@
 
 TaskManager *TaskManager::p = new TaskManager();
 
-//最多20个任务同时执行.20个线程的线程池
+//最多20个任务同时执行.20个线程的线程池，应该足够了
 
 TaskManager::TaskManager():
     pool(20),

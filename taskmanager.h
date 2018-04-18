@@ -7,7 +7,9 @@
 #include "agvtask.h"
 #include "threadpool.h"
 
-class TaskManager
+#include "utils/noncopyable.h"
+
+class TaskManager :  public noncopyable
 {
 public:
     static TaskManager* getInstance(){

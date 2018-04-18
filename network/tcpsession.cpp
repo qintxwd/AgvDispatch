@@ -1,6 +1,7 @@
 ﻿#include "tcpsession.h"
 #include "sessionmanager.h"
 #include "../Common.h"
+#include "../msgprocess.h"
 
 using namespace qyhnetwork;
 using std::min;
@@ -9,36 +10,19 @@ using std::max;
 namespace qyhnetwork {
 
 
-TcpSession::TcpSession()
+TcpSession::TcpSession():read_position(0)
 {
     SessionManager::getRef()._statInfo[STAT_SESSION_CREATED]++;
-    _recving = (SessionBlock*)malloc(sizeof(SessionBlock)+SESSION_BLOCK_SIZE);//每个连接要20K的内存,要修改一下
-    _recving->len = 0;
-    _recving->bound = SESSION_BLOCK_SIZE;
-    _sending = (SessionBlock*)malloc(sizeof(SessionBlock)+SESSION_BLOCK_SIZE);
-    _sending->len = 0;
-    _sending->bound = SESSION_BLOCK_SIZE;
-    _param.reserve(100);
 }
 
 TcpSession::~TcpSession()
 {
     SessionManager::getRef()._statInfo[STAT_SESSION_DESTROYED]++;
-    while (!_sendque.empty())
-    {
-        _options._freeBlock(_sendque.front());
-        _sendque.pop_front();
-    }
     if (_sockptr)
     {
         _sockptr->doClose();
         _sockptr.reset();
     }
-
-    free (_recving);
-    _recving = nullptr;
-    free (_sending);
-    _sending = nullptr;
 }
 
 
@@ -69,16 +53,8 @@ void TcpSession::reconnect()
         LOG(ERROR)<<"connect init error";
         return;
     }
-    _recving->len = 0;
-    _sending->len = 0;
-    _sendingLen = 0;
-    _bFirstRecvData = true;
 
-    while (_options._reconnectClean && !_sendque.empty())
-    {
-        _options._freeBlock(_sendque.front());
-        _sendque.pop_front();
-    }
+    read_position = 0;
 
     if (!_sockptr->doConnect(_remoteIP, _remotePort, std::bind(&TcpSession::onConnected, shared_from_this(), std::placeholders::_1)))
     {
@@ -166,10 +142,6 @@ void TcpSession::onConnected(qyhnetwork::NetErrorCode ec)
         }
     }
     SessionManager::getRef()._statInfo[STAT_SESSION_LINKED]++;
-    if (!_sendque.empty())
-    {
-        send(nullptr, 0);
-    }
 }
 
 bool TcpSession::doRecv()
@@ -180,9 +152,9 @@ bool TcpSession::doRecv()
         return false;
     }
 #ifndef WIN32
-    return _sockptr->doRecv(_recving->begin + _recving->len, _recving->bound - _recving->len, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2), true);
+    return _sockptr->doRecv(read_buffer + read_position, ONE_MSG_MAX_LENGTH - read_position, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2), true);
 #else
-    return _sockptr->doRecv(_recving->begin + _recving->len, _recving->bound - _recving->len, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+    return _sockptr->doRecv(read_buffer + read_position, ONE_MSG_MAX_LENGTH - read_position, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
 #endif
 }
 
@@ -221,6 +193,19 @@ void TcpSession::close()
     LOG(WARNING)<<"TcpSession::close closing. sID=" << _sessionID;
 }
 
+int findHead(char *data,int len){
+    if(len<sizeof(MSG_Head))return -1;
+    for(int i=0;i<len;++i){
+        if((unsigned int)data[i] == MSG_COMMON_HEAD_HEAD)
+        {
+            if(i+10>=len)return i;
+            if((unsigned int)data[i+10] ==MSG_COMMON_HEAD_TAIL )
+                return i;
+        }
+    }
+    return -1;
+}
+
 unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 {
     LOG(TRACE)<<"TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
@@ -238,78 +223,39 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
         close();
         return 0 ;
     }
-    _recving->len += received;
+
+    //只输出部分信息
+    LOG(DEBUG)<<"recv:"<<toHexString(read_buffer+read_position,min(received,sizeof(MSG_Head)));
+
+    read_position += received;
     SessionManager::getRef()._statInfo[STAT_RECV_COUNT]++;
     SessionManager::getRef()._statInfo[STAT_RECV_BYTES] += received;
 
-    //分包
-    unsigned int usedIndex = 0;
-    do
-    {
-        OnBlockCheckResult ret;
-        try
-        {
-            //TODO:
-            //ret = _options._onBlockCheck(_recving->begin + usedIndex, _recving->len - usedIndex, _recving->bound - usedIndex, _recving->bound);
-        }
-        catch (const std::exception & e)
-        {
-            LOG(WARNING)<<"MessageEntry _onBlockCheck catch one exception: " << e.what()  << ",  offset = " << usedIndex << ", len = " << _recving->len << ", bound = " << _recving->bound
-                << ", bindata(max 500byte) :"
-                << toHexString(_recving->begin+usedIndex, min(_recving->len - usedIndex, (unsigned int)500));
-            close();
-            return 0;
-        }
-        catch (...)
-        {
-            LOG(WARNING)<<"MessageEntry _onBlockCheck catch one unknown exception.  offset=" << usedIndex << ",  len=" << _recving->len << ", bound=" << _recving->bound
-                << "bindata(max 500byte) :"
-                << toHexString(_recving->begin + usedIndex, min(_recving->len - usedIndex, (unsigned int)500));
-            close();
-            return 0;
-        }
-        if (ret.first == BCT_CORRUPTION)
-        {
-            LOG(WARNING)<<"killed socket: _onBlockCheck error.  offset=" << usedIndex << ",  len=" << _recving->len << ", bound=" << _recving->bound
-                << "bindata(max 500byte) :"
-                << toHexString(_recving->begin + usedIndex, min(_recving->len - usedIndex, (unsigned int)500));
-            close();
-            return 0;
-        }
-        if (ret.first == BCT_SHORTAGE)
-        {
-            break;
-        }
-        try
-        {
-            SessionManager::getRef()._statInfo[STAT_RECV_PACKS]++;
-            LOG(TRACE)<<"TcpSession::onRecv _onBlockDispatch(sessionID=" << getSessionID() << ", offset=" << usedIndex
-                <<", len=" << ret.second;
-            _options._onBlockDispatch(shared_from_this(), _recving->begin + usedIndex, ret.second);
-        }
-        catch (const std::exception & e)
-        {
-            LOG(WARNING)<<"MessageEntry _onBlockDispatch catch one exception: " << e.what() << ", bindata(max 500byte) :"
-                << toHexString(_recving->begin + usedIndex, min(ret.second, (unsigned int)500));
-        }
-        catch (...)
-        {
-            LOG(WARNING)<<"MessageEntry _onBlockDispatch catch one unknown exception, bindata(max 500byte) :"
-                << toHexString(_recving->begin + usedIndex, min(ret.second, (unsigned int)500));
-        }
-        usedIndex += ret.second;
-
-    } while (true);
-
-
-    if (usedIndex > 0)
-    {
-        _recving->len= _recving->len - usedIndex;
-        if (_recving->len > 0)
-        {
-            memmove(_recving->begin, _recving->begin + usedIndex, _recving->len);
+    //解析
+    if(read_position>=sizeof(MSG_Head)){
+        int head_position = findHead(read_buffer,read_position);
+        if(head_position == -1){
+            //未找到头，丢弃数据
+            LOG(INFO)<<" msg head not found , discard read data";
+            read_position = 0;
+        }else{
+            if(head_position != 0){
+                memmove(read_buffer, read_buffer + head_position, read_position - head_position );
+                read_position -= head_position;
+            }
+            if(read_position>=sizeof(MSG_Head)){
+                memcpy(&read_one_msg,read_buffer,read_position);
+                if(read_one_msg.head.body_length<= read_position - sizeof(MSG_Head)){
+                    //一条完整的消息//入队一条消息
+                    //TODO
+                    MsgProcess::getInstance()->processOneMsg(read_one_msg,shared_from_this());
+                    //enqueue(read_one_msg);
+                    read_position -= sizeof(MSG_Request);
+                }
+            }
         }
     }
+
 # ifndef WIN32
     return _recving->len;
 #else
@@ -322,73 +268,20 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 
 }
 
-void TcpSession::send(const char *buf, unsigned int len)
+void TcpSession::send(const MSG_Response &msg)
 {
-    LOG(TRACE)<<"TcpSession::send sessionID=" << getSessionID() << ", len=" << len;
-    if (len > _sending->bound)
+    SessionManager::getRef()._statInfo[STAT_SEND_COUNT]++;
+    SessionManager::getRef()._statInfo[STAT_SEND_PACKS]++;
+    bool sendRet = _sockptr->doSend((char *)&msg,sizeof(MSG_Head)+sizeof(MSG_RESPONSE_HEAD)+msg.head.body_length , std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+    if (!sendRet)
     {
-        LOG(ERROR)<<"send error.  too large block than sending block bound.  len=" << len;
-        return;
-    }
-
-    if (len == 0)
-    {
-        if (_status == 2 && _sending->len == 0 && !_sendque.empty())
-        {
-            SessionBlock *sb = _sendque.front();
-            _sendque.pop_front();
-            memcpy(_sending->begin, sb->begin, sb->len);
-            _sending->len = sb->len;
-            _options._freeBlock(sb);
-            bool sendRet = _sockptr->doSend(_sending->begin, _sending->len, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
-            if (!sendRet)
-            {
-                LOG(ERROR)<<"send error from first connect to send dirty block";
-            }
-        }
-        return;
-    }
-
-    //push to send queue
-    if (!_sendque.empty() || _status != 2 || _sending->len != 0)
-    {
-        if (_sendque.size() >= _options._maxSendListCount)
-        {
-            close();
-            return;
-        }
-
-        SessionBlock * sb = _options._createBlock();
-        if (sb->bound < len)
-        {
-            _options._freeBlock(sb);
-            LOG(ERROR)<<"send error.  too large block than session block.  len=" << len;
-            return;
-        }
-        memcpy(sb->begin, buf, len);
-        sb->len = len;
-        _sendque.push_back(sb);
-        SessionManager::getRef()._statInfo[STAT_SEND_QUES]++;
-    }
-    //send direct
-    else
-    {
-        memcpy(_sending->begin, buf, len);
-        _sending->len = len;
-        SessionManager::getRef()._statInfo[STAT_SEND_COUNT]++;
-        SessionManager::getRef()._statInfo[STAT_SEND_PACKS]++;
-        bool sendRet = _sockptr->doSend(_sending->begin, _sending->len, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
-        if (!sendRet)
-        {
-            LOG(WARNING)<<"send error ";
-        }
+        LOG(WARNING)<<"send error ";
     }
 }
 
 
 void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
 {
-
     LOG(TRACE)<<"TcpSession::onSend session id=" << getSessionID() << ", sent=" << sent;
     if (ec)
     {
@@ -396,54 +289,7 @@ void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
         return ;
     }
 
-    _sendingLen += sent;
     SessionManager::getRef()._statInfo[STAT_SEND_BYTES] += sent;
-    if (_sendingLen < _sending->len)
-    {
-        SessionManager::getRef()._statInfo[STAT_SEND_COUNT]++;
-        bool sendRet = _sockptr->doSend(_sending->begin + _sendingLen, _sending->len - _sendingLen, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
-        if (!sendRet)
-        {
-            LOG(WARNING)<<"send error from onSend";
-            return;
-        }
-        return;
-    }
-    if (_sendingLen == _sending->len)
-    {
-        _sendingLen = 0;
-        _sending->len = 0;
-        if (!_sendque.empty())
-        {
-            do
-            {
-                SessionBlock *sb = _sendque.front();
-                _sendque.pop_front();
-                SessionManager::getRef()._statInfo[STAT_SEND_QUES]--;
-                memcpy(_sending->begin + _sending->len, sb->begin, sb->len);
-                _sending->len += sb->len;
-                _options._freeBlock(sb);
-                SessionManager::getRef()._statInfo[STAT_SEND_PACKS]++;
-                if (_sendque.empty())
-                {
-                    break;
-                }
-                if (_sending->bound - _sending->len < _sendque.front()->len)
-                {
-                    break;
-                }
-            } while (true);
-
-            SessionManager::getRef()._statInfo[STAT_SEND_COUNT]++;
-            bool sendRet = _sockptr->doSend(_sending->begin, _sending->len, std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
-            if (!sendRet)
-            {
-                LOG(WARNING)<<"send error from next queue block.";
-                return;
-            }
-            return;
-        }
-    }
 }
 
 void TcpSession::onPulse()
@@ -500,37 +346,6 @@ void TcpSession::onPulse()
         }
         _pulseTimerID = SessionManager::getRef().createTimer(isConnectID(_sessionID) ? _options._connectPulseInterval : _options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
     }
-}
-
-
-
-
-TupleParam & TcpSession::autoTupleParamImpl(size_t index)
-{
-    if (index > 100)
-    {
-        LOG(WARNING)<<"user param is too many.";
-    }
-    if (_param.size() <= index)
-    {
-        _param.insert(_param.end(), index - _param.size() + 1, std::make_tuple(false, 0.0, 0, ""));
-    }
-    return _param[index];
-}
-
-const TupleParam & TcpSession::peekTupleParamImpl(size_t index) const
-{
-    const static TupleParam _invalid = std::make_tuple( false, 0.0, 0, "" );
-    if (index > 100)
-    {
-        LOG(WARNING)<<"user param is too many. " ;
-    }
-    if (_param.size() <= index )
-    {
-        LOG(WARNING)<<"get user param error. not inited. ";
-        return _invalid;
-    }
-    return _param.at(index);
 }
 
 }

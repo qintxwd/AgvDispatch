@@ -58,7 +58,10 @@ HEADERS += \
     network/iocp/iocp.h \
     network/iocp/iocpsocket.h \
     network/iocp/iocpaccept.h \
-    utils/Log/easylogging.h
+    utils/Log/easylogging.h \
+    Protocol.h \
+    utils/noncopyable.h \
+    msgprocess.h
 
 SOURCES += \
     agv.cpp \
@@ -79,6 +82,7 @@ SOURCES += \
     network/iocp/iocp.cpp \
     network/iocp/iocpsocket.cpp \
     network/iocp/iocpaccept.cpp \
-    utils/Log/easylogging.cpp
+    utils/Log/easylogging.cpp \
+    msgprocess.cpp
 
 

@@ -1,4 +1,4 @@
-#ifndef MAPMANAGER_H
+﻿#ifndef MAPMANAGER_H
 #define MAPMANAGER_H
 #include <map>
 #include <utility>
@@ -11,6 +11,7 @@
 #include "agvline.h"
 #include "agv.h"
 #include "Common.h"
+#include "utils/noncopyable.h"
 
 //自定义颜色标记
 typedef enum{
@@ -83,7 +84,7 @@ private:
 
 
 //地图 由两部分助成： 点AgvStation 和 点之间的连线AgvLine
-class MapManager
+class MapManager : public noncopyable
 {
 public:
 

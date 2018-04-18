@@ -42,16 +42,6 @@ inline SessionID nextSessionID(SessionID curSessionID){ return curSessionID + 1 
 inline SessionID nextConnectID(SessionID curSessionID){ return curSessionID + 1 <= __MIDDLE_SEGMENT_VALUE ? __MIDDLE_SEGMENT_VALUE +1 : curSessionID + 1; }
 inline AccepterID nextAccepterID(AccepterID AccepterID){ return AccepterID + 1 >= __MIDDLE_SEGMENT_VALUE ? 1 : AccepterID + 1; }
 
-
-const unsigned int SESSION_BLOCK_SIZE = 20 * 1024;
-
-enum BLOCK_CHECK_TYPE
-{
-    BCT_SUCCESS = 0, //success, return block size
-    BCT_SHORTAGE = 1, //too short, return need size
-    BCT_CORRUPTION = 2, //error, need close socket.
-};
-
 enum StatType
 {
     STAT_STARTTIME,
@@ -92,43 +82,7 @@ const char * const StatTypeDesc[] = {
 class TcpSession;
 using TcpSessionPtr = std::shared_ptr<TcpSession>;
 
-struct SessionBlock
-{
-    unsigned int type = 0;
-    unsigned int createTime = 0;
-    unsigned int reused = 0;
-    unsigned int timestamp = 0;
-    unsigned int timetick = 0;
-    unsigned int bound = 0;
-    unsigned int len = 0;
-    char begin[0];
-};
-
-
-using CreateBlock = std::function<SessionBlock * ()>;
-
-using FreeBlock = std::function<void(SessionBlock *)>;
-
-using OnBlockCheckResult = std::pair<BLOCK_CHECK_TYPE, unsigned int>;
-
-//check one block integrity
-using OnBlockCheck = std::function<OnBlockCheckResult(const char * /*begin*/, unsigned int /*len*/, unsigned int /*bound*/, unsigned int /*blockLimit*/)>;
-
-//!dispatch one integrity block
-using OnBlockDispatch = std::function<void(const TcpSessionPtr &  /*session*/, const char * /*begin*/, unsigned int /*len*/)>;
-
-//!event linked, closed, ontimer
 using OnSessionEvent = std::function<void(const TcpSessionPtr &  /*session*/)>;
-
-
-//!HTTP unpack, hadHeader used by 'chunked', commonLine can be GET, POST RESPONSE.
-using OnHTTPBlockCheck = std::function<OnBlockCheckResult(const char * /*begin*/, unsigned int /*len*/, unsigned int /*bound*/,
-bool & /*isChunked*/, std::string& /*method*/, std::string &methodLine/*method line*/, std::map<std::string,std::string> & /*head*/, std::string & /*body*/)>;
-//!HTTP dispatch
-using OnHTTPBlockDispatch = std::function<
-void(TcpSessionPtr /*session*/, const std::string& /*method*/, const std::string &methodLine/*method line*/ , const std::map<std::string, std::string> &/*head*/, const std::string & /*body*/)>;
-
-
 
 struct SessionOptions: public el::Loggable
 {
@@ -136,23 +90,17 @@ struct SessionOptions: public el::Loggable
     unsigned int    _sessionPulseInterval = 30000;
     unsigned int    _connectPulseInterval = 5000;
     unsigned int    _reconnects = 0; // can reconnect count
-    bool            _reconnectClean = true;//clean unsend block .
     unsigned int    _maxSendListCount = 600;
-    OnBlockDispatch _onBlockDispatch;
     OnSessionEvent _onReconnectEnd;
     OnSessionEvent _onSessionClosed;
     OnSessionEvent _onSessionLinked;
     OnSessionEvent _onSessionPulse;
 
-    CreateBlock _createBlock ;
-    FreeBlock _freeBlock;
-
     virtual void log(el::base::type::ostream_t& os) const{
-        os << ", _setNoDelay=" << _setNoDelay
+        os << "{ _setNoDelay=" << _setNoDelay
            << ", _sessionPulseInterval=" << _sessionPulseInterval
            << ", _connectPulseInterval=" << _connectPulseInterval
            << ", _reconnects=" << _reconnects
-           << ", _reconnectClean=" << _reconnectClean
            << "}";
     }
 
@@ -190,16 +138,6 @@ struct AccepterOptions : public el::Loggable
         os << ", SessionOptions=" << _sessionOptions;
         os << "}";
     }
-};
-
-using TupleParam = std::tuple<bool, double, unsigned long long, std::string>;
-
-enum TupleParamType
-{
-    TupleParamInited = 0,
-    TupleParamNumber = 1,
-    TupleParamInteger = 2,
-    TupleParamString = 3,
 };
 
 }

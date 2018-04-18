@@ -3,10 +3,11 @@
 
 #include <vector>
 #include <mutex>
+#include "utils/noncopyable.h"
 
 class Agv;
 
-class AgvManager
+class AgvManager: public noncopyable
 {
 public:
     typedef std::function< void(Agv*) >  AgvEachCallback;

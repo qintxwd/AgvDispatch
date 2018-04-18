@@ -8,10 +8,6 @@
 namespace qyhnetwork
 {
 
-
-inline SessionBlock * DefaultCreateBlock();
-inline void DefaultFreeBlock(SessionBlock *sb);
-
 class SessionManager
 {
 private:
@@ -73,7 +69,7 @@ public:
     unsigned short getRemotePort(SessionID sID);
 
     //send data.
-    void sendSessionData(SessionID sID, const char * orgData, unsigned int orgDataLen);
+    void sendSessionData(SessionID sID, const MSG_Response &msg);
 
     //close session socket.
     void kickSession(SessionID sID);
@@ -85,11 +81,6 @@ public:
     inline unsigned long long getStatInfo(int stat){ return _statInfo[stat]; }
     alignas(unsigned long long) unsigned long long _statInfo[STAT_SIZE];
 
-public:
-    SessionBlock * CreateBlock();
-    void FreeBlock(SessionBlock * sb);
-private:
-    std::deque<SessionBlock*> _freeBlock;
 private:
     friend class TcpSession;
     // 一个established状态的session已经关闭.
@@ -114,20 +105,6 @@ private:
     std::unordered_map<SessionID, TcpSessionPtr> _mapTcpSessionPtr;
     std::unordered_map<AccepterID, AccepterOptions > _mapAccepterOptions;
 };
-
-
-
-
-inline SessionBlock * DefaultCreateBlock()
-{
-    return SessionManager::getRef().CreateBlock();
-}
-
-inline void DefaultFreeBlock(SessionBlock *sb)
-{
-    SessionManager::getRef().FreeBlock(sb);
-}
-
 
 }
 

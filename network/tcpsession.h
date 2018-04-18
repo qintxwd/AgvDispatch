@@ -1,7 +1,8 @@
-#ifndef TCPSESSION_H
+﻿#ifndef TCPSESSION_H
 #define TCPSESSION_H
 
 #include "networkconfig.h"
+#include "../Protocol.h"
 
 namespace qyhnetwork{
 
@@ -14,7 +15,7 @@ public:
     void connect();
     void reconnect();
     bool attatch(const TcpSocketPtr &sockptr, AccepterID aID, SessionID sID);
-    void send(const char *buf, unsigned int len);
+    void send(const MSG_Response &msg);
     void close();
 
 private:
@@ -35,18 +36,11 @@ public:
     inline void setRemoteIP(const std::string &remoteIP){ _remoteIP = remoteIP; }
     inline unsigned short getRemotePort(){ return _remotePort; }
     inline void setRemotePort(unsigned short remotePort){ _remotePort = remotePort; }
-    inline std::size_t getSendQueSize(){ return _sendque.size(); }
     inline qyhnetwork::NetErrorCode getLastError(){ return _lastRecvError; }
-
-    inline const TupleParam& getUserParam(size_t index) { return peekTupleParamImpl(index); }
-    inline void setUserParam(size_t index, const TupleParam &tp) { autoTupleParamImpl(index) = tp; }
-    inline bool isUserParamInited(size_t index) { return std::get<TupleParamInited>(peekTupleParamImpl(index)); }
-    inline double getUserParamNumber(size_t index) { return std::get<TupleParamNumber>(peekTupleParamImpl(index)); }
-    inline void setUserParamNumber(size_t index, double f) { std::get<TupleParamNumber>(autoTupleParamImpl(index)) = f; }
-    inline unsigned long long getUserParamInteger(size_t index) { return std::get<TupleParamInteger>(peekTupleParamImpl(index)); }
-    inline void setUserParamInteger(size_t index, unsigned long long ull) { std::get<TupleParamInteger>(autoTupleParamImpl(index)) = ull; }
-    inline const std::string & getUserParamString(size_t index) { return std::get<TupleParamString>(peekTupleParamImpl(index)); }
-    inline void setUserParamString(size_t index, const std::string & str) { std::get<TupleParamString>(autoTupleParamImpl(index)) = str; }
+    inline void setUserId(int _user_id){user_id = _user_id;}
+    inline int getUserId(){return user_id;}
+    inline void setUserRole(int _user_role){user_role = _user_role;}
+    inline int getUserRole(){return user_role;}
 
 private:
     SessionOptions _options;
@@ -56,38 +50,21 @@ private:
     unsigned short _remotePort = 0;
     int _status = 0; //0 uninit, 1 connecting, 2 session established, 3  died
 
-    //
     SessionID _sessionID = InvalidSessionID;
     AccepterID _acceptID = InvalidAccepterID;
     qyhnetwork::TimerID _pulseTimerID = qyhnetwork::InvalidTimerID;
 
-    //!
-    SessionBlock* _recving = nullptr;
-    SessionBlock* _sending = nullptr;
-    unsigned int _sendingLen = 0;
+    MSG_Request read_one_msg;//读取一条请求消息的缓存(大小1024)
+    char read_buffer[ONE_MSG_MAX_LENGTH];
+    int read_position;
 
-    //! send data queue
-    std::deque<SessionBlock *> _sendque;
     unsigned long long _reconnects = 0;
 
-    //!
-    bool _bFirstRecvData = true;
-
-    //!last recv error code
     qyhnetwork::NetErrorCode _lastRecvError = NEC_SUCCESS;
 
-    //! http status data
-    bool _httpIsChunked = false;
-    std::string _httpMethod;
-    std::string _httpMethodLine;
-    std::map<std::string, std::string> _httpHeader;
-
-
-    //! user param
-    std::vector<TupleParam> _param;
-    TupleParam & autoTupleParamImpl(size_t index);
-    const TupleParam & peekTupleParamImpl(size_t index) const;
-
+    //连接保存一个用户的两个信息
+    int user_id = 0;
+    int user_role = 0;
 };
 using TcpSessionPtr = std::shared_ptr<TcpSession>;
 
