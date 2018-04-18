@@ -52,8 +52,6 @@ public:
     //取消定时器.  注意, 如果在定时器的回调handler中取消当前定时器 会失败的.
     bool cancelTimer(unsigned long long timerID){ return _summer->cancelTimer(timerID); }
 
-
-
     AccepterID addAccepter(const std::string& listenIP, unsigned short listenPort);
     AccepterOptions & getAccepterOptions(AccepterID aID);
     bool openAccepter(AccepterID aID);

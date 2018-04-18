@@ -15,11 +15,10 @@ TEMPLATE = app
 
 unix{
 #LIBS=-ldl
-LIBS += /usr/local/lib/libopencv_core.so
-LIBS += /usr/local/lib/libopencv_highgui.so
-LIBS += /usr/local/lib/libopencv_imgproc.so
-LIBS += /usr/local/lib/libopencv_imgcodecs.so
-LIBS += /usr/lib/x86_64-linux-gnu/libsqlite3.so
+LIBS += -lopencv_core
+LIBS += -lopencv_highgui
+LIBS += -lopencv_imgproc
+LIBS += -lsqlite3
 }
 
 win32{

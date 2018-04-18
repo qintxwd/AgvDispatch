@@ -11,6 +11,11 @@ const int MAX_EPOLL_WAIT = 5000;
 class TcpSocket;
 class TcpAccept;
 const int InvalidFD = -1;
+
+using TcpSocketPtr = std::shared_ptr<TcpSocket>;
+using _OnAcceptHandler = std::function<void(NetErrorCode, TcpSocketPtr)>;
+using _OnPostHandler = std::function<void()>;
+
 struct EventData
 {
     enum REG_TYPE
@@ -24,7 +29,7 @@ struct EventData
     epoll_event   _event; //event, auto set
     unsigned char _type = REG_INVALID; //register type
     unsigned char _linkstat = LS_UNINITIALIZE;
-    int              _fd = InvalidFD;   //file descriptor
+    int           _fd = InvalidFD;   //file descriptor
     std::shared_ptr<TcpSocket> _tcpSocketPtr;
     std::shared_ptr<TcpAccept> _tcpacceptPtr;
 };

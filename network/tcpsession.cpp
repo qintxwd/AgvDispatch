@@ -73,9 +73,6 @@ bool TcpSession::attatch(const TcpSocketPtr &sockptr, AccepterID aID, SessionID 
     {
         sockptr->setNoDelay();
     }
-#ifndef WIN32
-    sockptr->setFloodSendOptimize(_options._floodSendOptimize);
-#endif
     _status = 2;
     _pulseTimerID = SessionManager::getRef().createTimer(_options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
     SessionManager::getRef()._statInfo[STAT_SESSION_LINKED]++;
@@ -123,9 +120,6 @@ void TcpSession::onConnected(qyhnetwork::NetErrorCode ec)
     {
         _sockptr->setNoDelay();
     }
-#ifndef WIN32
-    _sockptr->setFloodSendOptimize(_options._floodSendOptimize);
-#endif
     if (_options._onSessionLinked)
     {
         try
@@ -225,7 +219,7 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
     }
 
     //只输出部分信息
-    LOG(DEBUG)<<"recv:"<<toHexString(read_buffer+read_position,min(received,sizeof(MSG_Head)));
+    LOG(DEBUG)<<"recv:"<<toHexString(read_buffer+read_position,received<sizeof(MSG_Head)?received:sizeof(MSG_Head));
 
     read_position += received;
     SessionManager::getRef()._statInfo[STAT_RECV_COUNT]++;
@@ -257,7 +251,7 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
     }
 
 # ifndef WIN32
-    return _recving->len;
+    return read_position;
 #else
     if (!doRecv())
     {

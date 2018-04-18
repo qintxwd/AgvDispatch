@@ -21,6 +21,19 @@ void initLog()
 
 int main(int argc, char *argv[])
 {
+
+#ifndef _WIN32
+    //! linux下需要屏蔽的一些信号
+    signal( SIGHUP, SIG_IGN );
+    signal( SIGALRM, SIG_IGN );
+    signal( SIGPIPE, SIG_IGN );
+    signal( SIGXCPU, SIG_IGN );
+    signal( SIGXFSZ, SIG_IGN );
+    signal( SIGPROF, SIG_IGN );
+    signal( SIGVTALRM, SIG_IGN );
+    signal( SIGQUIT, SIG_IGN );
+    signal( SIGCHLD, SIG_IGN);
+#endif
     //0.日志输出
     initLog();
 

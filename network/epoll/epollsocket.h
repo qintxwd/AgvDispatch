@@ -10,7 +10,6 @@ namespace qyhnetwork
 using _OnSendHandler = std::function<void(NetErrorCode, int)>;
 using _OnRecvHandler = std::function<unsigned int(NetErrorCode, int)>;
 using _OnConnectHandler = std::function<void(NetErrorCode)>;
-using TcpSocketPtr = std::shared_ptr<TcpSocket>;
 
 class TcpSocket: public std::enable_shared_from_this<TcpSocket>
 {

@@ -1,5 +1,7 @@
 ﻿#include "epollsocket.h"
 
+#include "utils/Log/easylogging.h"
+
 using namespace qyhnetwork;
 
 #ifndef WIN32
@@ -18,7 +20,7 @@ TcpSocket::~TcpSocket()
     g_networkEnvironment.addClosedSocketCount();
     if (_onRecvHandler || _onSendHandler || _onConnectHandler)
     {
-        LOG(WARNING)<<"TcpSocket::~TcpSocket[this0x" << this << "] Handler status error. " << logSection());
+        LOG(WARNING)<<"TcpSocket::~TcpSocket[this0x" << this << "] Handler status error. " << logSection();
     }
     if (_eventData._fd != InvalidFD)
     {
@@ -128,7 +130,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 
     if (ret!=0 && errno != EINPROGRESS)
     {
-        LOG(WARNING)<<"TcpSocket::doConnect[this0x" << this << "] ::connect error. errno=" << strerror(errno) );
+        LOG(WARNING)<<"TcpSocket::doConnect[this0x" << this << "] ::connect error. errno=" << strerror(errno);
         ::close(_eventData._fd);
         _eventData._fd = InvalidFD;
         return false;
@@ -144,10 +146,10 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 
 bool TcpSocket::doSend(char * buf, unsigned int len, _OnSendHandler && handler)
 {
-    LOG(TRACE)<<"TcpSocket::doSend len=" << len);
+    LOG(TRACE)<<"TcpSocket::doSend len=" << len;
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LOG(WARNING)<<"TcpSocket::doSend[this0x" << this << "] _linkstat error!");
+        LOG(WARNING)<<"TcpSocket::doSend[this0x" << this << "] _linkstat error!";
         return false;
     }
 
@@ -190,7 +192,7 @@ bool TcpSocket::doSend(char * buf, unsigned int len, _OnSendHandler && handler)
     }
     else
     {
-        LOG(TRACE)<<"TcpSocket::doSend direct sent=" << ret);
+        LOG(TRACE)<<"TcpSocket::doSend direct sent=" << ret;
         _OnSendHandler onSend(std::move(handler));
         onSend(NEC_SUCCESS, ret);
     }
@@ -202,7 +204,7 @@ bool TcpSocket::doRecv(char * buf, unsigned int len, _OnRecvHandler && handler, 
 {
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LOG(WARNING)<<"TcpSocket::doRecv[this0x" << this << "] status error !" );
+        LOG(WARNING)<<"TcpSocket::doRecv[this0x" << this << "] status error !";
         return false;
     }
 
