@@ -51,8 +51,8 @@ public:
     std::string getDoneTime(){return doneTime;}
     void setDoneTime(std::string _doneTime){doneTime=_doneTime;}
 
-    Agv* getAgv(){return excuteAgv;}
-    void setAgv(Agv *agv){excuteAgv=agv;}
+    AgvPtr getAgv(){return excuteAgv;}
+    void setAgv(AgvPtr agv){excuteAgv=agv;}
 
     std::vector<AgvTaskNode *> getTaskNode(){return nodes;}
     void setTaskNode(std::vector<AgvTaskNode *> _nodes){nodes=_nodes;}
@@ -61,8 +61,8 @@ public:
     int getDoingIndex(){return doingIndex;}
     void setDoingIndex(int _doingIndex){doingIndex = _doingIndex;}
 
-    void setPath(std::vector<AgvLine *> _path){path = _path;}
-    std::vector<AgvLine *> getPath(){return path;}
+    void setPath(std::vector<AgvLinePtr> _path){path = _path;}
+    std::vector<AgvLinePtr> getPath(){return path;}
 
     int getPriority(){return priority;}
     void setPriority(int _priority){priority = _priority;}
@@ -85,7 +85,7 @@ public:
 
 private:
     std::vector<AgvTaskNode *> nodes;
-    std::vector<AgvLine *> path;
+    std::vector<AgvLinePtr> path;
     int id;
     std::string produceTime;
     std::string doTime;
@@ -94,7 +94,7 @@ private:
     std::string errorTime;//发生错误时间
     std::string errorInfo;//发生错误的信息
     int error_code;//发生错误的代码
-    Agv* excuteAgv;
+    AgvPtr excuteAgv;
 
     int status;//状态
     int priority;//优先级

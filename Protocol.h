@@ -8,7 +8,7 @@
 #define ONE_MSG_MAX_LENGTH  (1024)              //one msg max length
 
 
-#define	MSG_REQUEST_BODY_MAX_SIZE           (1012)  //一条消息的最大长度
+#define	MSG_REQUEST_BODY_MAX_SIZE           (1000)  //一条消息的最大长度
 #define MSG_RESPONSE_BODY_MAX_SIZE          (768)   //
 #define MSG_LOG_MAX_LENGTH              (MSG_RESPONSE_BODY_MAX_SIZE - 24)
 #define MSG_COMMON_HEAD_HEAD		0x88
@@ -19,6 +19,7 @@
 #define MSG_STRING_LEN                  (64)
 #define MSG_LONG_STRING_LEN             (128)
 #define MSG_LONG_LONG_STRING_LEN        (512)
+#define SQL_MAX_LENGTH                  (1024)
 
 
 
@@ -31,6 +32,7 @@ typedef struct _MSG_Head
 	uint32_t body_length;//body的长度 最大为TCP_MSG_MAX_SIZE
 	uint8_t todo;//要做的事情
 	uint32_t queuenumber;//消息序号，返回时要带上
+    uint8_t flag;//标志位，默认为0，0:完成  1:未完成
     uint8_t tail;//固定为0xAA [head 和tail 决定了这个消息是否是 我们定义的消息]  MSG_COMMON_HEAD_TAIL
 }MSG_Head;
 
@@ -91,11 +93,9 @@ typedef enum Msg_Todo
     MSG_TODO_MAP_CREATE_START,//创建地图开始
     MSG_TODO_MAP_CREATE_ADD_STATION,//添加站点 station[id[4]+x[4]+y[4]+name[MSG_STRING_LEN]+rfid[4]+r[2]+g[2]+b[2]]{个} //如果超出1024长度，可以分成多条
     MSG_TODO_MAP_CREATE_ADD_LINE, //添加直线 line[id[4] + startstation[4] + endstation[MSG_STRING_LEN] + length[4] + draw[1] + r[2] + g[2] + b[2]]{个 }//如果超出1024长度，可以分成多条
-    MSG_TODO_MAP_CREATE_ADD_ARC,//添加曲线 arc[id[4] + startstation[4] + endstation[MSG_STRING_LEN] +length[4] + draw[1] +r[2]+g[2]+b[2]+p1x[4]+p1y[4]+p2x[4]+p2y[4]]{个 }//如果超出1024长度，可以分成多条
     MSG_TODO_MAP_CREATE_FINISH,//创建地图完成
     MSG_TODO_MAP_LIST_STATION,//请求所有站点//none
     MSG_TODO_MAP_LIST_LINE,//请求所有直线//none
-    MSG_TODO_MAP_LIST_ARC,//请求所有曲线//none
     MSG_TODO_HAND_REQUEST,//请求控制权//none
     MSG_TODO_HAND_RELEASE,//释放控制权//none
     MSG_TODO_HAND_FORWARD,//前进//none
@@ -183,10 +183,7 @@ typedef struct _STATION_INFO
     int32_t id;
     int32_t x;
     int32_t y;
-    int32_t rfid;
-    int8_t r;
-    int8_t g;
-    int8_t b;
+    int32_t floorId;
     int32_t occuagv;
     char name[MSG_STRING_LEN];
 }STATION_INFO;
@@ -197,10 +194,6 @@ typedef struct _AGV_LINE
     int32_t startStation;
     int32_t endStation;
     int32_t length;
-    int8_t r;
-    int8_t g;
-    int8_t b;
-    int8_t draw;
 }AGV_LINE;
 
 typedef struct _TASK_INFO

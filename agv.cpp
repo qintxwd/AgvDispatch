@@ -47,9 +47,12 @@ void Agv::onDisconnect()
 {
     //TODO
 }
-
+void Agv::reconnect()
+{
+    tcpClient->resetConnect(ip,port);
+}
 //到达后是否停下，如果不停下，就是不减速。
-void Agv::goStation(AgvStation *station,bool stop)
+void Agv::goStation(AgvStationPtr station, bool stop)
 {
     //发送站点坐标
     //station->x;station->y;
@@ -62,7 +65,7 @@ void Agv::goStation(AgvStation *station,bool stop)
 }
 
 //请求切换地图(呼叫电梯)
-void Agv::callMapChange(AgvStation *station)
+void Agv::callMapChange(AgvStationPtr station)
 {
     if(!station->mapChangeStation)return ;
     //例如:
@@ -88,17 +91,17 @@ void Agv::callMapChange(AgvStation *station)
 
 }
 
-void Agv::excutePath(std::vector<AgvLine *> lines)
+void Agv::excutePath(std::vector<AgvLinePtr> lines)
 {
-    std::vector<AgvStation *> stations;
+    std::vector<AgvStationPtr> stations;
 
     for(auto line:lines){
         stations.push_back(line->endStation);
     }
     //告诉小车接下来要执行的路径
-    AgvStation *next = nullptr;//下一个要去的位置
+    AgvStationPtr next = nullptr;//下一个要去的位置
     for(int i=0;i<stations.size();++i){
-        AgvStation *now = stations[i];//接下来要去的位置
+        AgvStationPtr now = stations[i];//接下来要去的位置
         if(i+1<stations.size())
             next = stations[i+1];
         else

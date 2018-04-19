@@ -1,4 +1,4 @@
-#ifndef AGVTASKNODE_H
+﻿#ifndef AGVTASKNODE_H
 #define AGVTASKNODE_H
 
 #include <vector>
@@ -11,19 +11,19 @@ class AgvTaskNode
 {
 public:
     AgvTaskNode():
-        aimStation(NULL)
+        aimStation(nullptr)
     {
     }
 
-    AgvStation *getStation(){return aimStation;}
-    void setStation(AgvStation *station){aimStation = station;}
+    AgvStationPtr getStation(){return aimStation;}
+    void setStation(AgvStationPtr station){aimStation = station;}
 
     std::vector<AgvTaskNodeDoThing *> getDoThings(){return doThings;}
     void setDoThings(std::vector<AgvTaskNodeDoThing *> _doThings){doThings=_doThings;}
     void push_backDoThing(AgvTaskNodeDoThing *doThing){doThings.push_back(doThing);}
 
 private:
-    AgvStation *aimStation;
+    AgvStationPtr aimStation;
     std::vector<AgvTaskNodeDoThing *> doThings;
 };
 

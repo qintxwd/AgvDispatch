@@ -36,6 +36,11 @@ void TaskManager::checkTable()
     }
 }
 
+bool TaskManager::hasTaskDoing()
+{
+    return !toDistributeTasks.empty() && !doingTask.empty();
+}
+
 bool TaskManager::init()
 {
     //check table
@@ -72,7 +77,7 @@ bool TaskManager::init()
                         continue;
                     }else{
                         AgvTaskNode *node = nodes[index];
-                        AgvStation *aimStation = node->getStation();
+                        AgvStationPtr aimStation = node->getStation();
                         if(aimStation==NULL && task->getAgv()->getTask() == task){
                             //拿去执行//从未分配队列中拿出去agv
                             pos = itr->second.erase(pos);
@@ -80,20 +85,20 @@ bool TaskManager::init()
                             continue;
                         }else{
                             //获取执行路径
-                            Agv *agv = task->getAgv();
+                            AgvPtr agv = task->getAgv();
                             if(agv == NULL){
                                 //未分配AGV
-                                Agv *bestAgv = NULL;
+                                AgvPtr bestAgv = NULL;
                                 int minDis = DISTANCE_INFINITY;
-                                std::vector<AgvLine *> result;
+                                std::vector<AgvLinePtr > result;
                                 //遍历所有的agv
                                 AgvManager::getInstance()->foreachAgv(
-                                            [&](Agv *tempagv){
+                                            [&](AgvPtr tempagv){
                                     if(tempagv->status!=Agv::AGV_STATUS_IDLE)
                                         return ;
                                     if(tempagv->nowStation!=nullptr){
                                         int tempDis;
-                                        std::vector<AgvLine *> result_temp = MapManager::getInstance()->getBestPath(agv,agv->lastStation,agv->nowStation,aimStation,tempDis,CAN_CHANGE_DIRECTION);
+                                        std::vector<AgvLinePtr> result_temp = MapManager::getInstance()->getBestPath(agv,agv->lastStation,agv->nowStation,aimStation,tempDis,CAN_CHANGE_DIRECTION);
                                         if(result_temp.size()>0 && tempDis<minDis){
                                             minDis = tempDis;
                                             bestAgv = agv;
@@ -101,7 +106,7 @@ bool TaskManager::init()
                                         }
                                     }else{
                                         int tempDis;
-                                        std::vector<AgvLine *> result_temp = MapManager::getInstance()->getBestPath(agv,agv->lastStation,agv->nextStation,aimStation,tempDis,CAN_CHANGE_DIRECTION);
+                                        std::vector<AgvLinePtr> result_temp = MapManager::getInstance()->getBestPath(agv,agv->lastStation,agv->nextStation,aimStation,tempDis,CAN_CHANGE_DIRECTION);
                                         if(result_temp.size()>0 && tempDis<minDis){
                                             minDis = tempDis;
                                             bestAgv = agv;
@@ -126,7 +131,7 @@ bool TaskManager::init()
                                         continue;
                                 }
                                 int distance;
-                                std::vector<AgvLine *> result = MapManager::getInstance()->getBestPath(agv,agv->lastStation,agv->nowStation,aimStation,distance,CAN_CHANGE_DIRECTION);
+                                std::vector<AgvLinePtr > result = MapManager::getInstance()->getBestPath(agv,agv->lastStation,agv->nowStation,aimStation,distance,CAN_CHANGE_DIRECTION);
 
                                 if(distance!=DISTANCE_INFINITY && result.size()>0){
                                     //拿去执行//从未分配队列中拿出去
@@ -337,8 +342,8 @@ void TaskManager::excuteTask(AgvTask *task)
             finishTask(task);
         }else{
             AgvTaskNode *node = nodes[index];
-            AgvStation *station = node->getStation();
-            Agv *agv = task->getAgv();
+            AgvStationPtr station = node->getStation();
+            AgvPtr agv = task->getAgv();
             try{
                 if(station==NULL){
                     for(auto thing:node->getDoThings()){
@@ -359,7 +364,7 @@ void TaskManager::excuteTask(AgvTask *task)
                     }
                 }
                 //完成以后,从正在执行，返回到 分配队列中
-                task->setPath(std::vector<AgvLine *>());//清空路径
+                task->setPath(std::vector<AgvLinePtr >());//清空路径
                 task->setDoingIndex(task->getDoingIndex()+1);
                 doingTask.erase(std::find(doingTask.begin(),doingTask.end(),task));
                 addTask(task);

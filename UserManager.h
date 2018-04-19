@@ -7,34 +7,16 @@
 #include "network/tcpsession.h"
 using qyhnetwork::TcpSessionPtr;
 
+class UserManager;
+using UserManagerPtr = std::shared_ptr<UserManager>;
+
 class UserManager :private noncopyable, public std::enable_shared_from_this<UserManager>
 {
 public:
-    typedef std::shared_ptr<UserManager> Pointer;
-
-    //通过连接，查找用户信息
-    typedef std::unordered_map<int, USER_INFO> MapIdUser;
-    typedef std::shared_ptr<MapIdUser> MapIdUserPointer;
-
-	static Pointer getInstance()
+    static UserManagerPtr getInstance()
 	{
-		static Pointer m_inst = Pointer(new UserManager());
+        static UserManagerPtr m_inst = UserManagerPtr(new UserManager());
 		return m_inst;
-	}
-
-	void saveUser(USER_INFO &u)
-	{
-		(*m_idUsers)[u.id] = u;
-	}
-
-	void removeUser(int id)
-	{
-		m_idUsers->erase(id);
-	}
-
-	MapIdUserPointer getUserMap()
-	{
-		return m_idUsers;
 	}
 
     void interLogin(TcpSessionPtr conn, MSG_Request msg);
@@ -54,6 +36,5 @@ public:
 	virtual ~UserManager();
 private:
 	UserManager();
-	MapIdUserPointer m_idUsers;
 };
 

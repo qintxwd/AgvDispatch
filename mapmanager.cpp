@@ -1,9 +1,9 @@
 ﻿#include "mapmanager.h"
 #include "sqlite3/CppSQLite3.h"
-
+#include "msgprocess.h"
 #include "Common.h"
 
-MapManager* MapManager::p = new MapManager();
+#include "taskmanager.h"
 
 MapManager::MapManager():image_colors(NULL),mapModifying(false)
 {
@@ -108,7 +108,7 @@ bool MapManager::loadFromDb()
             table_station.setRow(row);
 
             if(table_station.fieldIsNull(0) ||table_station.fieldIsNull(1) ||table_station.fieldIsNull(2))return false;
-            AgvStation *station = new AgvStation;
+            AgvStationPtr station = AgvStationPtr(new AgvStation);
             station->id = atoi(table_station.fieldValue(0));
             station->x = atoi(table_station.fieldValue(1));
             station->y = atoi(table_station.fieldValue(2));
@@ -124,7 +124,7 @@ bool MapManager::loadFromDb()
             table_line.setRow(row);
 
             if(table_line.fieldIsNull(0) ||table_line.fieldIsNull(1) ||table_line.fieldIsNull(2) ||table_line.fieldIsNull(3))return false;
-            AgvLine *line = new AgvLine;
+            AgvLinePtr line = AgvLinePtr(new AgvLine);
             line->id = atoi(table_line.fieldValue(0));
             int sId = atoi(table_line.fieldValue(1));
             int eId = atoi(table_line.fieldValue(2));
@@ -188,15 +188,15 @@ bool MapManager::loadFromImg(std::string imgfile, int _gridsize)
 }
 
 //获取最优路径
-std::vector<AgvLine *> MapManager::getBestPath(Agv *agv,AgvStation *lastStation, AgvStation *startStation, AgvStation* endStation, int &distance, bool changeDirect)
+std::vector<AgvLinePtr> MapManager::getBestPath(AgvPtr agv,AgvStationPtr lastStation, AgvStationPtr startStation, AgvStationPtr endStation, int &distance, bool changeDirect)
 {
     distance = DISTANCE_INFINITY;
-    if(mapModifying) return std::vector<AgvLine *>();
+    if(mapModifying) return std::vector<AgvLinePtr>();
     int disA = DISTANCE_INFINITY;
     int disB = DISTANCE_INFINITY;
 
-    std::vector<AgvLine *> a = getPath(agv, lastStation, startStation, endStation, disA, false);
-    std::vector<AgvLine *> b;
+    std::vector<AgvLinePtr> a = getPath(agv, lastStation, startStation, endStation, disA, false);
+    std::vector<AgvLinePtr> b;
     if (changeDirect) {
         b = getPath(agv, startStation, lastStation, endStation, disB, true);
         if (disA != DISTANCE_INFINITY && disB != DISTANCE_INFINITY) {
@@ -213,9 +213,9 @@ std::vector<AgvLine *> MapManager::getBestPath(Agv *agv,AgvStation *lastStation,
     return b;
 }
 
-std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, AgvStation *startStation, AgvStation* endStation, int &distance, bool changeDirect)
+std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStation, AgvStationPtr startStation, AgvStationPtr endStation, int &distance, bool changeDirect)
 {
-    std::vector<AgvLine *> result;
+    std::vector<AgvLinePtr> result;
 
     distance = DISTANCE_INFINITY;
 
@@ -242,7 +242,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
         return result;
     }
 
-    std::multimap<int, AgvLine *> Q;//key -->  distance ;value --> station;
+    std::multimap<int, AgvLinePtr> Q;//key -->  distance ;value --> station;
 
     for(auto line:m_lines){
         line->father = NULL;
@@ -260,7 +260,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
             if(templine->startStation == endStation){
                 if (templine->occuAgvs.size() > 1 || (templine->occuAgvs.size() == 1 && (*(templine->occuAgvs.begin())) != agv)) {
                     //TODO:该方式到达这个地方 不可行.该线路 置黑、
-                    AgvLine* llid = m_reverseLines[templine];
+                    AgvLinePtr  llid = m_reverseLines[templine];
                     llid->color = AGV_LINE_COLOR_BLACK;
                     llid->distance = DISTANCE_INFINITY;
                 }
@@ -272,7 +272,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
     if (lastStation == startStation) {
         for (auto l : m_lines) {
             if (l->startStation == lastStation) {
-                AgvLine *reverse = m_reverseLines[l];
+                AgvLinePtr reverse = m_reverseLines[l];
                 if (reverse->occuAgvs.size() == 0 && (l->endStation->occuAgv == nullptr || l->endStation->occuAgv == agv)) {
                     if (l->color == AGV_LINE_COLOR_BLACK)continue;
                     l->distance = l->length;
@@ -285,7 +285,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
     else {
         for (auto l : m_lines) {
             if (l->startStation == lastStation && l->endStation == lastStation) {
-                AgvLine *reverse = m_reverseLines[l];
+                AgvLinePtr reverse = m_reverseLines[l];
                 if (reverse->occuAgvs.size() == 0 && (l->endStation->occuAgv == nullptr || l->endStation->occuAgv == agv)) {
                     if (l->color == AGV_LINE_COLOR_BLACK)continue;
                     l->distance = 0;
@@ -299,7 +299,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
 
     while (Q.size() > 0) {
         auto front = Q.begin();
-        AgvLine *startLine = front->second;
+        AgvLinePtr startLine = front->second;
 
         if (m_adj.find(startLine) == m_adj.end()) {
             startLine->color = AGV_LINE_COLOR_BLACK;
@@ -316,7 +316,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
         for (auto line : m_adj[startLine]) {
             if (line->color == AGV_LINE_COLOR_BLACK)continue;
             if (line->color == AGV_LINE_COLOR_WHITE) {
-                AgvLine *reverse = m_reverseLines[line];
+                AgvLinePtr reverse = m_reverseLines[line];
                 if (reverse->occuAgvs.size() == 0 && (line->endStation->occuAgv == nullptr || line->endStation->occuAgv == agv)) {
                     line->distance = startLine->distance + line->length;
                     line->color = AGV_LINE_COLOR_GRAY;
@@ -326,7 +326,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
             }
             else if (line->color == AGV_LINE_COLOR_GRAY) {
                 if (line->distance > startLine->distance + line->length) {
-                    AgvLine *reverse = m_reverseLines[line];
+                    AgvLinePtr reverse = m_reverseLines[line];
                     if (reverse->occuAgvs.size() == 0 && (line->endStation->occuAgv == nullptr || line->endStation->occuAgv == agv)) {
                         int old_distance = line->distance;
                         line->distance = startLine->distance + line->length;
@@ -355,7 +355,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
         }
     }
 
-    AgvLine *index = NULL;
+    AgvLinePtr index = NULL;
     int minDis = DISTANCE_INFINITY;
 
     for (auto ll : m_lines) {
@@ -378,7 +378,7 @@ std::vector<AgvLine *> MapManager::getPath(Agv *agv, AgvStation *lastStation, Ag
 
     if (result.size() > 0 && lastStation != startStation) {
         if (!changeDirect) {
-            AgvLine * agv_line = *(result.begin());
+            AgvLinePtr  agv_line = *(result.begin());
             if (agv_line->startStation == lastStation && agv_line->endStation == startStation) {
                 result.erase(result.begin());
             }
@@ -453,14 +453,14 @@ void MapManager::getImgStations()
 
             if(lineAmount >2){
                 //这个是交叉点
-                AgvStation *station = new AgvStation;
+                AgvStationPtr station =AgvStationPtr(new AgvStation);
                 station->id = m_stations.size();
                 station->x = j;
                 station->y = i;
                 m_stations.push_back(station);
             }else if(lineAmount == 1){
                 //这个是端点
-                AgvStation *station = new AgvStation;
+                AgvStationPtr station = AgvStationPtr(new AgvStation);
                 station->id = m_stations.size()+1;//ID>0
                 station->x = j;
                 station->y = i;
@@ -475,7 +475,7 @@ void MapManager::getImgStations()
 }
 
 //返回下一个站点
-AgvStation* MapManager::recrsion(int row,int column,int stationId,int ***pps,int &l_length,int s_length){
+AgvStationPtr MapManager::recrsion(int row,int column,int stationId,int ***pps,int &l_length,int s_length){
     for(int k=0;k<sizeof(around_pos)/sizeof(around_pos[0]);++k)
     {
         int rrow = row+around_pos[k].row;
@@ -506,7 +506,7 @@ void MapManager::getImgLines()
 
 
 
-    for(AgvStation *station:m_stations){
+    for(auto station:m_stations){
         //对于一个站点
         for(int i=0;i<imageGridRow;++i){
             for(int j=0;j<imageGridColumn;++j){
@@ -534,9 +534,9 @@ void MapManager::getImgLines()
             if(image_colors->getColor(row,column) == MAP_GRID_COLOR_BLUE){
                 int l_length = 0;
                 int s_length = 0;
-                AgvStation* nextStationId = recrsion(row,column,station->id,&ppps,l_length,s_length);
+                AgvStationPtr nextStationId = recrsion(row,column,station->id,&ppps,l_length,s_length);
                 if(nextStationId!=0){
-                    AgvLine *line = new AgvLine;
+                    AgvLinePtr line = AgvLinePtr(new AgvLine);
                     line->id = m_lines.size()+1;
                     line->startStation = station;
                     line->endStation = nextStationId;
@@ -570,7 +570,7 @@ void MapManager::getAdj()
                 if(m_adj.find(a)!=m_adj.end()){
                     m_adj[a].push_back(b);
                 }else{
-                    std::vector<AgvLine *> ll;
+                    std::vector<AgvLinePtr > ll;
                     ll.push_back(b);
                     m_adj.insert(std::make_pair(a,ll));
                 }
@@ -578,3 +578,230 @@ void MapManager::getAdj()
         }
     }
 }
+
+void MapManager::clear()
+{
+    m_reverseLines.clear();
+    m_adj.clear();
+    m_stations.clear();
+    m_lines.clear();
+}
+
+void MapManager::interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+{
+    MSG_Response response;
+    memset(&response, 0, sizeof(MSG_Response));
+    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    response.head.body_length = 0;
+    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+
+    if (TaskManager::getInstance()->hasTaskDoing())
+    {
+        response.return_head.error_code = RETURN_MSG_ERROR_CODE_TASKING;
+        sprintf_s(response.return_head.error_info, "there are some task is taking", strlen("there are some task is taking"), sizeof(response.return_head.error_info));
+    }
+    else {
+        mapModifying = true;
+        clear();
+        try{
+            CppSQLite3DB db;
+            db.open(DB_File);
+            db.execDML("delete from agv_station;");
+            db.execDML("delete from agv_line;");
+            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+        }catch(CppSQLite3Exception e){
+            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            LOG(FATAL)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+        }catch(std::exception e){
+            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            LOG(FATAL)<<"sqlerr code:"<<e.what();
+        }
+    }
+
+    conn->send(response);
+}
+
+void MapManager::interCreateAddStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+{
+    MSG_Response response;
+    memset(&response, 0, sizeof(MSG_Response));
+    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    response.head.body_length = 0;
+    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+
+    if (!mapModifying) {
+        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
+        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+    }
+    else {
+        if (msg.head.body_length != sizeof(STATION_INFO)) {
+            response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
+            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error STATION_INFO length");
+        }
+        else {
+            STATION_INFO station;
+            memcpy_s(&station, sizeof(STATION_INFO),msg.body, sizeof(STATION_INFO));
+            char buf[MSG_LONG_LONG_STRING_LEN];
+            sprintf_s(buf,MSG_LONG_LONG_STRING_LEN, "insert into agv_station values (%d, %d,%d,%s);", station.id, station.x,station.y,station.name);
+            try{
+                CppSQLite3DB db;
+                db.open(DB_File);
+                db.execDML(buf);
+                response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+            }catch(CppSQLite3Exception e){
+                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+                LOG(FATAL)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+            }catch(std::exception e){
+                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+                LOG(FATAL)<<"sqlerr code:"<<e.what();
+            }
+        }
+    }
+    conn->send(response);
+}
+
+void MapManager::interCreateAddLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+{
+    MSG_Response response;
+    memset(&response, 0, sizeof(MSG_Response));
+    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    response.head.body_length = 0;
+    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+
+    if (!mapModifying) {
+        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
+        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+    }
+    else {
+        if (msg.head.body_length != sizeof(AGV_LINE)) {
+            response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
+            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
+        }
+        else {
+            AGV_LINE line;
+            memcpy_s(&line,sizeof(AGV_LINE), msg.body, sizeof(AGV_LINE));
+            char buf[SQL_MAX_LENGTH];
+            sprintf_s(buf,SQL_MAX_LENGTH, "INSERT INTO agv_line (id,line_startStation,line_endStation,line_length) VALUES (%d,%d,%d,%d);", line.id, line.startStation,line.endStation,line.length);
+            try{
+                CppSQLite3DB db;
+                db.open(DB_File);
+                db.execDML(buf);
+                response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+            }catch(CppSQLite3Exception e){
+                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+                LOG(FATAL)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+            }catch(std::exception e){
+                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+                LOG(FATAL)<<"sqlerr code:"<<e.what();
+            }
+
+            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+        }
+
+    }
+    conn->send(response);
+}
+
+void MapManager::interCreateFinish(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+{
+    MSG_Response response;
+    memset(&response, 0, sizeof(MSG_Response));
+    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    response.head.body_length = 0;
+    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+
+    if (!mapModifying) {
+        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
+        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+    }
+    else {
+        if(!save()){
+            response.return_head.result = RETURN_MSG_RESULT_FAIL;
+            response.return_head.error_code = RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL;
+            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","save data to sql fail");
+        }else{
+            getReverseLines();
+            getAdj();
+            mapModifying = false;
+            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+        }
+    }
+    conn->send(response);
+
+    //通知所有客户端，map更新了
+    MsgProcess::getInstance()->notifyAll(ENUM_NOTIFY_ALL_TYPE_MAP_UPDATE);
+}
+
+void MapManager::interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+{
+    MSG_Response response;
+    memset(&response, 0, sizeof(MSG_Response));
+    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    response.head.body_length = 0;
+    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+
+    if (mapModifying) {
+        response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
+        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+    }
+    else {
+        response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+        for (auto s : m_stations) {
+            STATION_INFO info;
+            info.id = s->id;
+            info.x = s->x;
+            info.y = s->y;
+            info.floorId = s->floorId;
+            info.occuagv = s->occuAgv->getId();
+            sprintf_s(info.name,MSG_STRING_LEN,s->name.c_str(),s->name.length());
+            memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(STATION_INFO));
+            response.head.flag = 1;
+            response.head.body_length = sizeof(STATION_INFO);
+            conn->send(response);
+        }
+        response.head.body_length = 0;
+        response.head.flag = 0;
+    }
+    conn->send(response);
+}
+
+void MapManager::interListLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+{
+    MSG_Response response;
+    memset(&response, 0, sizeof(MSG_Response));
+    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    response.head.body_length = 0;
+    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+
+    if (mapModifying) {
+        response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
+        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is creating map");
+    }
+    else {
+        response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+        for (auto l : m_lines) {
+            AGV_LINE line;
+            line.id = l->id;
+            line.startStation = l->startStation->id;
+            line.endStation = l->endStation->id;
+            line.length = l->length;
+
+            memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&line,sizeof(AGV_LINE));
+
+            response.head.flag = 1;
+            response.head.body_length = sizeof(AGV_LINE);
+            conn->send(response);
+        }
+        response.head.flag = 0;
+        response.head.body_length = 0;
+    }
+    conn->send(response);
+}
+
+

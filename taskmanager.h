@@ -15,6 +15,8 @@ public:
     }
     bool init();
 
+    bool hasTaskDoing();
+
     //添加任务
     bool addTask(AgvTask *task);
 

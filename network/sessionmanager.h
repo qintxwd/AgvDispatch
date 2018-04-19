@@ -1,6 +1,6 @@
 ﻿#ifndef SESSIONMANAGER_H
 #define SESSIONMANAGER_H
-
+#include <memory>
 #include "networkconfig.h"
 #include "tcpsession.h"
 
@@ -9,14 +9,18 @@
 namespace qyhnetwork
 {
 
-class SessionManager : public noncopyable
+class SessionManager;
+using SessionManagerPtr = std::shared_ptr<SessionManager>;
+
+class SessionManager : public noncopyable,public std::enable_shared_from_this<SessionManager>
 {
 private:
     SessionManager();
 
 public:
-    static SessionManager* getInstance(){
-        return p;
+    static SessionManagerPtr getInstance(){
+        static SessionManagerPtr m_inst = SessionManagerPtr(new SessionManager());
+        return m_inst;
     }
 public:
     //要使用SessionManager必须先调用start来启动服务.
@@ -69,6 +73,8 @@ public:
 
     //send data.
     void sendSessionData(SessionID sID, const MSG_Response &msg);
+    //send data to all session
+    void sendData(const MSG_Response &msg);
 
     //close session socket.
     void kickSessionByUserId(int userId);
@@ -89,7 +95,6 @@ private:
     //accept到新连接.
     void onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSocketPtr & s, const TcpAcceptPtr & accepter, AccepterID aID);
 private:
-    static SessionManager *p;
     //消息循环
     EventLoopPtr _summer;
 

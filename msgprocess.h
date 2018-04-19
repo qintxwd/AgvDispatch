@@ -1,25 +1,54 @@
 ﻿#ifndef MSGPROCESS_H
 #define MSGPROCESS_H
-
 #include "utils/noncopyable.h"
 #include "Protocol.h"
 #include "network/networkconfig.h"
 
-class MsgProcess : public noncopyable
+class MsgProcess;
+
+using MsgProcessPtr = std::shared_ptr<MsgProcess>;
+
+typedef enum{
+    ENUM_NOTIFY_ALL_TYPE_MAP_UPDATE = 0,
+}ENUM_NOTIFY_ALL_TYPE;
+
+class MsgProcess : public noncopyable,public std::enable_shared_from_this<MsgProcess>
 {
 public:
 
-    static MsgProcess* getInstance(){
-        return p;
+    static MsgProcessPtr getInstance(){
+        static MsgProcessPtr m_inst = MsgProcessPtr(new MsgProcess());
+        return m_inst;
     }
 
     bool init();
 
-
+    void removeSubSession(int session);
     //进来一个消息,分配给一个线程去处理它
     void processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr session);
 
     void publishOneLog(USER_LOG log);
+
+    void notifyAll(ENUM_NOTIFY_ALL_TYPE type);
+
+    void interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interAddSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interAddSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interRemoveSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+
+    void addSubAgvPosition(int id);
+    void addSubAgvStatus(int id);
+    void addSubTask(int id);
+    void addSubLog(int id);
+
+    void removeSubAgvPosition(int id);
+    void removeSubAgvStatus(int id);
+    void removeSubTask(int id);
+    void removeSubLog(int id);
 private:
 
     void publisher_agv_position();
@@ -30,14 +59,21 @@ private:
 
     void publisher_log();
 
-    static MsgProcess* p;
-
     MsgProcess();
 
-    std::list<qyhnetwork::TcpSessionPtr> agvPositionSubers;
-    std::list<qyhnetwork::TcpSessionPtr> agvStatusSubers;
-    std::list<qyhnetwork::TcpSessionPtr> taskSubers;
-    std::list<qyhnetwork::TcpSessionPtr> logSubers;
+    std::mutex psMtx;
+    std::list<int> agvPositionSubers;
+
+    std::mutex ssMtx;
+    std::list<int> agvStatusSubers;
+
+    std::mutex tsMtx;
+    std::list<int> taskSubers;
+
+    std::mutex lsMtx;
+    std::list<int> logSubers;
 };
+
+
 
 #endif // MSGPROCESS_H

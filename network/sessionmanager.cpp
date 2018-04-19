@@ -1,13 +1,11 @@
 ﻿#include "sessionmanager.h"
 #include "tcpsession.h"
-
+#include "../msgprocess.h"
 #include "../Protocol.h"
 
 using namespace qyhnetwork;
 
 namespace qyhnetwork {
-
-SessionManager* SessionManager::p = new SessionManager();
 
 SessionManager::SessionManager()
 {
@@ -119,7 +117,7 @@ bool SessionManager::openAccepter(AccepterID aID)
         return false;
     }
     if (!accepter->doAccept(std::make_shared<qyhnetwork::TcpSocket>(),
-        std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, founder->second._aID)))
+                            std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, founder->second._aID)))
     {
         LOG(ERROR)<<"openAccept error. extend info=" << founder->second;
         return false;
@@ -200,14 +198,14 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
         if (!checkSucess)
         {
             LOG(ERROR)<<"onAcceptNewClient Accept New Client Check Whitelist Failed remoteAdress=" << remoteIP << ":" << remotePort
-                << ", extend=" << founder->second;
+                     << ", extend=" << founder->second;
             accepter->doAccept(std::make_shared<qyhnetwork::TcpSocket>(), std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, aID));
             return;
         }
         else
         {
             LOG(ERROR)<<"onAcceptNewClient Accept New Client Check Whitelist Success remoteAdress=" << remoteIP << ":" << remotePort
-                << ", extend=" << founder->second;
+                     << ", extend=" << founder->second;
         }
     }
 
@@ -224,7 +222,7 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
         _lastSessionID = nextSessionID(_lastSessionID);
 
         LOG(ERROR)<<"onAcceptNewClient Accept New Client. Accept new Sessions sID=" << _lastSessionID << ". The new socket  remoteAddress=" << remoteIP << ":" << remotePort
-            << ", Aready linked sessions = " << founder->second._currentLinked << ", extend=" << founder->second;
+                 << ", Aready linked sessions = " << founder->second._currentLinked << ", extend=" << founder->second;
 
         s->initialize(_summer);
 
@@ -325,12 +323,14 @@ void SessionManager::kickConnect(SessionID cID)
 
 void SessionManager::removeSession(TcpSessionPtr session)
 {
+    MsgProcess::getInstance()->removeSubSession(session->getSessionID());
     _mapTcpSessionPtr.erase(session->getSessionID());
     if (session->getAcceptID() != InvalidAccepterID)
     {
         _mapAccepterOptions[session->getAcceptID()]._currentLinked--;
         _mapAccepterOptions[session->getAcceptID()]._totalAcceptCount++;
     }
+    //通知订阅信息，取消该session的所有订阅
 
 
 }
@@ -396,6 +396,14 @@ void SessionManager::sendSessionData(SessionID sID, const MSG_Response &msg)
         return;
     }
     iter->second->send(msg);
+}
+
+void SessionManager::sendData(const MSG_Response &msg)
+{
+    for (auto &ms : _mapTcpSessionPtr)
+    {
+        ms.second->send(msg);
+    }
 }
 
 }

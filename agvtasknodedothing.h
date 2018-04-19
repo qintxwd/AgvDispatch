@@ -15,9 +15,9 @@ public:
     }
 
     //三个虚函数，由基类去实现
-    virtual void beforeDoing(Agv *agv) = 0;
-    virtual void doing(Agv *agv) = 0;
-    virtual void afterDoing(Agv *agv) = 0;
+    virtual void beforeDoing(AgvPtr agv) = 0;
+    virtual void doing(AgvPtr agv) = 0;
+    virtual void afterDoing(AgvPtr agv) = 0;
 
     virtual std::string discribe()  = 0;//用于保存数据库//简单描述以下干什么的
 

@@ -2,14 +2,22 @@
 #define AGV_H
 #include <string>
 #include <vector>
-
+#include <memory>
 
 class AgvLine;
+using AgvLinePtr = std::shared_ptr<AgvLine>;
+
 class AgvTask;
+
 class AgvStation;
+using AgvStationPtr = std::shared_ptr<AgvStation>;
+
 class QyhTcpClient;
+
+class Agv;
+using AgvPtr = std::shared_ptr<Agv>;
 //AGV
-class Agv
+class Agv:public std::enable_shared_from_this<Agv>
 {
 public:
     Agv(int id,std::string name,std::string ip,int port);
@@ -18,7 +26,7 @@ public:
 
     ~Agv();
 
-    virtual void excutePath(std::vector<AgvLine *> lines);
+    virtual void excutePath(std::vector<AgvLinePtr> lines);
 
     //状态
     enum {
@@ -34,19 +42,28 @@ public:
     int status = AGV_STATUS_IDLE;
 
     //计算路径用的
-    AgvStation* lastStation = 0;//上一个站点
-    AgvStation* nowStation = 0;//当前所在站点
-    AgvStation* nextStation = 0;//下一个站点
+    AgvStationPtr lastStation = nullptr;//上一个站点
+    AgvStationPtr nowStation = nullptr;//当前所在站点
+    AgvStationPtr nextStation = nullptr;//下一个站点
 
     void setTask(AgvTask *_task){currentTask = _task;}
     AgvTask *getTask(){return currentTask;}
 
     int getId(){return id;}
+    std::string getName(){return name;}
+    std::string getIp(){return ip;}
+    int getPort(){return port;}
+
+    void setName(std::string _name){name=_name;}
+    void setIp(std::string _ip){ip=_ip;}
+    void setPort(int _port){port=_port;}
 
     //回调
     void onRead(const char *data,int len);
     void onConnect();
     void onDisconnect();
+
+    void reconnect();
 private:
     AgvTask *currentTask;
     int id;
@@ -54,8 +71,8 @@ private:
     std::string ip;
     int port;
 
-    void goStation(AgvStation *station, bool stop = false);
-    void callMapChange(AgvStation *station);
+    void goStation(AgvStationPtr station, bool stop = false);
+    void callMapChange(AgvStationPtr station);
 
     QyhTcpClient *tcpClient;
 };

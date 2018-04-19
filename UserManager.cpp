@@ -4,8 +4,7 @@
 using namespace qyhnetwork;
 
 
-UserManager::UserManager() :
-    m_idUsers(new MapIdUser)
+UserManager::UserManager()
 {
 }
 
@@ -227,8 +226,8 @@ void UserManager::interRemove(TcpSessionPtr conn, MSG_Request msg)
         response.return_head.result = RETURN_MSG_RESULT_FAIL;
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_PERMISSION_DENIED;
     }else{
-        int id = 0;
-        memcpy_s(&id, sizeof(int), msg.body, sizeof(int));
+        uint32_t id = 0;
+        memcpy_s(&id, sizeof(uint32_t), msg.body, sizeof(uint32_t));
         try{
             CppSQLite3DB db;
             db.open(DB_File);
