@@ -21,7 +21,7 @@ void initLog()
 
 int main(int argc, char *argv[])
 {
-
+    LOG(INFO)<<"start server ...";
 #ifndef _WIN32
     //! linux下需要屏蔽的一些信号
     signal( SIGHUP, SIG_IGN );
@@ -62,11 +62,11 @@ int main(int argc, char *argv[])
     }
 
     //5.初始化tcp/ip 接口
-    qyhnetwork::SessionManager::getRef().start();
-    auto aID = qyhnetwork::SessionManager::getRef().addAccepter("0.0.0.0", 9999);
-    qyhnetwork::SessionManager::getRef().getAccepterOptions(aID)._setReuse = true;
-    qyhnetwork::SessionManager::getRef().openAccepter(aID);
-    qyhnetwork::SessionManager::getRef().run();
+    qyhnetwork::SessionManager::getInstance()->start();
+    auto aID = qyhnetwork::SessionManager::getInstance()->addAccepter("0.0.0.0", 9999);
+    qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
+    qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
+    qyhnetwork::SessionManager::getInstance()->run();
 
     return 0;
 }

@@ -1,12 +1,11 @@
 ﻿#include "msgprocess.h"
 #include "network/tcpsession.h"
 
+#include "UserManager.h"
+
 MsgProcess* MsgProcess::p = new MsgProcess();
 
-
-//8个线程处理所有消息，应该足够了
-MsgProcess::MsgProcess():
-    pool(12)
+MsgProcess::MsgProcess()
 {
 
 }
@@ -95,9 +94,9 @@ void MsgProcess::publisher_task()
 bool MsgProcess::init()
 {
     //启动3个pulish的线程
-    pool.enqueue(std::bind(&MsgProcess::publisher_agv_position,this));
-    pool.enqueue(std::bind(&MsgProcess::publisher_agv_status,this));
-    pool.enqueue(std::bind(&MsgProcess::publisher_task,this));
+    g_threadPool.enqueue(std::bind(&MsgProcess::publisher_agv_position,this));
+    g_threadPool.enqueue(std::bind(&MsgProcess::publisher_agv_status,this));
+    g_threadPool.enqueue(std::bind(&MsgProcess::publisher_task,this));
     //日志发布时每次产生一个日志，发布一个日志
     return true;
 }
@@ -106,7 +105,7 @@ bool MsgProcess::init()
 void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr session)
 {
     //request需要copy一个到线程中。
-    pool.enqueue([&,request]{
+    g_threadPool.enqueue([&,request]{
         //处理消息，如果有返回值，发送返回值
         MSG_Response response;
         memcpy(&(response.head),&(request.head),sizeof(MSG_Head));
@@ -125,6 +124,25 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         typedef std::function<void(qyhnetwork::TcpSessionPtr, MSG_Request)> ProcessFunction;
 
         //TODO:
+        UserManager::Pointer userManager = UserManager::getInstance();
+
+        static struct
+            {
+                MSG_TODO t;
+                ProcessFunction f;
+            } table[] =
+            {
+                { MSG_TODO_USER_LOGIN,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
+                { MSG_TODO_USER_LOGOUT,std::bind(&UserManager::interLogout,userManager,std::placeholders::_1,std::placeholders::_2) },
+                { MSG_TODO_USER_CHANGED_PASSWORD,std::bind(&UserManager::interChangePassword,userManager,std::placeholders::_1,std::placeholders::_2) },
+                { MSG_TODO_USER_LIST,std::bind(&UserManager::interList,userManager,std::placeholders::_1,std::placeholders::_2) },
+                { MSG_TODO_USER_DELTE,std::bind(&UserManager::interRemove,userManager,std::placeholders::_1,std::placeholders::_2) },
+                { MSG_TODO_USER_ADD,std::bind(&UserManager::interAdd,userManager,std::placeholders::_1,std::placeholders::_2) },
+                { MSG_TODO_USER_MODIFY,std::bind(&UserManager::interModify,userManager,std::placeholders::_1,std::placeholders::_2) },
+
+            };
+            table[request.head.todo].f(session, request);
+
     });
 }
 
@@ -132,7 +150,7 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
 void MsgProcess::publishOneLog(USER_LOG log)
 {
     //异步发布
-    pool.enqueue([&,log]{
+    g_threadPool.enqueue([&,log]{
         if(logSubers.empty())return ;
 
         MSG_Response response;
@@ -141,7 +159,7 @@ void MsgProcess::publishOneLog(USER_LOG log)
         response.head.queuenumber = 0;
         response.head.tail = 0xAA;
         response.head.todo = MSG_TODO_PUB_LOG;
-        memcpy(response.body,&log,sizeof(log));
+        memcpy_s(response.body,MSG_LONG_STRING_LEN,&log,sizeof(log));
         response.head.body_length = sizeof(log.time)+strlen(log.msg);
 
         for(auto c = logSubers.begin();c!=logSubers.end();++c){

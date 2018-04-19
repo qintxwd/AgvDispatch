@@ -1,7 +1,7 @@
 ﻿#include  "timer.h"
 #include <algorithm>
 
-#include "utils/Log/easylogging.h"
+#include "../../utils/Log/easylogging.h"
 
 using namespace qyhnetwork;
 

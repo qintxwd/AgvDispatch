@@ -2,7 +2,6 @@
 #define MSGPROCESS_H
 
 #include "utils/noncopyable.h"
-#include "threadpool.h"
 #include "Protocol.h"
 #include "network/networkconfig.h"
 
@@ -34,8 +33,6 @@ private:
     static MsgProcess* p;
 
     MsgProcess();
-
-    ThreadPool pool;
 
     std::list<qyhnetwork::TcpSessionPtr> agvPositionSubers;
     std::list<qyhnetwork::TcpSessionPtr> agvStatusSubers;

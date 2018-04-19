@@ -1,6 +1,5 @@
 ﻿#include "mapmanager.h"
 #include "sqlite3/CppSQLite3.h"
-#include <iostream>
 
 #include "Common.h"
 
@@ -23,10 +22,10 @@ void MapManager::checkTable()
             db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
         }
     }catch(CppSQLite3Exception &e){
-        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
         return ;
     }catch(std::exception e){
-        std::cerr << e.what()  << std::endl;
+        LOG(ERROR) << e.what();
         return ;
     }
 }
@@ -79,10 +78,10 @@ bool MapManager::save()
         }
         db.execDML("commit transaction;");
     }catch(CppSQLite3Exception &e){
-        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
         return false;
     }catch(std::exception e){
-        std::cerr << e.what()  << std::endl;
+        LOG(ERROR) << e.what();
         return false;
     }
     return true;
@@ -141,10 +140,10 @@ bool MapManager::loadFromDb()
         getReverseLines();
         getAdj();
     }catch(CppSQLite3Exception &e){
-        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
         return false;
     }catch(std::exception e){
-        std::cerr << e.what()  << std::endl;
+        LOG(ERROR) << e.what();
         return false;
     }
     return true;
@@ -471,7 +470,7 @@ void MapManager::getImgStations()
     }
 
     for(auto station:m_stations){
-        LOG(DEBUG)<<"x="<<station->x<<" y="<<station->y<<" id="<<station->id<<std::endl;
+        LOG(DEBUG)<<"x="<<station->x<<" y="<<station->y<<" id="<<station->id;
     }
 }
 

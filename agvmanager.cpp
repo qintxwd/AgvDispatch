@@ -19,10 +19,10 @@ void AgvManager::checkTable()
             db.execDML("create table agv_agv(id int, name char(64),ip char(64),port int);");
         }
     }catch(CppSQLite3Exception e){
-        std::cerr<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage()<<std::endl;
+        LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         return ;
     }catch(std::exception e){
-        std::cerr<<"sqlerr code:"<<e.what()<<std::endl;
+        LOG(ERROR)<<"sqlerr code:"<<e.what();
         return ;
     }
 }
@@ -50,10 +50,10 @@ bool AgvManager::init()
             agvs.push_back(agv);
         }
     }catch(CppSQLite3Exception e){
-        std::cerr<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage()<<std::endl;
+        LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         return false;
     }catch(std::exception e){
-        std::cerr<<"sqlerr code:"<<e.what()<<std::endl;
+        LOG(ERROR)<<"sqlerr code:"<<e.what();
         return false;
     }
     return true;

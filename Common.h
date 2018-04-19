@@ -1,6 +1,5 @@
 ﻿#ifndef COMMON_H
 #define COMMON_H
-#include <iostream>
 #include <vector>
 #include <list>
 #include <chrono>
@@ -8,6 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include "utils/Log/easylogging.h"
+#include "utils/threadpool.h"
 
 #define  CAN_CHANGE_DIRECTION  false
 
@@ -30,4 +30,9 @@ enum {
 std::string getTimeStrNow();
 
 std::string toHexString(char *data, int len);
+
+extern ThreadPool g_threadPool;
+
+
+
 #endif // COMMON_H

@@ -4,25 +4,26 @@
 #include "networkconfig.h"
 #include "tcpsession.h"
 
+#include "../utils/noncopyable.h"
 
 namespace qyhnetwork
 {
 
-class SessionManager
+class SessionManager : public noncopyable
 {
 private:
     SessionManager();
 
-public://!get the single and global object pointer
-    static SessionManager & getRef();
-    inline static SessionManager * getPtr(){ return &getRef(); };
+public:
+    static SessionManager* getInstance(){
+        return p;
+    }
 public:
     //要使用SessionManager必须先调用start来启动服务.
     bool start();
 
     //退出消息循环.
     void stop();
-
 
     //阻塞当前线程并开始消息循环. 默认选用这个比较好. 当希望有更细力度的控制run的时候推荐使用runOnce
     bool run();
@@ -70,6 +71,7 @@ public:
     void sendSessionData(SessionID sID, const MSG_Response &msg);
 
     //close session socket.
+    void kickSessionByUserId(int userId);
     void kickSession(SessionID sID);
     void kickClientSession(AccepterID aID = InvalidAccepterID);
     void kickConnect(SessionID cID = InvalidSessionID);
@@ -87,7 +89,7 @@ private:
     //accept到新连接.
     void onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSocketPtr & s, const TcpAcceptPtr & accepter, AccepterID aID);
 private:
-
+    static SessionManager *p;
     //消息循环
     EventLoopPtr _summer;
 

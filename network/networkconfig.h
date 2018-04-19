@@ -1,7 +1,6 @@
 ﻿#ifndef NETWORKCONFIG_H
 #define NETWORKCONFIG_H
 
-#include <iostream>
 #include <queue>
 #include <iomanip>
 #include <string.h>

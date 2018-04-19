@@ -1,5 +1,7 @@
 ﻿#include "Common.h"
 
+ThreadPool g_threadPool(30);
+
 std::string getTimeStrNow()
 {
     using std::chrono::system_clock;

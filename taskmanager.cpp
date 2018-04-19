@@ -6,10 +6,7 @@
 
 TaskManager *TaskManager::p = new TaskManager();
 
-//最多20个任务同时执行.20个线程的线程池，应该足够了
-
 TaskManager::TaskManager():
-    pool(20),
     node_id(0),
     thing_id(0),
     task_id(0)
@@ -31,10 +28,10 @@ void TaskManager::checkTable()
             db.execDML("create table agv_task_node_thing(id int,task_node_id int,discribe char[256]);");
         }
     }catch(CppSQLite3Exception &e){
-        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage() ;
         return ;
     }catch(std::exception e){
-        std::cerr << e.what()  << std::endl;
+        LOG(ERROR) << e.what()  ;
         return ;
     }
 }
@@ -54,13 +51,13 @@ bool TaskManager::init()
         node_id = db.execScalar("select max(id) from agv_task_node;");
         thing_id = db.execScalar("select max(id) from agv_task_node_thing;");
     }catch(CppSQLite3Exception &e){
-        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage() ;
     }catch(std::exception e){
-        std::cerr << e.what()  << std::endl;
+        LOG(ERROR) << e.what()  ;
     }
 
     //启动一个分配任务的线程
-    pool.enqueue([&]{
+    g_threadPool.enqueue([&]{
         while(true){
             toDisMtx.lock();
             for(auto itr = toDistributeTasks.begin();itr!=toDistributeTasks.end();++itr){
@@ -236,10 +233,10 @@ bool TaskManager::saveTask(AgvTask *task)
         }
         db.execDML("commit transaction;");
     }catch(CppSQLite3Exception &e){
-        std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
+        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage() ;
         return false;
     }catch(std::exception e){
-        std::cerr << e.what()  << std::endl;
+        LOG(ERROR) << e.what()  ;
         return false;
     }
     return true;
@@ -329,7 +326,7 @@ void TaskManager::excuteTask(AgvTask *task)
     doingTaskMtx.lock();
     doingTask.push_back(task);
     doingTaskMtx.unlock();
-    pool.enqueue([&]{
+    g_threadPool.enqueue([&]{
         std::vector<AgvTaskNode *> nodes = task->getTaskNode();
         int index = task->getDoingIndex();
         if(index >= nodes.size()){

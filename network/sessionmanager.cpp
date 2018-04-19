@@ -7,12 +7,8 @@ using namespace qyhnetwork;
 
 namespace qyhnetwork {
 
+SessionManager* SessionManager::p = new SessionManager();
 
-SessionManager & SessionManager::getRef()
-{
-    static SessionManager _manager;
-    return _manager;
-}
 SessionManager::SessionManager()
 {
     memset(_statInfo, 0, sizeof(_statInfo));
@@ -264,6 +260,17 @@ unsigned short SessionManager::getRemotePort(SessionID sID)
         return founder->second->getRemotePort();
     }
     return -1;
+}
+
+void SessionManager::kickSessionByUserId(int userId)
+{
+    for (auto &ms : _mapTcpSessionPtr)
+    {
+        if (ms.second->getUserId() == userId)
+        {
+            ms.second->close();
+        }
+    }
 }
 
 void SessionManager::kickSession(SessionID sID)

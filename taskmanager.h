@@ -5,8 +5,6 @@
 #include <atomic>
 
 #include "agvtask.h"
-#include "threadpool.h"
-
 #include "utils/noncopyable.h"
 
 class TaskManager :  public noncopyable
@@ -53,8 +51,6 @@ private:
     //已分配的任务
     std::vector<AgvTask *> doingTask;
     std::mutex doingTaskMtx;
-
-    ThreadPool pool;
 
     bool saveTask(AgvTask *task);
 

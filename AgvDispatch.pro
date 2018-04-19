@@ -42,7 +42,6 @@ HEADERS += \
     mapmanager.h \
     qyhtcpclient.h \
     taskmanager.h \
-    threadpool.h \
     sqlite3/CppSQLite3.h \
     network/networkconfig.h \
     network/sessionmanager.h \
@@ -60,7 +59,9 @@ HEADERS += \
     utils/Log/easylogging.h \
     Protocol.h \
     utils/noncopyable.h \
-    msgprocess.h
+    msgprocess.h \
+    UserManager.h \
+    utils/threadpool.h
 
 SOURCES += \
     agv.cpp \
@@ -82,6 +83,7 @@ SOURCES += \
     network/iocp/iocpsocket.cpp \
     network/iocp/iocpaccept.cpp \
     utils/Log/easylogging.cpp \
-    msgprocess.cpp
+    msgprocess.cpp \
+    UserManager.cpp
 
 

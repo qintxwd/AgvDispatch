@@ -14,6 +14,14 @@
 #define MSG_COMMON_HEAD_HEAD		0x88
 #define MSG_COMMON_HEAD_TAIL		0xAA
 
+#define MSG_TIME_STRING_LEN            (24)
+#define MSG_SHORT_STRING_LEN           (32)
+#define MSG_STRING_LEN                  (64)
+#define MSG_LONG_STRING_LEN             (128)
+#define MSG_LONG_LONG_STRING_LEN        (512)
+
+
+
 #pragma pack(1)
 
 //消息的head
@@ -38,12 +46,27 @@ enum
     RETURN_MSG_RESULT_SUCCESS = 0,//全局的成功
     RETURN_MSG_RESULT_FAIL,//全局的错误
 };
+//error_code位的定义
+enum {
+    RETURN_MSG_ERROR_NO_ERROR = 0,
+    RETURN_MSG_ERROR_CODE_UNKNOW,//未知错误
+    RETURN_MSG_ERROR_CODE_LENGTH,//数据长度有问题
+    RETURN_MSG_ERROR_CODE_PERMISSION_DENIED,//
+    RETURN_MSG_ERROR_CODE_USERNAME_NOT_EXIST,//登陆用户名不存在
+    RETURN_MSG_ERROR_CODE_PASSWORD_ERROR,//登陆密码错误
+    RETURN_MSG_ERROR_CODE_NOT_LOGIN,//用户未登录
+    RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL,
+    RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL,//保存数据库失败
+    RETURN_MSG_ERROR_CODE_TASKING,//有任务正在执行
+    RETURN_MSG_ERROR_CODE_NOT_CTREATING,//不是正在创建地图的时候添加 站点啊、直线、曲线
+    RETURN_MSG_ERROR_CODE_CTREATING,//正在创建地图的时候获取地图
+};
 //返回消息的结构的额外头
 typedef struct _MSG_RESPONSE_HEAD
 {
     uint8_t result;//RETURN_MSG_RESULT
     uint32_t error_code;//RETURN_MSG_ERROR_CODE_
-    char error_info[128];
+    char error_info[MSG_LONG_STRING_LEN];
 }MSG_RESPONSE_HEAD;
 
 //!!!完整的返回消息
@@ -58,17 +81,17 @@ typedef struct _MSG_Response {
 typedef enum Msg_Todo
 {
     //request and response
-    MSG_TODO_USER_LOGIN = 0,//登录//username[64]+password[64]
+    MSG_TODO_USER_LOGIN = 0,//登录//username[MSG_STRING_LEN]+password[MSG_STRING_LEN]
     MSG_TODO_USER_LOGOUT,//登出//none
-    MSG_TODO_USER_CHANGED_PASSWORD,//修改密码//newpassword[64]
+    MSG_TODO_USER_CHANGED_PASSWORD,//修改密码//newpassword[MSG_STRING_LEN]
     MSG_TODO_USER_LIST,//列表//none
     MSG_TODO_USER_DELTE,//删除用户//userid[32]
-    MSG_TODO_USER_ADD,//添加用户//username[64] password[64] role[1]
-    MSG_TODO_USER_MODIFY,//添加用户//username[64] password[64] role[1]
+    MSG_TODO_USER_ADD,//添加用户//username[MSG_STRING_LEN] password[MSG_STRING_LEN] role[1]
+    MSG_TODO_USER_MODIFY,//添加用户//username[MSG_STRING_LEN] password[MSG_STRING_LEN] role[1]
     MSG_TODO_MAP_CREATE_START,//创建地图开始
-    MSG_TODO_MAP_CREATE_ADD_STATION,//添加站点 station[id[4]+x[4]+y[4]+name[64]+rfid[4]+r[2]+g[2]+b[2]]{个} //如果超出1024长度，可以分成多条
-    MSG_TODO_MAP_CREATE_ADD_LINE, //添加直线 line[id[4] + startstation[4] + endstation[64] + length[4] + draw[1] + r[2] + g[2] + b[2]]{个 }//如果超出1024长度，可以分成多条
-    MSG_TODO_MAP_CREATE_ADD_ARC,//添加曲线 arc[id[4] + startstation[4] + endstation[64] +length[4] + draw[1] +r[2]+g[2]+b[2]+p1x[4]+p1y[4]+p2x[4]+p2y[4]]{个 }//如果超出1024长度，可以分成多条
+    MSG_TODO_MAP_CREATE_ADD_STATION,//添加站点 station[id[4]+x[4]+y[4]+name[MSG_STRING_LEN]+rfid[4]+r[2]+g[2]+b[2]]{个} //如果超出1024长度，可以分成多条
+    MSG_TODO_MAP_CREATE_ADD_LINE, //添加直线 line[id[4] + startstation[4] + endstation[MSG_STRING_LEN] + length[4] + draw[1] + r[2] + g[2] + b[2]]{个 }//如果超出1024长度，可以分成多条
+    MSG_TODO_MAP_CREATE_ADD_ARC,//添加曲线 arc[id[4] + startstation[4] + endstation[MSG_STRING_LEN] +length[4] + draw[1] +r[2]+g[2]+b[2]+p1x[4]+p1y[4]+p2x[4]+p2y[4]]{个 }//如果超出1024长度，可以分成多条
     MSG_TODO_MAP_CREATE_FINISH,//创建地图完成
     MSG_TODO_MAP_LIST_STATION,//请求所有站点//none
     MSG_TODO_MAP_LIST_LINE,//请求所有直线//none
@@ -80,9 +103,9 @@ typedef enum Msg_Todo
     MSG_TODO_HAND_TURN_LEFT,//左转//none
     MSG_TODO_HAND_TURN_RIGHT,//右转//none
     MSG_TODO_AGV_MANAGE_LIST,//车辆列表//none
-    MSG_TODO_AGV_MANAGE_ADD,//增加//name[64]+ip[64]
+    MSG_TODO_AGV_MANAGE_ADD,//增加//name[MSG_STRING_LEN]+ip[MSG_STRING_LEN]
     MSG_TODO_AGV_MANAGE_DELETE,//删除//id[4]
-    MSG_TODO_AGV_MANAGE_MODIFY,//修改//id[4]+name[64]+ip[64]
+    MSG_TODO_AGV_MANAGE_MODIFY,//修改//id[4]+name[MSG_STRING_LEN]+ip[MSG_STRING_LEN]
     MSG_TODO_TASK_CREATE_TO_X,//到X点位的任务//x[4]
     MSG_TODO_TASK_CREATE_AGV_TO_X,//制定Agv到X点位的任务//agvid[4]+x[4]
     MSG_TODO_TASK_CREATE_PASS_Y_TO_X,//去Y取货放到X的任务//x[4]+y[4]
@@ -114,31 +137,25 @@ typedef enum Msg_Todo
 }MSG_TODO;
 
 //定义消息头的 todo//---------------------------------------------------------------------------------------------------------------------------------
-
-//error_code位的定义
-enum {
-    RETURN_MSG_ERROR_NO_ERROR = 0,
-    RETURN_MSG_ERROR_CODE_UNKNOW,//未知错误
-    RETURN_MSG_ERROR_CODE_LENGTH,//数据长度有问题
-    RETURN_MSG_ERROR_CODE_PERMISSION_DENIED,//
-    RETURN_MSG_ERROR_CODE_USERNAME_NOT_EXIST,//登陆用户名不存在
-    RETURN_MSG_ERROR_CODE_PASSWORD_ERROR,//登陆密码错误
-    RETURN_MSG_ERROR_CODE_NOT_LOGIN,//用户未登录
-    RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL,//保存数据库失败
-    RETURN_MSG_ERROR_CODE_TASKING,//有任务正在执行
-    RETURN_MSG_ERROR_CODE_NOT_CTREATING,//不是正在创建地图的时候添加 站点啊、直线、曲线
-    RETURN_MSG_ERROR_CODE_CTREATING,//正在创建地图的时候获取地图
-};
-
 ////////////////////////////////////////以下是特殊情况的返回结构体
 
 //用户信息结构体[登录成功时，返回一个该用户的userinfo.用户列表返回多个用户userinfo]
+
+enum{
+    USER_ROLE_VISITOR = 0,//游客，只有登录的权限
+    USER_ROLE_OPERATOR,//普通操作人员
+    USER_ROLE_ADMIN,//管理员
+    USER_ROLE_SUPER_ADMIN,//超级管理员
+    USER_ROLE_DEVELOP,//开发人员
+};
+
+
 typedef struct _USER_INFO
 {
     uint32_t id;//id号
     uint32_t role;//角色
-    char username[64];//用户名
-    char password[64];//密码
+    char username[MSG_STRING_LEN];//用户名
+    char password[MSG_STRING_LEN];//密码
     uint8_t status;//登录状态
 }USER_INFO;
 
@@ -146,8 +163,8 @@ typedef struct _USER_INFO
 typedef struct _AGV_BASE_INFO
 {
     uint32_t id;
-    char name[64];
-    char ip[64];
+    char name[MSG_STRING_LEN];
+    char ip[MSG_STRING_LEN];
     uint32_t port;
 }AGV_BASE_INFO;
 
@@ -171,7 +188,7 @@ typedef struct _STATION_INFO
     int8_t g;
     int8_t b;
     int32_t occuagv;
-    char name[64];
+    char name[MSG_STRING_LEN];
 }STATION_INFO;
 
 typedef struct _AGV_LINE
@@ -189,15 +206,15 @@ typedef struct _AGV_LINE
 typedef struct _TASK_INFO
 {
     int32_t id;
-    char produceTime[24];
-    char doTime[24];
-    char doneTime[24];
+    char produceTime[MSG_TIME_STRING_LEN];
+    char doTime[MSG_TIME_STRING_LEN];
+    char doneTime[MSG_TIME_STRING_LEN];
     int32_t excuteAgv;
     int32_t status;
 }TASK_INFO;
 
 typedef struct _USER_Log {
-    char time[24];//yyyy-MM-dd hh:mm:ss.fff
+    char time[MSG_TIME_STRING_LEN];//yyyy-MM-dd hh:mm:ss.fff
     char msg[MSG_LOG_MAX_LENGTH];//日志内容
 }USER_LOG;
 

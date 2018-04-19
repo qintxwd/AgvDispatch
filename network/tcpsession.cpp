@@ -12,12 +12,12 @@ namespace qyhnetwork {
 
 TcpSession::TcpSession():read_position(0)
 {
-    SessionManager::getRef()._statInfo[STAT_SESSION_CREATED]++;
+    SessionManager::getInstance()->_statInfo[STAT_SESSION_CREATED]++;
 }
 
 TcpSession::~TcpSession()
 {
-    SessionManager::getRef()._statInfo[STAT_SESSION_DESTROYED]++;
+    SessionManager::getInstance()->_statInfo[STAT_SESSION_DESTROYED]++;
     if (_sockptr)
     {
         _sockptr->doClose();
@@ -30,7 +30,7 @@ void TcpSession::connect()
 {
     if (_status == 0)
     {
-        _pulseTimerID = SessionManager::getRef().createTimer(_options._connectPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
+        _pulseTimerID = SessionManager::getInstance()->createTimer(_options._connectPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
         _status = 1;
         reconnect();
     }
@@ -74,8 +74,8 @@ bool TcpSession::attatch(const TcpSocketPtr &sockptr, AccepterID aID, SessionID 
         sockptr->setNoDelay();
     }
     _status = 2;
-    _pulseTimerID = SessionManager::getRef().createTimer(_options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
-    SessionManager::getRef()._statInfo[STAT_SESSION_LINKED]++;
+    _pulseTimerID = SessionManager::getInstance()->createTimer(_options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
+    SessionManager::getInstance()->_statInfo[STAT_SESSION_LINKED]++;
 
     if (_options._onSessionLinked)
     {
@@ -135,7 +135,7 @@ void TcpSession::onConnected(qyhnetwork::NetErrorCode ec)
             LOG(WARNING)<<"TcpSession::onConnected catch one unknown exception.";
         }
     }
-    SessionManager::getRef()._statInfo[STAT_SESSION_LINKED]++;
+    SessionManager::getInstance()->_statInfo[STAT_SESSION_LINKED]++;
 }
 
 bool TcpSession::doRecv()
@@ -164,10 +164,10 @@ void TcpSession::close()
         LOG(DEBUG)<<"TcpSession to close socket. sID= " << _sessionID;
         if (_status == 2)
         {
-            SessionManager::getRef()._statInfo[STAT_SESSION_CLOSED]++;
+            SessionManager::getInstance()->_statInfo[STAT_SESSION_CLOSED]++;
             if (_options._onSessionClosed)
             {
-                SessionManager::getRef().post(std::bind(_options._onSessionClosed, shared_from_this()));
+                SessionManager::getInstance()->post(std::bind(_options._onSessionClosed, shared_from_this()));
             }
         }
 
@@ -179,7 +179,7 @@ void TcpSession::close()
         else
         {
             _status = 3;
-            SessionManager::getRef().post(std::bind(&SessionManager::removeSession, SessionManager::getPtr(), shared_from_this()));
+            SessionManager::getInstance()->post(std::bind(&SessionManager::removeSession, SessionManager::getInstance(), shared_from_this()));
             LOG(INFO)<<"TcpSession remove self from manager. sID= " << _sessionID;
         }
         return;
@@ -222,8 +222,8 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
     LOG(DEBUG)<<"recv:"<<toHexString(read_buffer+read_position,received<sizeof(MSG_Head)?received:sizeof(MSG_Head));
 
     read_position += received;
-    SessionManager::getRef()._statInfo[STAT_RECV_COUNT]++;
-    SessionManager::getRef()._statInfo[STAT_RECV_BYTES] += received;
+    SessionManager::getInstance()->_statInfo[STAT_RECV_COUNT]++;
+    SessionManager::getInstance()->_statInfo[STAT_RECV_BYTES] += received;
 
     //解析
     if(read_position>=sizeof(MSG_Head)){
@@ -264,8 +264,8 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 
 void TcpSession::send(const MSG_Response &msg)
 {
-    SessionManager::getRef()._statInfo[STAT_SEND_COUNT]++;
-    SessionManager::getRef()._statInfo[STAT_SEND_PACKS]++;
+    SessionManager::getInstance()->_statInfo[STAT_SEND_COUNT]++;
+    SessionManager::getInstance()->_statInfo[STAT_SEND_PACKS]++;
     bool sendRet = _sockptr->doSend((char *)&msg,sizeof(MSG_Head)+sizeof(MSG_RESPONSE_HEAD)+msg.head.body_length , std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
     if (!sendRet)
     {
@@ -283,7 +283,7 @@ void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
         return ;
     }
 
-    SessionManager::getRef()._statInfo[STAT_SEND_BYTES] += sent;
+    SessionManager::getInstance()->_statInfo[STAT_SEND_BYTES] += sent;
 }
 
 void TcpSession::onPulse()
@@ -318,7 +318,7 @@ void TcpSession::onPulse()
         {
             reconnect();
             _reconnects++;
-            _pulseTimerID = SessionManager::getRef().createTimer(_options._connectPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
+            _pulseTimerID = SessionManager::getInstance()->createTimer(_options._connectPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
         }
     }
     else if (_status == 2)
@@ -338,7 +338,7 @@ void TcpSession::onPulse()
                 LOG(WARNING)<<"TcpSession::onPulse catch one unknown exception: ";
             }
         }
-        _pulseTimerID = SessionManager::getRef().createTimer(isConnectID(_sessionID) ? _options._connectPulseInterval : _options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
+        _pulseTimerID = SessionManager::getInstance()->createTimer(isConnectID(_sessionID) ? _options._connectPulseInterval : _options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));
     }
 }
 

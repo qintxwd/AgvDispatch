@@ -1,5 +1,4 @@
 ﻿#include "qyhtcpclient.h"
-#include <iostream>
 
 #ifdef WIN32
 #define _WIN32_WINNT _WIN32_WINNT_WIN8
