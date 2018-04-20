@@ -13,15 +13,16 @@ void initLog()
     el::Loggers::reconfigureAllLoggers(fileConf);
 
     //日志支持多线程
-    el::Loggers::addFlag(el::LoggingFlag::MultiLoggerSupport); // Enables support for multiple loggers
+    el::Loggers::addFlag(el::LoggingFlag::MultiLoggerSupport);
 
     //日志终端颜色输出
-    el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput ); // Enables support for multiple loggers
+    el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput );
 }
 
 int main(int argc, char *argv[])
 {
     LOG(INFO)<<"start server ...";
+
 #ifndef _WIN32
     //! linux下需要屏蔽的一些信号
     signal( SIGHUP, SIG_IGN );
@@ -37,35 +38,45 @@ int main(int argc, char *argv[])
     //0.日志输出
     initLog();
 
-    //1.载入地图
-    if(!MapManager::getInstance()->load()){
-        LOG(FATAL)<<"map manager load fail";
+    //1.打开数据库
+    try{
+        g_db.open(DB_File);
+    }catch(CppSQLite3Exception &e){
+        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
         return -1;
     }
 
-    //2.初始化车辆及其链接
-    if(!AgvManager::getInstance()->init()){
-        LOG(FATAL)<<"AgvManager init fail";
+    //2.载入地图
+    if(!MapManager::getInstance()->load()){
+        LOG(FATAL)<<"map manager load fail";
         return -2;
     }
 
-    //3.初始化任务管理
-    if(!TaskManager::getInstance()->init()){
-        LOG(FATAL)<<"TaskManager init fail";
+    //3.初始化车辆及其链接
+    if(!AgvManager::getInstance()->init()){
+        LOG(FATAL)<<"AgvManager init fail";
         return -3;
     }
 
-    //4.初始化消息处理
-    if(!MsgProcess::getInstance()->init()){
-        LOG(FATAL)<<"MsgProcess init fail";
+    //4.初始化任务管理
+    if(!TaskManager::getInstance()->init()){
+        LOG(FATAL)<<"TaskManager init fail";
         return -4;
     }
 
-    //5.初始化tcp/ip 接口
+    //5.初始化消息处理
+    if(!MsgProcess::getInstance()->init()){
+        LOG(FATAL)<<"MsgProcess init fail";
+        return -5;
+    }
+
+    //6.初始化tcp/ip 接口
     qyhnetwork::SessionManager::getInstance()->start();
     auto aID = qyhnetwork::SessionManager::getInstance()->addAccepter("0.0.0.0", 9999);
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
     qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
+
+    LOG(INFO)<<"server init OK!";
     qyhnetwork::SessionManager::getInstance()->run();
 
     return 0;

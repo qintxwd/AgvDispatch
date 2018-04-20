@@ -1,9 +1,16 @@
 ﻿#ifndef AGVTASKNODEDOTHING_H
 #define AGVTASKNODEDOTHING_H
+
+#include <memory>
+
 #include "agv.h"
 //agv到达一个地方后要执行的多个事情中的一个
 //做成插件模式
-class AgvTaskNodeDoThing
+
+class AgvTaskNodeDoThing;
+using AgvTaskNodeDoThingPtr = std::shared_ptr<AgvTaskNodeDoThing>;
+
+class AgvTaskNodeDoThing : public std::enable_shared_from_this<AgvTaskNodeDoThing>
 {
 public:
 

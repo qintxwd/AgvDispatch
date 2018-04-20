@@ -61,7 +61,8 @@ HEADERS += \
     utils/noncopyable.h \
     msgprocess.h \
     UserManager.h \
-    utils/threadpool.h
+    utils/threadpool.h \
+    userlogmanager.h
 
 SOURCES += \
     agv.cpp \
@@ -84,6 +85,7 @@ SOURCES += \
     network/iocp/iocpaccept.cpp \
     utils/Log/easylogging.cpp \
     msgprocess.cpp \
-    UserManager.cpp
+    UserManager.cpp \
+    userlogmanager.cpp
 
 

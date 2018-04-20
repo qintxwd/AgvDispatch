@@ -3,11 +3,13 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <mutex>
 
 class AgvLine;
 using AgvLinePtr = std::shared_ptr<AgvLine>;
 
 class AgvTask;
+using AgvTaskPtr = std::shared_ptr<AgvTask>;
 
 class AgvStation;
 using AgvStationPtr = std::shared_ptr<AgvStation>;
@@ -24,9 +26,11 @@ public:
 
     void init();
 
-    ~Agv();
+    virtual ~Agv();
 
     virtual void excutePath(std::vector<AgvLinePtr> lines);
+
+    virtual void cancelTask();
 
     //状态
     enum {
@@ -39,6 +43,7 @@ public:
         AGV_STATUS_GO_CHARGING = 5,//返回充电中
         AGV_STATUS_CHARGING = 6,//正在充电
     };
+
     int status = AGV_STATUS_IDLE;
 
     //计算路径用的
@@ -46,8 +51,8 @@ public:
     AgvStationPtr nowStation = nullptr;//当前所在站点
     AgvStationPtr nextStation = nullptr;//下一个站点
 
-    void setTask(AgvTask *_task){currentTask = _task;}
-    AgvTask *getTask(){return currentTask;}
+    void setTask(AgvTaskPtr _task){currentTask = _task;}
+    AgvTaskPtr getTask(){return currentTask;}
 
     int getId(){return id;}
     std::string getName(){return name;}
@@ -63,18 +68,28 @@ public:
     void onConnect();
     void onDisconnect();
 
+    void onArriveStation(int stationid);
+    void onLeaveStation(int stationid);
+    void onError(int code,std::string msg);
+    void onWarning(int code, std::string msg);
     void reconnect();
 private:
-    AgvTask *currentTask;
+    AgvTaskPtr currentTask;
     int id;
     std::string name;
     std::string ip;
     int port;
 
     void goStation(AgvStationPtr station, bool stop = false);
+    void stop();
     void callMapChange(AgvStationPtr station);
 
     QyhTcpClient *tcpClient;
+
+    volatile int arriveStation;
+
+    std::mutex stationMtx;
+    std::vector<AgvStationPtr> excutestations;
 };
 
 #endif // AGV_H

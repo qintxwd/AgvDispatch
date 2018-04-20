@@ -41,7 +41,8 @@ public:
     inline int getUserId(){return user_id;}
     inline void setUserRole(int _user_role){user_role = _user_role;}
     inline int getUserRole(){return user_role;}
-
+    inline void setUserName(std::string _user_name){username = _user_name;}
+    inline std::string getUserName(){return username;}
 private:
     SessionOptions _options;
     EventLoopPtr _eventLoop;
@@ -65,6 +66,7 @@ private:
     //连接保存一个用户的两个信息
     int user_id = 0;
     int user_role = 0;
+    std::string username;
 };
 using TcpSessionPtr = std::shared_ptr<TcpSession>;
 

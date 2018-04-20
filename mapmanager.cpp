@@ -2,8 +2,8 @@
 #include "sqlite3/CppSQLite3.h"
 #include "msgprocess.h"
 #include "Common.h"
-
 #include "taskmanager.h"
+#include "userlogmanager.h"
 
 MapManager::MapManager():image_colors(NULL),mapModifying(false)
 {
@@ -13,13 +13,11 @@ void MapManager::checkTable()
 {
     //检查表
     try{
-        CppSQLite3DB db;
-        db.open(DB_File);
-        if(!db.tableExists("agv_station")){
-            db.execDML("create table agv_station(id int, x int,y int,name char(64));");
+        if(!g_db.tableExists("agv_station")){
+            g_db.execDML("create table agv_station(id int, x int,y int,name char(64));");
         }
-        if(!db.tableExists("agv_line")){
-            db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+        if(!g_db.tableExists("agv_line")){
+            g_db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
         }
     }catch(CppSQLite3Exception &e){
         LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
@@ -30,6 +28,19 @@ void MapManager::checkTable()
     }
 }
 
+AgvLinePtr MapManager::getReverseLine(AgvLinePtr line)
+{
+    if(m_reverseLines.find(line)==m_reverseLines.end())return nullptr;
+    return m_reverseLines[line];
+}
+
+AgvStationPtr MapManager::getStationById(int id)
+{
+    for(auto s:m_stations){
+        if(s->id == id)return s;
+    }
+    return nullptr;
+}
 //载入地图
 bool MapManager::load()
 {
@@ -53,30 +64,28 @@ bool MapManager::load()
 bool MapManager::save()
 {
     try{
-        CppSQLite3DB db;
-        db.open(DB_File);
-        if(!db.tableExists("agv_station")){
-            db.execDML("create table agv_station(id int, x int,y int,name char(64));");
+        if(!g_db.tableExists("agv_station")){
+            g_db.execDML("create table agv_station(id int, x int,y int,name char(64));");
         }else{
-            db.execDML("delete from agv_station;");
+            g_db.execDML("delete from agv_station;");
         }
-        if(!db.tableExists("agv_line")){
-            db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+        if(!g_db.tableExists("agv_line")){
+            g_db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
         }else{
-            db.execDML("delete from agv_line;");
+            g_db.execDML("delete from agv_line;");
         }
 
-        db.execDML("begin transaction;");
+        g_db.execDML("begin transaction;");
         char buf[256];
         for(auto station:m_stations){
             sprintf(buf, "insert into agv_station values (%d, %d,%d,%s);", station->id, station->x,station->y,station->name.c_str());
-            db.execDML(buf);
+            g_db.execDML(buf);
         }
         for(auto line:m_lines){
-            sprintf(buf, "insert into agv_line values (%d, %d,%d,%d);", line->id, line->startStation,line->endStation,line->length);
-            db.execDML(buf);
+            sprintf(buf, "insert into agv_line values (%d,%d,%d,%d);", line->id, line->startStation->id,line->endStation->id,line->length);
+            g_db.execDML(buf);
         }
-        db.execDML("commit transaction;");
+        g_db.execDML("commit transaction;");
     }catch(CppSQLite3Exception &e){
         LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
         return false;
@@ -91,17 +100,14 @@ bool MapManager::save()
 bool MapManager::loadFromDb()
 {
     try{
-        CppSQLite3DB db;
-        db.open(DB_File);
-
-        if(!db.tableExists("agv_station")){
-            db.execDML("create table agv_station(id int, x int,y int,name char(64));");
+        if(!g_db.tableExists("agv_station")){
+            g_db.execDML("create table agv_station(id int, x int,y int,name char(64));");
         }
-        if(!db.tableExists("agv_line")){
-            db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+        if(!g_db.tableExists("agv_line")){
+            g_db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
         }
 
-        CppSQLite3Table table_station = db.getTable("select id,x,y,name from agv_station;");
+        CppSQLite3Table table_station = g_db.getTable("select id,x,y,name from agv_station;");
         if(table_station.numRows()>0 && table_station.numFields()!=4)return false;
         for (int row = 0; row < table_station.numRows(); row++)
         {
@@ -117,7 +123,7 @@ bool MapManager::loadFromDb()
             m_stations.push_back(station);
         }
 
-        CppSQLite3Table table_line = db.getTable("select id,startStation,endStation,length from agv_line;");
+        CppSQLite3Table table_line = g_db.getTable("select id,startStation,endStation,length from agv_line;");
         if(table_line.numRows()>0 && table_line.numFields()!=4)return false;
         for (int row = 0; row < table_line.numRows(); row++)
         {
@@ -185,6 +191,7 @@ bool MapManager::loadFromImg(std::string imgfile, int _gridsize)
         LOG(ERROR)<<e.what();
         return false;
     }
+    return true;
 }
 
 //获取最优路径
@@ -391,7 +398,7 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
 
 
 //对图像中每个栅格的颜色做标记
-void MapManager::getImgColors(cv::Mat &gridmap) throw (std::exception)
+void MapManager::getImgColors(cv::Mat &gridmap)
 {
     if(gridmap.cols<=0||gridmap.rows<0){
         throw std::runtime_error(std::string("空图像"));
@@ -598,16 +605,16 @@ void MapManager::interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
     if (TaskManager::getInstance()->hasTaskDoing())
     {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_TASKING;
-        sprintf_s(response.return_head.error_info, "there are some task is taking", strlen("there are some task is taking"), sizeof(response.return_head.error_info));
+        sprintf_s(response.return_head.error_info, "%s","there are some task is taking");
     }
     else {
+        UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图");
+
         mapModifying = true;
         clear();
         try{
-            CppSQLite3DB db;
-            db.open(DB_File);
-            db.execDML("delete from agv_station;");
-            db.execDML("delete from agv_line;");
+            g_db.execDML("delete from agv_station;");
+            g_db.execDML("delete from agv_line;");
             response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
@@ -646,9 +653,7 @@ void MapManager::interCreateAddStation(qyhnetwork::TcpSessionPtr conn, MSG_Reque
             char buf[MSG_LONG_LONG_STRING_LEN];
             sprintf_s(buf,MSG_LONG_LONG_STRING_LEN, "insert into agv_station values (%d, %d,%d,%s);", station.id, station.x,station.y,station.name);
             try{
-                CppSQLite3DB db;
-                db.open(DB_File);
-                db.execDML(buf);
+                g_db.execDML(buf);
                 response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
             }catch(CppSQLite3Exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
@@ -687,9 +692,7 @@ void MapManager::interCreateAddLine(qyhnetwork::TcpSessionPtr conn, MSG_Request 
             char buf[SQL_MAX_LENGTH];
             sprintf_s(buf,SQL_MAX_LENGTH, "INSERT INTO agv_line (id,line_startStation,line_endStation,line_length) VALUES (%d,%d,%d,%d);", line.id, line.startStation,line.endStation,line.length);
             try{
-                CppSQLite3DB db;
-                db.open(DB_File);
-                db.execDML(buf);
+                g_db.execDML(buf);
                 response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
             }catch(CppSQLite3Exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
@@ -721,6 +724,7 @@ void MapManager::interCreateFinish(qyhnetwork::TcpSessionPtr conn, MSG_Request m
         sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
     }
     else {
+        UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图完成");
         if(!save()){
             response.return_head.result = RETURN_MSG_RESULT_FAIL;
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL;
@@ -751,6 +755,7 @@ void MapManager::interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
         sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
     }
     else {
+        UserLogManager::getInstance()->push(conn->getUserName()+"获取地图站点信息");
         response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
         for (auto s : m_stations) {
             STATION_INFO info;
@@ -784,6 +789,7 @@ void MapManager::interListLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is creating map");
     }
     else {
+        UserLogManager::getInstance()->push(conn->getUserName()+"获取地图线路信息");
         response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
         for (auto l : m_lines) {
             AGV_LINE line;

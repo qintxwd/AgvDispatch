@@ -6,6 +6,9 @@
 #include "agvline.h"
 #include "agvtask.h"
 #include "qyhtcpclient.h"
+#include "userlogmanager.h"
+#include "msgprocess.h"
+#include "mapmanager.h"
 
 
 Agv::Agv(int _id, std::string _name, std::string _ip, int _port):
@@ -17,7 +20,8 @@ Agv::Agv(int _id, std::string _name, std::string _ip, int _port):
     lastStation(nullptr),
     nowStation(nullptr),
     nextStation(nullptr),
-    tcpClient(nullptr)
+    tcpClient(nullptr),
+    arriveStation(0)
 {
 }
 
@@ -52,6 +56,7 @@ void Agv::reconnect()
     tcpClient->resetConnect(ip,port);
 }
 //到达后是否停下，如果不停下，就是不减速。
+//是一个阻塞的函数
 void Agv::goStation(AgvStationPtr station, bool stop)
 {
     //发送站点坐标
@@ -61,7 +66,67 @@ void Agv::goStation(AgvStationPtr station, bool stop)
     //stringstream ss;
     //ss<<"x:"<<x<<",y:"<<y<<".";
     //tcpsocket.write(ss.str().c_str());
+//    while(true)
+//    {
+//        if(currentTask->getIsCancel())break;//任务取消
+//        if(status == AGV_STATUS_HANDING)break;//手动控制
+//        if(status == AGV_STATUS_ERROR)break;//发生错误
 
+//        if(arriveStation == station->id)break;
+//        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+//    }
+
+}
+
+void Agv::onArriveStation(int stationid)
+{
+    arriveStation = stationid;
+    AgvStationPtr s= MapManager::getInstance()->getStationById(stationid);
+    if(s!=nullptr){
+        if(nowStation){
+            lastStation = nowStation;
+        }
+        nowStation = s;
+        stationMtx.lock();
+        auto itr = std::find(excutestations.begin(),excutestations.end(),s);
+        if(itr!=excutestations.end() && (itr+1)!=excutestations.end()){
+            nextStation = *(++itr);
+        }
+        stationMtx.unlock();
+    }
+}
+
+void Agv::onLeaveStation(int stationid)
+{
+    if(nowStation->id == stationid)nowStation = nullptr;
+    AgvStationPtr s= MapManager::getInstance()->getStationById(stationid);
+    lastStation = s;
+}
+
+void Agv::stop()
+{
+
+}
+
+void Agv::onError(int code, std::string msg)
+{
+    status = AGV_STATUS_ERROR;
+    char sss[1024];
+    sprintf_s(sss,1024,"Agv id:%d occur error code:%d msg:%s",id,code,msg.c_str());
+    std::string ss(sss);
+    LOG(ERROR)<<ss;
+    UserLogManager::getInstance()->push(ss);
+    MsgProcess::getInstance()->errorOccur(code,msg,true);
+}
+
+void Agv::onWarning(int code, std::string msg)
+{
+    char sss[1024];
+    sprintf_s(sss,1024,"Agv id:%d occur warning code:%d msg:%s",id,code,msg.c_str());
+    std::string ss(sss);
+    LOG(WARNING)<<ss;
+    UserLogManager::getInstance()->push(ss);
+    MsgProcess::getInstance()->errorOccur(code,msg,false);
 }
 
 //请求切换地图(呼叫电梯)
@@ -73,37 +138,43 @@ void Agv::callMapChange(AgvStationPtr station)
     //2楼电梯内坐标 (200,200)
     //3楼电梯内坐标 (300,300)
     //给电梯一个到达1楼并开门的指令
-//    if(station->x == 100 && station->y == 100){
-//        elevactorGoFloor(1);
-//        elevactorOpenDoor();
-//    }
-//    else if(station->x == 200 && station->y == 200){
-//        elevactorGoFloor(2);
-//        elevactorOpenDoor();
-//    }
-//    else if(station->x == 300 && station->y == 300){
-//        elevactorGoFloor(3);
-//        elevactorOpenDoor();
-//    }else{
-//        //
-//        throw std::exception("地图切换站点错误");
-//    }
+    //    if(station->x == 100 && station->y == 100){
+    //        elevactorGoFloor(1);
+    //        elevactorOpenDoor();
+    //    }
+    //    else if(station->x == 200 && station->y == 200){
+    //        elevactorGoFloor(2);
+    //        elevactorOpenDoor();
+    //    }
+    //    else if(station->x == 300 && station->y == 300){
+    //        elevactorGoFloor(3);
+    //        elevactorOpenDoor();
+    //    }else{
+    //        //
+    //        throw std::exception("地图切换站点错误");
+    //    }
 
 }
 
 void Agv::excutePath(std::vector<AgvLinePtr> lines)
 {
-    std::vector<AgvStationPtr> stations;
-
+    stationMtx.lock();
+    excutestations.clear();
     for(auto line:lines){
-        stations.push_back(line->endStation);
+        excutestations.push_back(line->endStation);
     }
+    stationMtx.unlock();
     //告诉小车接下来要执行的路径
     AgvStationPtr next = nullptr;//下一个要去的位置
-    for(int i=0;i<stations.size();++i){
-        AgvStationPtr now = stations[i];//接下来要去的位置
-        if(i+1<stations.size())
-            next = stations[i+1];
+    for(int i=0;i<excutestations.size();++i)
+    {
+        if(currentTask!=nullptr && currentTask->getIsCancel())break;//任务取消
+        if(status == AGV_STATUS_HANDING)break;//手动控制
+        if(status == AGV_STATUS_ERROR)break;//发生错误
+
+        AgvStationPtr now = excutestations[i];//接下来要去的位置
+        if(i+1<excutestations.size())
+            next = excutestations[i+1];
         else
             next = nullptr;
 
@@ -125,7 +196,9 @@ void Agv::excutePath(std::vector<AgvLinePtr> lines)
 
             //到达电梯口停下，
             goStation(now,true);
-
+            if(currentTask!=nullptr && currentTask->getIsCancel())break;//任务取消
+            if(status == AGV_STATUS_HANDING)break;//手动控制
+            if(status == AGV_STATUS_ERROR)break;//发生错误
             //并呼叫电梯到达三楼
             callMapChange(next);
         }
@@ -141,8 +214,12 @@ void Agv::excutePath(std::vector<AgvLinePtr> lines)
             goStation(now,true);
             callMapChange(next);//开门
         }
-
-
     }
+    if(currentTask!=nullptr && currentTask->getIsCancel())cancelTask();
+    if(status == AGV_STATUS_HANDING || status == AGV_STATUS_ERROR)cancelTask();
+}
 
+void Agv::cancelTask()
+{
+    stop();
 }

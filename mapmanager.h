@@ -130,8 +130,9 @@ public:
     std::vector<AgvLinePtr> getBestPath(AgvPtr agv,AgvStationPtr lastStation, AgvStationPtr startStation, AgvStationPtr endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
 
     //获取反向线路
-    AgvLine* getReverseLine(AgvLinePtr line);
+    AgvLinePtr getReverseLine(AgvLinePtr line);
 
+    AgvStationPtr getStationById(int id);
 
     //用户接口
     void interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
@@ -155,7 +156,7 @@ private:
     std::vector<AgvLinePtr> getPath(AgvPtr agv, AgvStationPtr lastStation, AgvStationPtr startStation, AgvStationPtr endStation, int &distance, bool changeDirect);
     void checkTable();
     //以下是从image 读取 路径和站点
-    void getImgColors(cv::Mat &gridmap) throw (std::exception);
+    void getImgColors(cv::Mat &gridmap);
     void getImgStations();
     void getImgLines();
     void getReverseLines();

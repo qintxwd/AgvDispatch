@@ -1,6 +1,8 @@
 ﻿#include "Common.h"
 
 ThreadPool g_threadPool(30);
+CppSQLite3DB g_db;
+
 
 std::string getTimeStrNow()
 {
@@ -22,6 +24,41 @@ std::string getTimeStrNow()
     return ss.str();
 }
 
+std::string getTimeStrToday()
+{
+    using std::chrono::system_clock;
+
+    //获取当前时间
+    auto time_now = std::chrono::system_clock::now();
+
+    std::time_t tt = std::chrono::system_clock::to_time_t(time_now);
+
+    std::stringstream ss;
+
+    //gcc 4.9及之前版本不支持 std::put_time//需要gcc 5.0+
+    ss << std::put_time(std::localtime(&tt), "%Y-%m-%d 00:00:00") << "." << 0;
+
+    return ss.str();
+}
+std::string getTimeStrTomorrow()
+{
+    using std::chrono::system_clock;
+
+    //获取当前时间
+    auto time_now = std::chrono::system_clock::now();
+    std::chrono::duration<int,std::ratio<60*60*24> > one_day(1);
+    system_clock::time_point tomorrow = time_now + one_day;
+
+    std::time_t tt = std::chrono::system_clock::to_time_t(tomorrow);
+
+    std::stringstream ss;
+
+    //gcc 4.9及之前版本不支持 std::put_time//需要gcc 5.0+
+    ss << std::put_time(std::localtime(&tt), "%Y-%m-%d 00:00:00") << "." << 0;
+
+    return ss.str();
+}
+
 std::string toHexString(char *data,int len)
 {
     std::ostringstream out;
@@ -29,5 +66,12 @@ std::string toHexString(char *data,int len)
     for(int i=0;i<len;++i){
         out<<std::setw(2)<<(0xff &(data[i]))<<std::setw(1)<<" ";
     }
+    return out.str();
+}
+
+std::string intToString(int i)
+{
+    std::ostringstream out;
+    out<<i;
     return out.str();
 }

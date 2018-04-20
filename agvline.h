@@ -43,7 +43,7 @@ public:
     std::vector<AgvPtr> occuAgvs;
 
     int id;
-    double length;
+    int length;
     AgvStationPtr startStation = nullptr;//起始站点
     AgvStationPtr endStation = nullptr;//终止站点
 

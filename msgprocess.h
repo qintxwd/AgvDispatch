@@ -10,6 +10,7 @@ using MsgProcessPtr = std::shared_ptr<MsgProcess>;
 
 typedef enum{
     ENUM_NOTIFY_ALL_TYPE_MAP_UPDATE = 0,
+    ENUM_NOTIFY_ALL_TYPE_ERROR,
 }ENUM_NOTIFY_ALL_TYPE;
 
 class MsgProcess : public noncopyable,public std::enable_shared_from_this<MsgProcess>
@@ -24,13 +25,20 @@ public:
     bool init();
 
     void removeSubSession(int session);
+
     //进来一个消息,分配给一个线程去处理它
     void processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr session);
 
+    //发布一个日志消息
     void publishOneLog(USER_LOG log);
 
+    //通知所有用户的事件
     void notifyAll(ENUM_NOTIFY_ALL_TYPE type);
 
+    //发生错误，需要告知
+    void errorOccur(int code,std::string msg,bool needConfirm);
+
+    //用户接口
     void interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
     void interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
     void interAddSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
@@ -72,6 +80,11 @@ private:
 
     std::mutex lsMtx;
     std::list<int> logSubers;
+
+    std::mutex errorMtx;
+    int error_code;
+    std::string error_info;
+    bool needConfirm;
 };
 
 

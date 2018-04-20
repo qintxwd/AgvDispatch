@@ -12,10 +12,8 @@ void AgvManager::checkTable()
 {
     //检查表
     try{
-        CppSQLite3DB db;
-        db.open(DB_File);
-        if(!db.tableExists("agv_agv")){
-            db.execDML("create table agv_agv(id int primary key AUTO_INCREMENT, name char(64),ip char(64),port int);");
+        if(!g_db.tableExists("agv_agv")){
+            g_db.execDML("create table agv_agv(id int primary key AUTO_INCREMENT, name char(64),ip char(64),port int);");
         }
     }catch(CppSQLite3Exception e){
         LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
@@ -31,9 +29,7 @@ bool AgvManager::init()
 {
     checkTable();
     try{
-        CppSQLite3DB db;
-        db.open(DB_File);
-        CppSQLite3Table table_agv = db.getTable("select id,name,ip,port from agv_agv;");
+        CppSQLite3Table table_agv = g_db.getTable("select id,name,ip,port from agv_agv;");
         if(table_agv.numRows()>0 && table_agv.numFields()!=4)return false;
         std::unique_lock<std::mutex> lck(mtx);
         for (int row = 0; row < table_agv.numRows(); row++)
@@ -158,15 +154,14 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         char buf[SQL_MAX_LENGTH];
         sprintf_s(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values(%s,%s,%d);", baseinfo.name, baseinfo.ip,baseinfo.port);
         try{
-            CppSQLite3DB db;
-            db.open(DB_File);
-            db.execDML(buf);
-            int id = db.execScalar("select max(id) from agv_agv;");
+            g_db.execDML(buf);
+            int id = g_db.execScalar("select max(id) from agv_agv;");
             response.head.body_length = sizeof(int);
             memcpy(response.body,&id,sizeof(int));
             response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 
             AgvPtr agv = AgvPtr(new Agv(id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port));
+            agv->init();
             addAgv(agv);
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
@@ -200,9 +195,7 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         char buf[SQL_MAX_LENGTH];
         sprintf_s(buf,SQL_MAX_LENGTH, "delete from agv_agv where id=%d;", id);
         try{
-            CppSQLite3DB db;
-            db.open(DB_File);
-            db.execDML(buf);
+            g_db.execDML(buf);
             removeAgv(id);
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
@@ -237,9 +230,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         sprintf_s(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", baseinfo.name, baseinfo.ip,baseinfo.port,baseinfo.id);
 
         try{
-            CppSQLite3DB db;
-            db.open(DB_File);
-            db.execDML(buf);
+            g_db.execDML(buf);
             updateAgv(baseinfo.id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port);
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;

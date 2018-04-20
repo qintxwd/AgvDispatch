@@ -8,8 +8,10 @@
 #include <iomanip>
 #include <mutex>
 #include <algorithm>
+#include <memory>
 #include "utils/Log/easylogging.h"
 #include "utils/threadpool.h"
+#include "sqlite3/CppSQLite3.h"
 
 #define  CAN_CHANGE_DIRECTION  false
 
@@ -28,11 +30,13 @@ enum {
 };
 
 std::string getTimeStrNow();
+std::string getTimeStrToday();
+std::string getTimeStrTomorrow();
 
 std::string toHexString(char *data, int len);
+std::string intToString(int i);
 
 extern ThreadPool g_threadPool;
-
-
+extern CppSQLite3DB g_db;
 
 #endif // COMMON_H

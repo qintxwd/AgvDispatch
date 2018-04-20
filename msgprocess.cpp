@@ -4,12 +4,13 @@
 #include "UserManager.h"
 #include "mapmanager.h"
 #include "agvmanager.h"
+#include "userlogmanager.h"
+#include "taskmanager.h"
 
 MsgProcess::MsgProcess()
 {
 
 }
-
 
 void MsgProcess::interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
@@ -17,6 +18,7 @@ void MsgProcess::interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Requ
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"订阅AGV实时位置信息");
     addSubAgvPosition(conn->getSessionID());
     conn->send(response);
 }
@@ -26,6 +28,7 @@ void MsgProcess::interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Reques
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"订阅AGV实时状态信息");
     addSubAgvStatus(conn->getSessionID());
     conn->send(response);
 }
@@ -35,6 +38,7 @@ void MsgProcess::interAddSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"订阅任务信息");
     addSubTask(conn->getSessionID());
     conn->send(response);
 }
@@ -44,6 +48,7 @@ void MsgProcess::interAddSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"订阅日志信息");
     addSubLog(conn->getSessionID());
     conn->send(response);
 }
@@ -53,6 +58,7 @@ void MsgProcess::interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_R
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅AGV实时位置信息");
     removeSubAgvPosition(conn->getSessionID());
     conn->send(response);
 }
@@ -62,6 +68,7 @@ void MsgProcess::interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Req
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅AGV实时状态信息");
     removeSubAgvStatus(conn->getSessionID());
     conn->send(response);
 }
@@ -71,6 +78,7 @@ void MsgProcess::interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request 
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅任务信息");
     removeSubTask(conn->getSessionID());
     conn->send(response);
 }
@@ -80,6 +88,7 @@ void MsgProcess::interRemoveSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request m
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅日志信息");
     removeSubLog(conn->getSessionID());
     conn->send(response);
 }
@@ -268,7 +277,7 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         response.head.body_length = 0;
 
         if((session->getUserId()<=0 || session->getUserRole()<=USER_ROLE_VISITOR) && request.head.todo != MSG_TODO_USER_LOGIN){
-            //未登录，却请求了其它请求
+            //未登录，却发送了 登录以外的 其它请求
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_LOGIN;
             response.return_head.result = RETURN_MSG_RESULT_FAIL;
             session->send(response);
@@ -281,8 +290,9 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         UserManagerPtr userManager = UserManager::getInstance();
         MapManagerPtr mapManager = MapManager::getInstance();
         AgvManagerPtr agvManager = AgvManager::getInstance();
-
         MsgProcessPtr msgProcess = shared_from_this();
+        UserLogManagerPtr userLogManager = UserLogManager::getInstance();
+        TaskManagerPtr taskManager = TaskManager::getInstance();
 
         static struct
         {
@@ -310,15 +320,15 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         { MSG_TODO_AGV_MANAGE_DELETE,std::bind(&AgvManager::interDelete,agvManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_AGV_MANAGE_MODIFY,std::bind(&AgvManager::interModify,agvManager,std::placeholders::_1,std::placeholders::_2) },
 
-//        { MSG_TODO_TASK_CREATE_AGV_PASS_Y_TO_X,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
-//        { MSG_TODO_TASK_QUERY_STATUS,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
-//        { MSG_TODO_TASK_CANCEL,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
-//        { MSG_TODO_TASK_LIST_UNDO,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
-//        { MSG_TODO_TASK_LIST_DOING,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
-//        { MSG_TODO_TASK_LIST_DONE_TODAY,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
-//        { MSG_TODO_TASK_LIST_DURING,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_TASK_CREATE,std::bind(&TaskManager::interCreate,taskManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_TASK_QUERY_STATUS,std::bind(&TaskManager::interQueryStatus,taskManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_TASK_CANCEL,std::bind(&TaskManager::interCancel,taskManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_TASK_LIST_UNDO,std::bind(&TaskManager::interListUndo,taskManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_TASK_LIST_DOING,std::bind(&TaskManager::interListDoing,taskManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_TASK_LIST_DONE_TODAY,std::bind(&TaskManager::interListDoneToday,taskManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_TASK_LIST_DURING,std::bind(&TaskManager::interListDuring,taskManager,std::placeholders::_1,std::placeholders::_2) },
 
-//        { MSG_TODO_LOG_LIST_DURING,std::bind(&UserManager::interLogin,userManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_LOG_LIST_DURING,std::bind(&UserLogManager::interLogDuring,userLogManager,std::placeholders::_1,std::placeholders::_2) },
 
         //订阅类
         { MSG_TODO_SUB_AGV_POSITION,std::bind(&MsgProcess::interAddSubAgvPosition,msgProcess,std::placeholders::_1,std::placeholders::_2) },
@@ -358,6 +368,16 @@ void MsgProcess::publishOneLog(USER_LOG log)
     });
 }
 
+void MsgProcess::errorOccur(int code, std::string msg, bool needConfirm)
+{
+    errorMtx.lock();
+    error_code = code;
+    error_info = msg;
+    needConfirm = needConfirm;
+    errorMtx.unlock();
+    notifyAll(ENUM_NOTIFY_ALL_TYPE_ERROR);
+}
+
 void MsgProcess::notifyAll(ENUM_NOTIFY_ALL_TYPE type)
 {
     if(type == ENUM_NOTIFY_ALL_TYPE_MAP_UPDATE){
@@ -369,6 +389,23 @@ void MsgProcess::notifyAll(ENUM_NOTIFY_ALL_TYPE type)
         response.head.tail = 0xAA;
         response.head.todo = MSG_TODO_NOTIFY_ALL_MAP_UPDATE;
 
+        qyhnetwork::SessionManager::getInstance()->sendData(response);
+    }else if(type == ENUM_NOTIFY_ALL_TYPE_ERROR){
+        MSG_Response response;
+        memcpy(&response,0,sizeof(MSG_Response));
+        response.head.head = 0x88;
+        response.head.queuenumber = 0;
+        response.head.flag = 0;
+        response.head.tail = 0xAA;
+        response.head.todo = MSG_TODO_NOTIFY_ALL_ERROR;
+        NOTIFY_ERROR info;
+        errorMtx.lock();
+        info.needConfirm = needConfirm;
+        info.code = error_code;
+        sprintf_s(info.msg,MSG_RESPONSE_BODY_MAX_SIZE-4-sizeof(bool),"%s",error_info.c_str());
+        memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(NOTIFY_ERROR));
+        response.head.body_length = sizeof(int32_t)+sizeof(bool)+error_info.length();
+        errorMtx.unlock();
         qyhnetwork::SessionManager::getInstance()->sendData(response);
     }
 }

@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <memory>
 #include "Common.h"
 #include "Protocol.h"
 #include "utils/noncopyable.h"
@@ -10,7 +9,7 @@ using qyhnetwork::TcpSessionPtr;
 class UserManager;
 using UserManagerPtr = std::shared_ptr<UserManager>;
 
-class UserManager :private noncopyable, public std::enable_shared_from_this<UserManager>
+class UserManager :public noncopyable, public std::enable_shared_from_this<UserManager>
 {
 public:
     static UserManagerPtr getInstance()

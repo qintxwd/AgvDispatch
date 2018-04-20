@@ -5,11 +5,10 @@
 //define msg from client to server and msg from server to client
 // make each msg length <= 1024
 
-#define ONE_MSG_MAX_LENGTH  (1024)              //one msg max length
+#define ONE_MSG_MAX_LENGTH  (1024)              //一条消息的最大长度（请求消息:head+body  响应消息: head+return_head+body）
 
-
-#define	MSG_REQUEST_BODY_MAX_SIZE           (1000)  //一条消息的最大长度
-#define MSG_RESPONSE_BODY_MAX_SIZE          (768)   //
+#define	MSG_REQUEST_BODY_MAX_SIZE           (1000)  //一条消息的内容部分最大长度
+#define MSG_RESPONSE_BODY_MAX_SIZE          (768)   //一条响应消息的最大长度
 #define MSG_LOG_MAX_LENGTH              (MSG_RESPONSE_BODY_MAX_SIZE - 24)
 #define MSG_COMMON_HEAD_HEAD		0x88
 #define MSG_COMMON_HEAD_TAIL		0xAA
@@ -106,10 +105,7 @@ typedef enum Msg_Todo
     MSG_TODO_AGV_MANAGE_ADD,//增加//name[MSG_STRING_LEN]+ip[MSG_STRING_LEN]
     MSG_TODO_AGV_MANAGE_DELETE,//删除//id[4]
     MSG_TODO_AGV_MANAGE_MODIFY,//修改//id[4]+name[MSG_STRING_LEN]+ip[MSG_STRING_LEN]
-    MSG_TODO_TASK_CREATE_TO_X,//到X点位的任务//x[4]
-    MSG_TODO_TASK_CREATE_AGV_TO_X,//制定Agv到X点位的任务//agvid[4]+x[4]
-    MSG_TODO_TASK_CREATE_PASS_Y_TO_X,//去Y取货放到X的任务//x[4]+y[4]
-    MSG_TODO_TASK_CREATE_AGV_PASS_Y_TO_X,//指定AGV到Y取货放到X的任务//agvid[4]+x[4]+y[4]
+    MSG_TODO_TASK_CREATE,//添加任务
     MSG_TODO_TASK_QUERY_STATUS,//查询任务状态//taskid[4]
     MSG_TODO_TASK_CANCEL,//取消任务//taskid[4]
     MSG_TODO_TASK_LIST_UNDO,//未完成的列表//none
@@ -134,7 +130,15 @@ typedef enum Msg_Todo
 
     //notify
     MSG_TODO_NOTIFY_ALL_MAP_UPDATE,//通知消息 -- 地图更新
+    MSG_TODO_NOTIFY_ALL_ERROR,
 }MSG_TODO;
+
+typedef struct _NOTIFY_ERROR
+{
+    bool needConfirm;
+    int32_t code;
+    char msg[MSG_RESPONSE_BODY_MAX_SIZE-4-sizeof(bool)];
+}NOTIFY_ERROR;
 
 //定义消息头的 todo//---------------------------------------------------------------------------------------------------------------------------------
 ////////////////////////////////////////以下是特殊情况的返回结构体
@@ -206,6 +210,7 @@ typedef struct _TASK_INFO
     int32_t status;
 }TASK_INFO;
 
+//用户日志，显示给用户的日志。
 typedef struct _USER_Log {
     char time[MSG_TIME_STRING_LEN];//yyyy-MM-dd hh:mm:ss.fff
     char msg[MSG_LOG_MAX_LENGTH];//日志内容

@@ -1,12 +1,17 @@
 ﻿#ifndef AGVTASK_H
 #define AGVTASK_H
-
+#include <memory>
 #include <vector>
+#include <atomic>
 #include "agvtasknode.h"
 #include <agvline.h>
 #include "agv.h"
+
+class AgvTask;
+using AgvTaskPtr = std::shared_ptr<AgvTask>;
+
 //一个任务:由N个任务节点TaskNode助成
-class AgvTask
+class AgvTask : public std::enable_shared_from_this<AgvTask>
 {
 public:
     /////////任务状态
@@ -31,10 +36,11 @@ public:
 
     AgvTask():
         id(0),
-        excuteAgv(NULL),
+        excuteAgv(nullptr),
         status(AGV_TASK_STATUS_UNEXCUTE),
         priority(PRIORITY_NORMAL),
-        error_code(0)
+        error_code(0),
+        isCancel(false)
     {
     }
 
@@ -54,9 +60,9 @@ public:
     AgvPtr getAgv(){return excuteAgv;}
     void setAgv(AgvPtr agv){excuteAgv=agv;}
 
-    std::vector<AgvTaskNode *> getTaskNode(){return nodes;}
-    void setTaskNode(std::vector<AgvTaskNode *> _nodes){nodes=_nodes;}
-    void push_backNode(AgvTaskNode *_node){nodes.push_back(_node);}
+    std::vector<AgvTaskNodePtr> getTaskNode(){return nodes;}
+    void setTaskNode(std::vector<AgvTaskNodePtr> _nodes){nodes=_nodes;}
+    void push_backNode(AgvTaskNodePtr _node){nodes.push_back(_node);}
 
     int getDoingIndex(){return doingIndex;}
     void setDoingIndex(int _doingIndex){doingIndex = _doingIndex;}
@@ -81,10 +87,11 @@ public:
     int getStatus(){return status;}
     void setStatus(int _status){status=_status;}
 
-
+    void cancel(){isCancel = true;}
+    bool getIsCancel(){return isCancel;}
 
 private:
-    std::vector<AgvTaskNode *> nodes;
+    std::vector<AgvTaskNodePtr> nodes;
     std::vector<AgvLinePtr> path;
     int id;
     std::string produceTime;
@@ -100,6 +107,8 @@ private:
     int priority;//优先级
 
     int doingIndex;
+
+    std::atomic_bool isCancel;
 };
 
 #endif // AGVTASK_H

@@ -10,7 +10,7 @@ using std::max;
 namespace qyhnetwork {
 
 
-TcpSession::TcpSession():read_position(0)
+TcpSession::TcpSession():read_position(0),username("")
 {
     SessionManager::getInstance()->_statInfo[STAT_SESSION_CREATED]++;
 }
