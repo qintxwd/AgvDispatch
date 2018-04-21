@@ -5,13 +5,15 @@
 //define msg from client to server and msg from server to client
 // make each msg length <= 1024
 
+#define GLOBAL_SERVER_PORT   9999
+
 #define ONE_MSG_MAX_LENGTH  (1024)              //一条消息的最大长度（请求消息:head+body  响应消息: head+return_head+body）
 
 #define	MSG_REQUEST_BODY_MAX_SIZE           (1000)  //一条消息的内容部分最大长度
 #define MSG_RESPONSE_BODY_MAX_SIZE          (768)   //一条响应消息的最大长度
 #define MSG_LOG_MAX_LENGTH              (MSG_RESPONSE_BODY_MAX_SIZE - 24)
-#define MSG_COMMON_HEAD_HEAD		0x88
-#define MSG_COMMON_HEAD_TAIL		0xAA
+#define MSG_MSG_Head_HEAD		0x88
+#define MSG_MSG_Head_TAIL		0xAA
 
 #define MSG_TIME_STRING_LEN            (24)
 #define MSG_SHORT_STRING_LEN           (32)
@@ -27,12 +29,12 @@
 //消息的head
 typedef struct _MSG_Head
 {
-    uint8_t head;//固定为0x88  MSG_COMMON_HEAD_HEAD
+    uint8_t head;//固定为0x88  MSG_MSG_Head_HEAD
 	uint32_t body_length;//body的长度 最大为TCP_MSG_MAX_SIZE
 	uint8_t todo;//要做的事情
 	uint32_t queuenumber;//消息序号，返回时要带上
     uint8_t flag;//标志位，默认为0，0:完成  1:未完成
-    uint8_t tail;//固定为0xAA [head 和tail 决定了这个消息是否是 我们定义的消息]  MSG_COMMON_HEAD_TAIL
+    uint8_t tail;//固定为0xAA [head 和tail 决定了这个消息是否是 我们定义的消息]  MSG_MSG_Head_TAIL
 }MSG_Head;
 
 //!!!完整的请求消息

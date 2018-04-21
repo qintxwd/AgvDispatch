@@ -2,6 +2,7 @@
 #include "agv.h"
 #include "sqlite3/CppSQLite3.h"
 #include "Common.h"
+#include "userlogmanager.h"
 
 
 AgvManager::AgvManager()
@@ -113,6 +114,7 @@ void AgvManager::interList(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     memcpy(&response.head, &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+    UserLogManager::getInstance()->push(conn->getUserName()+"请求AGV列表");
     UNIQUE_LCK lck(mtx);
     for (auto agv : agvs) {
         AGV_BASE_INFO info;
@@ -151,6 +153,7 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
             sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
         }
 
+        UserLogManager::getInstance()->push(conn->getUserName()+"添加AGV.name:"+ baseinfo.name+" ip:"+baseinfo.ip+intToString(baseinfo.port));
         char buf[SQL_MAX_LENGTH];
         sprintf_s(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values(%s,%s,%d);", baseinfo.name, baseinfo.ip,baseinfo.port);
         try{
@@ -191,7 +194,7 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     else {
         uint32_t id;
         memcpy(&id, msg.body, sizeof(uint32_t));
-
+        UserLogManager::getInstance()->push(conn->getUserName()+"删除AGV.ID:"+ intToString(id));
         char buf[SQL_MAX_LENGTH];
         sprintf_s(buf,SQL_MAX_LENGTH, "delete from agv_agv where id=%d;", id);
         try{
@@ -225,7 +228,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     else {
         AGV_BASE_INFO baseinfo;
         memcpy(&baseinfo, msg.body, sizeof(AGV_BASE_INFO));
-
+        UserLogManager::getInstance()->push(conn->getUserName()+"修改AGV信息.ID:"+ intToString(baseinfo.id)+" newname:"+ baseinfo.name+" newip:"+baseinfo.ip+" newport:"+intToString( baseinfo.port));
         char buf[SQL_MAX_LENGTH];
         sprintf_s(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", baseinfo.name, baseinfo.ip,baseinfo.port,baseinfo.id);
 
