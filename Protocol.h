@@ -12,8 +12,8 @@
 #define	MSG_REQUEST_BODY_MAX_SIZE           (1000)  //一条消息的内容部分最大长度
 #define MSG_RESPONSE_BODY_MAX_SIZE          (768)   //一条响应消息的最大长度
 #define MSG_LOG_MAX_LENGTH              (MSG_RESPONSE_BODY_MAX_SIZE - 24)
-#define MSG_MSG_Head_HEAD		0x88
-#define MSG_MSG_Head_TAIL		0xAA
+#define MSG_MSG_Head_HEAD		(0x88)
+#define MSG_MSG_Head_TAIL		(0xAA)
 
 #define MSG_TIME_STRING_LEN            (24)
 #define MSG_SHORT_STRING_LEN           (32)

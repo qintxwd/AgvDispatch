@@ -1,4 +1,4 @@
-﻿#include "UserManager.h"
+﻿#include "usermanager.h"
 #include "sqlite3/CppSQLite3.h"
 #include "network/sessionmanager.h"
 #include "userlogmanager.h"
@@ -13,6 +13,28 @@ UserManager::UserManager()
 UserManager::~UserManager()
 {
 }
+
+void UserManager::checkTable(){
+    //检查表
+    try{
+        if(!g_db.tableExists("agv_user")){
+            g_db.execDML("create table agv_user(id INTEGER primary key AUTOINCREMENT, user_password char(64),user_username char(64),user_role INTEGER,user_signState INTEGER);");
+        }
+    }catch(CppSQLite3Exception e){
+        LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+        return ;
+    }catch(std::exception e){
+        LOG(ERROR)<<"sqlerr code:"<<e.what();
+        return ;
+    }
+}
+
+
+void UserManager::init()
+{
+    checkTable();
+}
+
 
 void UserManager::interLogin(TcpSessionPtr conn, MSG_Request msg)
 {

@@ -10,7 +10,7 @@
 #include "agvstation.h"
 #include "agvline.h"
 #include "agv.h"
-#include "Common.h"
+#include "common.h"
 #include "utils/noncopyable.h"
 
 #include "network/tcpsession.h"

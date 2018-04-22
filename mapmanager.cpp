@@ -1,7 +1,7 @@
 ﻿#include "mapmanager.h"
 #include "sqlite3/CppSQLite3.h"
 #include "msgprocess.h"
-#include "Common.h"
+#include "common.h"
 #include "taskmanager.h"
 #include "userlogmanager.h"
 
@@ -14,10 +14,10 @@ void MapManager::checkTable()
     //检查表
     try{
         if(!g_db.tableExists("agv_station")){
-            g_db.execDML("create table agv_station(id int, x int,y int,name char(64));");
+            g_db.execDML("create table agv_station(id INTEGER, x INTEGER,y INTEGER,name char(64));");
         }
         if(!g_db.tableExists("agv_line")){
-            g_db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+            g_db.execDML("create table agv_line(id INTEGER, startStation INTEGER,endStation INTEGER,length INTEGER);");
         }
     }catch(CppSQLite3Exception &e){
         LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
@@ -65,12 +65,12 @@ bool MapManager::save()
 {
     try{
         if(!g_db.tableExists("agv_station")){
-            g_db.execDML("create table agv_station(id int, x int,y int,name char(64));");
+            g_db.execDML("create table agv_station(id INTEGER, x INTEGER,y INTEGER,name char(64));");
         }else{
             g_db.execDML("delete from agv_station;");
         }
         if(!g_db.tableExists("agv_line")){
-            g_db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+            g_db.execDML("create table agv_line(id INTEGER, startStation INTEGER,endStation INTEGER,length INTEGER);");
         }else{
             g_db.execDML("delete from agv_line;");
         }
@@ -101,10 +101,10 @@ bool MapManager::loadFromDb()
 {
     try{
         if(!g_db.tableExists("agv_station")){
-            g_db.execDML("create table agv_station(id int, x int,y int,name char(64));");
+            g_db.execDML("create table agv_station(id INTEGER, x INTEGER,y INTEGER,name char(64));");
         }
         if(!g_db.tableExists("agv_line")){
-            g_db.execDML("create table agv_line(id int, startStation int,endStation int,length int);");
+            g_db.execDML("create table agv_line(id INTEGER, startStation INTEGER,endStation INTEGER,length INTEGER);");
         }
 
         CppSQLite3Table table_station = g_db.getTable("select id,x,y,name from agv_station;");

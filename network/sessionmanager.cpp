@@ -1,7 +1,7 @@
 ﻿#include "sessionmanager.h"
 #include "tcpsession.h"
 #include "../msgprocess.h"
-#include "../Protocol.h"
+#include "../protocol.h"
 
 using namespace qyhnetwork;
 

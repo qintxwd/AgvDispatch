@@ -1,5 +1,5 @@
 ﻿#include "taskmanager.h"
-#include "Common.h"
+#include "common.h"
 #include "mapmanager.h"
 #include "agvmanager.h"
 #include "sqlite3/CppSQLite3.h"
@@ -16,13 +16,13 @@ void TaskManager::checkTable()
 {
     try{
         if(!g_db.tableExists("agv_task")){
-            g_db.execDML("create table agv_task(id int,produce_time char[64],do_time char[64],done_time char[64],cancel_time char[64],error_time char[64],error_info char[256],error_code int,agv int,status int,priority int,dongindex int) ;");
+            g_db.execDML("create table agv_task(id INTEGER,produce_time char[64],do_time char[64],done_time char[64],cancel_time char[64],error_time char[64],error_info char[256],error_code INTEGER,agv INTEGER,status INTEGER,priority INTEGER,dongindex INTEGER) ;");
         }
         if(!g_db.tableExists("agv_task_node")){
-            g_db.execDML("create table agv_task_node(id int,taskId int,aimstation int);");
+            g_db.execDML("create table agv_task_node(id INTEGER,taskId INTEGER,aimstation INTEGER);");
         }
         if(!g_db.tableExists("agv_task_node_thing")){
-            g_db.execDML("create table agv_task_node_thing(id int,task_node_id int,discribe char[256]);");
+            g_db.execDML("create table agv_task_node_thing(id INTEGER,task_node_id INTEGER,discribe char[256]);");
         }
     }catch(CppSQLite3Exception &e){
         LOG(ERROR) << e.errorCode() << ":" << e.errorMessage() ;
@@ -221,13 +221,13 @@ bool TaskManager::saveTask(AgvTaskPtr task)
 {
     try{
         if(!g_db.tableExists("agv_task")){
-            g_db.execDML("create table agv_task(id int,produce_time char[64],do_time char[64],done_time char[64],cancel_time char[64],error_time char[64],error_info char[256],error_code int,agv int,status int,priority int,dongindex int) ;");
+            g_db.execDML("create table agv_task(id INTEGER,produce_time char[64],do_time char[64],done_time char[64],cancel_time char[64],error_time char[64],error_info char[256],error_code INTEGER,agv INTEGER,status INTEGER,priority INTEGER,dongindex INTEGER) ;");
         }
         if(!g_db.tableExists("agv_task_node")){
-            g_db.execDML("create table agv_task_node(id int,taskId int,aimstation int);");
+            g_db.execDML("create table agv_task_node(id INTEGER,taskId INTEGER,aimstation INTEGER);");
         }
         if(!g_db.tableExists("agv_task_node_thing")){
-            g_db.execDML("create table agv_task_node_thing(id int,task_node_id int,discribe char[256]);");
+            g_db.execDML("create table agv_task_node_thing(id INTEGER,task_node_id INTEGER,discribe char[256]);");
         }
 
         g_db.execDML("begin transaction;");

@@ -2,7 +2,7 @@
 #define TCPSESSION_H
 
 #include "networkconfig.h"
-#include "../Protocol.h"
+#include "../protocol.h"
 
 namespace qyhnetwork{
 

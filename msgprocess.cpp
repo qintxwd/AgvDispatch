@@ -1,7 +1,7 @@
 ﻿#include "msgprocess.h"
 #include "network/tcpsession.h"
 #include "network/sessionmanager.h"
-#include "UserManager.h"
+#include "usermanager.h"
 #include "mapmanager.h"
 #include "agvmanager.h"
 #include "userlogmanager.h"
@@ -270,14 +270,13 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
     //request需要copy一个到线程中。
     g_threadPool.enqueue([&,request]{
         //处理消息，如果有返回值，发送返回值
-        MSG_Response response;
-        memcpy(&(response.head),&(request.head),sizeof(MSG_Head));
-        response.return_head.error_code = 0;
-        response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-        response.head.body_length = 0;
-
         if((session->getUserId()<=0 || session->getUserRole()<=USER_ROLE_VISITOR) && request.head.todo != MSG_TODO_USER_LOGIN){
             //未登录，却发送了 登录以外的 其它请求
+            MSG_Response response;
+            memcpy(&(response.head),&(request.head),sizeof(MSG_Head));
+            response.return_head.error_code = 0;
+            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+            response.head.body_length = 0;
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_LOGIN;
             response.return_head.result = RETURN_MSG_RESULT_FAIL;
             session->send(response);

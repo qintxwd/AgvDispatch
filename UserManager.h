@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Common.h"
-#include "Protocol.h"
+#include "common.h"
+#include "protocol.h"
 #include "utils/noncopyable.h"
 #include "network/tcpsession.h"
 using qyhnetwork::TcpSessionPtr;
@@ -17,6 +17,8 @@ public:
         static UserManagerPtr m_inst = UserManagerPtr(new UserManager());
 		return m_inst;
 	}
+
+    void init();
 
     void interLogin(TcpSessionPtr conn, MSG_Request msg);
 
@@ -35,5 +37,7 @@ public:
 	virtual ~UserManager();
 private:
 	UserManager();
+
+    void checkTable();
 };
 

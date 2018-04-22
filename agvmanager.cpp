@@ -1,7 +1,7 @@
 ﻿#include "agvmanager.h"
 #include "agv.h"
 #include "sqlite3/CppSQLite3.h"
-#include "Common.h"
+#include "common.h"
 #include "userlogmanager.h"
 
 
@@ -14,7 +14,7 @@ void AgvManager::checkTable()
     //检查表
     try{
         if(!g_db.tableExists("agv_agv")){
-            g_db.execDML("create table agv_agv(id int primary key AUTO_INCREMENT, name char(64),ip char(64),port int);");
+            g_db.execDML("create table agv_agv(id INTEGER primary key AUTOINCREMENT, name char(64),ip char(64),port INTEGER);");
         }
     }catch(CppSQLite3Exception e){
         LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
@@ -47,10 +47,10 @@ bool AgvManager::init()
         }
     }catch(CppSQLite3Exception e){
         LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-        return false;
+        //return false;
     }catch(std::exception e){
         LOG(ERROR)<<"sqlerr code:"<<e.what();
-        return false;
+        //return false;
     }
     return true;
 }

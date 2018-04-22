@@ -1,9 +1,9 @@
 ﻿#ifndef USERLOGMANAGER_H
 #define USERLOGMANAGER_H
 
-#include "Common.h"
+#include "common.h"
 #include "utils/noncopyable.h"
-#include "Protocol.h"
+#include "protocol.h"
 #include "network/tcpsession.h"
 
 class UserLogManager;

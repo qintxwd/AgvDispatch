@@ -38,7 +38,7 @@ HEADERS += \
     agvtask.h \
     agvtasknode.h \
     agvtasknodedothing.h \
-    Common.h \
+    common.h \
     mapmanager.h \
     qyhtcpclient.h \
     taskmanager.h \
@@ -57,17 +57,17 @@ HEADERS += \
     network/iocp/iocpsocket.h \
     network/iocp/iocpaccept.h \
     utils/Log/easylogging.h \
-    Protocol.h \
+    protocol.h \
     utils/noncopyable.h \
     msgprocess.h \
-    UserManager.h \
+    usermanager.h \
     utils/threadpool.h \
     userlogmanager.h
 
 SOURCES += \
     agv.cpp \
     agvmanager.cpp \
-    Common.cpp \
+    common.cpp \
     main.cpp \
     mapmanager.cpp \
     qyhtcpclient.cpp \
@@ -85,7 +85,7 @@ SOURCES += \
     network/iocp/iocpaccept.cpp \
     utils/Log/easylogging.cpp \
     msgprocess.cpp \
-    UserManager.cpp \
+    usermanager.cpp \
     userlogmanager.cpp
 
 

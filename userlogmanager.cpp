@@ -9,7 +9,7 @@ UserLogManager::UserLogManager()
 
 void UserLogManager::checkTable(){
     if(!g_db.tableExists("agv_log")){
-        g_db.execDML("create table agv_log(id int primary key AUTO_INCREMENT, log_time,log_msg char(1024));");
+        g_db.execDML("create table agv_log(id INTEGER primary key AUTOINCREMENT, log_time,log_msg char(1024));");
     }
 }
 

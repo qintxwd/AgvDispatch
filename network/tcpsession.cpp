@@ -187,13 +187,13 @@ void TcpSession::close()
     LOG(WARNING)<<"TcpSession::close closing. sID=" << _sessionID;
 }
 
-int findHead(char *data,int len){
+int findHead(unsigned char *data,int len){
     if(len<sizeof(MSG_Head))return -1;
     for(int i=0;i<len;++i){
-        if((unsigned int)data[i] == MSG_COMMON_HEAD_HEAD)
+        if(data[i] == MSG_MSG_Head_HEAD)
         {
-            if(i+10>=len)return i;
-            if((unsigned int)data[i+10] ==MSG_COMMON_HEAD_TAIL )
+            if(i+11>=len)return i;
+            if(data[i+11] ==MSG_MSG_Head_TAIL )
                 return i;
         }
     }
@@ -227,7 +227,7 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 
     //解析
     if(read_position>=sizeof(MSG_Head)){
-        int head_position = findHead(read_buffer,read_position);
+        int head_position = findHead((unsigned char *)read_buffer,read_position);
         if(head_position == -1){
             //未找到头，丢弃数据
             LOG(INFO)<<" msg head not found , discard read data";

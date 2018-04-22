@@ -1,7 +1,7 @@
 ﻿#ifndef MSGPROCESS_H
 #define MSGPROCESS_H
 #include "utils/noncopyable.h"
-#include "Protocol.h"
+#include "protocol.h"
 #include "network/networkconfig.h"
 
 class MsgProcess;
