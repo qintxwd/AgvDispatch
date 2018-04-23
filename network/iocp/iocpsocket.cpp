@@ -261,12 +261,12 @@ bool TcpSocket::doSend(char * buf, unsigned int len, _OnSendHandler &&handler)
     }
     if (!_summer)
     {
-        LOG(FATAL)<<"TcpSocket uninitialize." << logSection();
+        LOG(WARNING)<<"TcpSocket uninitialize." << logSection();
         return false;
     }
     if (_onSendHandler)
     {
-        LOG(FATAL)<<"TcpSocket already send." << logSection();
+        LOG(WARNING)<<"TcpSocket already send." << logSection();
         return false;
     }
     if (len == 0)

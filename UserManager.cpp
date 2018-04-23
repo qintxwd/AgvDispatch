@@ -18,7 +18,7 @@ void UserManager::checkTable(){
     //检查表
     try{
         if(!g_db.tableExists("agv_user")){
-            g_db.execDML("create table agv_user(id INTEGER primary key AUTOINCREMENT, user_password char(64),user_username char(64),user_role INTEGER,user_signState INTEGER);");
+            g_db.execDML("create table agv_user(id INTEGER primary key AUTOINCREMENT, user_password char(64),user_username char(64),user_role INTEGER,user_status INTEGER);");
         }
     }catch(CppSQLite3Exception e){
         LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
@@ -49,7 +49,7 @@ void UserManager::interLogin(TcpSessionPtr conn, MSG_Request msg)
         std::string username(msg.body);
         std::string password(msg.body + 64);
         std::stringstream ss;
-        ss<<"select id,user_password,user_role,user_signState from agv_user where user_username=\'"<<username<<"\'";
+        ss<<"select id,user_password,user_role,user_status from agv_user where user_username=\'"<<username<<"\'";
         try{
             CppSQLite3Table table_agv = g_db.getTable(ss.str().c_str());
             if(table_agv.numRows() == 1)
@@ -77,7 +77,7 @@ void UserManager::interLogin(TcpSessionPtr conn, MSG_Request msg)
                     UserLogManager::getInstance()->push(username+"登录成功");
                     //更新登录状态
                     std::stringstream ss;
-                    ss<<"update agv_user set user_signState=1 where id= "<<u.id;
+                    ss<<"update agv_user set user_status=1 where id= "<<u.id;
                     g_db.execDML(ss.str().c_str());
                 }else{
                     response.return_head.error_code = RETURN_MSG_ERROR_CODE_PASSWORD_ERROR;
@@ -112,7 +112,7 @@ void UserManager::interLogout(TcpSessionPtr conn, MSG_Request msg)
     try{
         UserLogManager::getInstance()->push(conn->getUserName()+"注销");
         std::stringstream ss;
-        ss<<"update agv_user set user_signState=1 where id= "<<conn->getUserId();
+        ss<<"update agv_user set user_status=1 where id= "<<conn->getUserId();
         g_db.execDML(ss.str().c_str());
     }catch(CppSQLite3Exception e){
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
@@ -189,7 +189,7 @@ void UserManager::interList(TcpSessionPtr conn, MSG_Request msg)
     }else{
         try{
             std::stringstream ss;
-            ss<<"select id,user_name,user_password,user_role,user_status from agv_user where role <="<<conn->getUserRole();
+            ss<<"select id,user_username,user_password,user_role,user_status from agv_user where user_role <="<<conn->getUserRole();
             CppSQLite3Table table = g_db.getTable(ss.str().c_str());
             if(table.numRows()>0 && table.numFields() ==5 ){
                 for(int i=0;i<table.numRows();++i){
