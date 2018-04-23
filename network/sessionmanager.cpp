@@ -279,7 +279,7 @@ void SessionManager::kickSession(SessionID sID)
         LOG(INFO)<<"kickSession NOT FOUND SessionID. SessionID=" << sID;
         return;
     }
-    LOG(DEBUG)<<"kickSession SessionID. SessionID=" << sID;
+    LOG(INFO)<<"kickSession SessionID. SessionID=" << sID;
     iter->second->close();
 }
 
@@ -305,7 +305,7 @@ void SessionManager::kickConnect(SessionID cID)
         }
         iter->second->getOptions()._reconnects = 0;
         iter->second->close();
-        LOG(DEBUG)<<"SessionManager::kickConnect cID=" << cID;
+        LOG(INFO)<<"SessionManager::kickConnect cID=" << cID;
     }
     else
     {
@@ -315,7 +315,7 @@ void SessionManager::kickConnect(SessionID cID)
             {
                 ms.second->getOptions()._reconnects = 0;
                 ms.second->close();
-                LOG(DEBUG)<<"SessionManager::kickConnect [all] cID=" << ms.second->getSessionID();
+                LOG(INFO)<<"SessionManager::kickConnect [all] cID=" << ms.second->getSessionID();
             }
         }
     }

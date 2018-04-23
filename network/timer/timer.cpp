@@ -130,7 +130,7 @@ void Timer::checkTimer()
             _steadyQue.erase(_steadyQue.begin());
             try
             {
-                //LOG(DEBUG)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
+                //LOG(INFO)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
                 (*handler)();
             }
             catch (const std::exception & e)
@@ -155,7 +155,7 @@ void Timer::checkTimer()
             _sysQue.erase(_sysQue.begin());
             try
             {
-                //LOG(DEBUG)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
+                //LOG(INFO)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
                 (*handler)();
             }
             catch (const std::exception & e)

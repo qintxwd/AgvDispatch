@@ -48,9 +48,10 @@ void UserManager::interLogin(TcpSessionPtr conn, MSG_Request msg)
     {
         std::string username(msg.body);
         std::string password(msg.body + 64);
-
+        std::stringstream ss;
+        ss<<"select id,user_password,user_role,user_signState from agv_user where user_username=\'"<<username<<"\'";
         try{
-            CppSQLite3Table table_agv = g_db.getTable("select id,user_password,user_role,user_signState from agv_user where user_username=?");
+            CppSQLite3Table table_agv = g_db.getTable(ss.str().c_str());
             if(table_agv.numRows() == 1)
             {
                 table_agv.setRow(0);

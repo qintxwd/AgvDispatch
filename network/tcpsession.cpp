@@ -161,7 +161,7 @@ void TcpSession::close()
             _sockptr->doClose();
             _sockptr.reset();
         }
-        LOG(DEBUG)<<"TcpSession to close socket. sID= " << _sessionID;
+        LOG(INFO)<<"TcpSession to close socket. sID= " << _sessionID;
         if (_status == 2)
         {
             SessionManager::getInstance()->_statInfo[STAT_SESSION_CLOSED]++;
@@ -174,7 +174,7 @@ void TcpSession::close()
         if (isConnectID(_sessionID) && _reconnects < _options._reconnects)
         {
             _status = 1;
-            LOG(DEBUG)<<"TcpSession already closed. try reconnect ... sID= " << _sessionID;
+            LOG(INFO)<<"TcpSession already closed. try reconnect ... sID= " << _sessionID;
         }
         else
         {
@@ -219,7 +219,7 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
     }
 
     //只输出部分信息
-    LOG(DEBUG)<<"recv:"<<toHexString(read_buffer+read_position,received<sizeof(MSG_Head)?received:sizeof(MSG_Head));
+    LOG(INFO)<<"recv:"<<toHexString(read_buffer+read_position,received<sizeof(MSG_Head)?received:sizeof(MSG_Head));
 
     read_position += received;
     SessionManager::getInstance()->_statInfo[STAT_RECV_COUNT]++;
@@ -244,7 +244,7 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
                     //TODO
                     MsgProcess::getInstance()->processOneMsg(read_one_msg,shared_from_this());
                     //enqueue(read_one_msg);
-                    read_position -= sizeof(MSG_Request);
+                    read_position -= sizeof(MSG_Head)+read_one_msg.head.body_length;
                 }
             }
         }
@@ -279,7 +279,7 @@ void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
     LOG(TRACE)<<"TcpSession::onSend session id=" << getSessionID() << ", sent=" << sent;
     if (ec)
     {
-        LOG(DEBUG)<<"remote socket closed";
+        LOG(INFO)<<"remote socket closed";
         return ;
     }
 

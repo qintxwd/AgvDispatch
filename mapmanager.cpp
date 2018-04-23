@@ -477,7 +477,7 @@ void MapManager::getImgStations()
     }
 
     for(auto station:m_stations){
-        LOG(DEBUG)<<"x="<<station->x<<" y="<<station->y<<" id="<<station->id;
+        LOG(INFO)<<"x="<<station->x<<" y="<<station->y<<" id="<<station->id;
     }
 }
 
