@@ -58,7 +58,7 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request 
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
@@ -82,9 +82,12 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request 
                     sprintf_s(log.msg,MSG_LOG_MAX_LENGTH, table.fieldValue(1));
                     sprintf_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,"%s",log.time);
                     sprintf_s(response.body+MSG_TIME_STRING_LEN,MSG_LOG_MAX_LENGTH,"%s",log.msg);
-                    response.head.body_length += MSG_TIME_STRING_LEN+strlen(log.msg);
+                    response.head.body_length = MSG_TIME_STRING_LEN+strlen(log.msg);
+					response.head.flag = 1;
                     conn->send(response);
                 }
+				response.head.body_length = 0;
+				response.head.flag = 0;
             }
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;

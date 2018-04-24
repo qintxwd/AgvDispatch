@@ -1,27 +1,5 @@
 ﻿#include "qyhtcpclient.h"
 
-#ifdef WIN32
-#define _WIN32_WINNT _WIN32_WINNT_WIN8
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <mstcpip.h>
-#include <Ws2tcpip.h>
-#else
-#include <time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <netdb.h>
-#include <errno.h>
-#endif
-
-#ifdef WIN32
-#pragma comment(lib,"ws2_32.lib")
-#endif
 
 QyhTcpClient::QyhTcpClient(std::string ip,int _port, QyhClientReadCallback _readcallback,QyhClientConnectCallback _connectcallback,QyhClientDisconnectCallback _disconnectcallback):
     need_reconnect(true),

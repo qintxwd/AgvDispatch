@@ -69,8 +69,8 @@ void UserManager::interLogin(TcpSessionPtr conn, MSG_Request msg)
                     u.id = id;
                     u.role = role;
                     u.status = 1;
-                    memcpy_s(u.username,MSG_STRING_LEN,username.c_str(), username.length());
-                    memcpy_s(u.password,MSG_STRING_LEN,password.c_str(), password.length());
+                    sprintf_s(u.username,MSG_STRING_LEN,"%s",username.c_str());
+					sprintf_s(u.password,MSG_STRING_LEN,"%s", password.c_str());
 
                     memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE, &u, sizeof(u));
                     response.head.body_length = sizeof(u);
@@ -202,10 +202,12 @@ void UserManager::interList(TcpSessionPtr conn, MSG_Request msg)
                     u.role = std::atoi(table.fieldValue(3));
                     u.status = (uint8_t)std::atoi(table.fieldValue(4));
                     memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&u, sizeof(USER_INFO));
-                    response.head.body_length += sizeof(USER_INFO);
                     response.head.body_length = sizeof(USER_INFO);
+                    response.head.flag = 1;
                     conn->send(response);
                 }
+				response.head.body_length = 0;
+				response.head.flag = 0;
             }
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;

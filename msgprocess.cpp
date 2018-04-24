@@ -15,7 +15,7 @@ MsgProcess::MsgProcess()
 void MsgProcess::interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"订阅AGV实时位置信息");
@@ -25,7 +25,7 @@ void MsgProcess::interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Requ
 void MsgProcess::interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"订阅AGV实时状态信息");
@@ -35,7 +35,7 @@ void MsgProcess::interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Reques
 void MsgProcess::interAddSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"订阅任务信息");
@@ -45,7 +45,7 @@ void MsgProcess::interAddSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg
 void MsgProcess::interAddSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"订阅日志信息");
@@ -55,7 +55,7 @@ void MsgProcess::interAddSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 void MsgProcess::interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅AGV实时位置信息");
@@ -65,7 +65,7 @@ void MsgProcess::interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_R
 void MsgProcess::interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅AGV实时状态信息");
@@ -75,7 +75,7 @@ void MsgProcess::interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Req
 void MsgProcess::interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅任务信息");
@@ -85,7 +85,7 @@ void MsgProcess::interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request 
 void MsgProcess::interRemoveSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg){
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"取消订阅日志信息");
@@ -273,7 +273,7 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         if((session->getUserId()<=0 || session->getUserRole()<=USER_ROLE_VISITOR) && request.head.todo != MSG_TODO_USER_LOGIN){
             //未登录，却发送了 登录以外的 其它请求
             MSG_Response response;
-            memcpy(&(response.head),&(request.head),sizeof(MSG_Head));
+            memcpy_s(&(response.head), sizeof(MSG_Head),&(request.head),sizeof(MSG_Head));
             response.return_head.error_code = 0;
             response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
             response.head.body_length = 0;
@@ -337,8 +337,12 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         { MSG_TODO_SUB_LOG,std::bind(&MsgProcess::interAddSubLog,msgProcess,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_CANCEL_SUB_LOG,std::bind(&MsgProcess::interRemoveSubLog,msgProcess,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_SUB_TASK,std::bind(&MsgProcess::interAddSubTask,msgProcess,std::placeholders::_1,std::placeholders::_2) },
-        { MSG_TODO_CANCEL_SUB_TASK,std::bind(&MsgProcess::interRemoveSubTask,msgProcess,std::placeholders::_1,std::placeholders::_2) }
+        { MSG_TODO_CANCEL_SUB_TASK,std::bind(&MsgProcess::interRemoveSubTask,msgProcess,std::placeholders::_1,std::placeholders::_2) },
 
+		{ MSG_TODO_TRAFFIC_CONTROL_STATION,std::bind(&MapManager::interTrafficControlStation,mapManager,std::placeholders::_1,std::placeholders::_2) },
+		{ MSG_TODO_TRAFFIC_CONTROL_LINE,std::bind(&MapManager::interTrafficControlLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
+		{ MSG_TODO_TRAFFIC_RELEASE_STATION,std::bind(&MapManager::interTrafficReleaseStation,mapManager,std::placeholders::_1,std::placeholders::_2) },
+		{ MSG_TODO_TRAFFIC_RELEASE_LINE,std::bind(&MapManager::interTrafficReleaseLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
     };
         table[request.head.todo].f(session, request);
     });
@@ -352,7 +356,7 @@ void MsgProcess::publishOneLog(USER_LOG log)
         if(logSubers.empty())return ;
 
         MSG_Response response;
-        memcpy(&response,0,sizeof(MSG_Response));
+        memset(&response,0,sizeof(MSG_Response));
         response.head.head = 0x88;
         response.head.queuenumber = 0;
         response.head.flag = 0;
@@ -381,7 +385,7 @@ void MsgProcess::notifyAll(ENUM_NOTIFY_ALL_TYPE type)
 {
     if(type == ENUM_NOTIFY_ALL_TYPE_MAP_UPDATE){
         MSG_Response response;
-        memcpy(&response,0,sizeof(MSG_Response));
+        memset(&response,0,sizeof(MSG_Response));
         response.head.head = 0x88;
         response.head.queuenumber = 0;
         response.head.flag = 0;
@@ -391,7 +395,7 @@ void MsgProcess::notifyAll(ENUM_NOTIFY_ALL_TYPE type)
         qyhnetwork::SessionManager::getInstance()->sendData(response);
     }else if(type == ENUM_NOTIFY_ALL_TYPE_ERROR){
         MSG_Response response;
-        memcpy(&response,0,sizeof(MSG_Response));
+		memset(&response,0,sizeof(MSG_Response));
         response.head.head = 0x88;
         response.head.queuenumber = 0;
         response.head.flag = 0;

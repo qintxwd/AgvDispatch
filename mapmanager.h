@@ -134,6 +134,8 @@ public:
 
     AgvStationPtr getStationById(int id);
 
+	AgvLinePtr getLineById(int id);
+
     //用户接口
     void interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
     void interCreateAddStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
@@ -143,6 +145,10 @@ public:
     void interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
     void interListLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
 
+	void interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+	void interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+	void interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+	void interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
 protected:
     MapManager();
 private:

@@ -231,17 +231,17 @@ bool TaskManager::saveTask(AgvTaskPtr task)
         }
 
         g_db.execDML("begin transaction;");
-        char buf[1024];
-        sprintf(buf, "insert into agv_task values (%d,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d);", task->getId(),task->getProduceTime().c_str(),task->getDoTime().c_str(),task->getDoneTime().c_str(),task->getCancelTime().c_str(),task->getErrorTime().c_str(),task->getErrorInfo().c_str(),task->getErrorCode(),task->getAgv()->getId(),task->getStatus(),task->getPriority(),task->getDoingIndex());
+        char buf[SQL_MAX_LENGTH];
+        sprintf_s(buf, SQL_MAX_LENGTH, "insert into agv_task values (%d,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d);", task->getId(),task->getProduceTime().c_str(),task->getDoTime().c_str(),task->getDoneTime().c_str(),task->getCancelTime().c_str(),task->getErrorTime().c_str(),task->getErrorInfo().c_str(),task->getErrorCode(),task->getAgv()->getId(),task->getStatus(),task->getPriority(),task->getDoingIndex());
         g_db.execDML(buf);
 
         for(auto node:task->getTaskNode()){
             int node__id = ++node_id;
-            sprintf(buf, "insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(),node->getStation()->id);
+            sprintf_s(buf, SQL_MAX_LENGTH,"insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(),node->getStation()->id);
             g_db.execDML(buf);
             for(auto thing:node->getDoThings()){
                 int thing__id = ++thing_id;
-                sprintf(buf, "insert into agv_task_node_thing values (%d, %d,%s);", thing__id, node__id,thing->discribe().c_str());
+                sprintf_s(buf, SQL_MAX_LENGTH, "insert into agv_task_node_thing values (%d, %d,%s);", thing__id, node__id,thing->discribe().c_str());
                 g_db.execDML(buf);
             }
         }
@@ -384,7 +384,7 @@ void TaskManager::interQueryStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request m
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
@@ -394,10 +394,10 @@ void TaskManager::interQueryStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request m
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
     }else{
         int32_t id;
-        memcpy(&id,msg.body,sizeof(int32_t));
+        memcpy_s(&id,sizeof(int32_t),msg.body,sizeof(int32_t));
         UserLogManager::getInstance()->push(conn->getUserName()+"请求任务状态，任务ID:"+intToString(id));
         int32_t status = queryTaskStatus(id);
-        memcpy(response.body,&status,sizeof(int32_t));
+		memcpy_s(response.body, MSG_RESPONSE_BODY_MAX_SIZE,&status,sizeof(int32_t));
         response.head.body_length = sizeof(int32_t);
     }
     conn->send(response);
@@ -407,7 +407,7 @@ void TaskManager::interCancel(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
@@ -417,7 +417,7 @@ void TaskManager::interCancel(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
     }else{
         int32_t id;
-        memcpy(&id,msg.body,sizeof(int32_t));
+        memcpy_s(&id,sizeof(int32_t),msg.body,sizeof(int32_t));
         UserLogManager::getInstance()->push(conn->getUserName()+"取消任务，任务ID:"+intToString(id));
         //取消该任务
         cancelTask(id);
@@ -429,7 +429,7 @@ void TaskManager::interListUndo(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
@@ -466,7 +466,7 @@ void TaskManager::interListDoing(qyhnetwork::TcpSessionPtr conn, MSG_Request msg
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
@@ -501,7 +501,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, MSG_Request
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
@@ -545,7 +545,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;

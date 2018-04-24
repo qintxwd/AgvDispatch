@@ -111,13 +111,13 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 {
     if (!_summer || _linkStatus != LS_WAITLINK)
     {
-        LOG(FATAL)<<"TcpSocket uninitialize." ;
+        LOG(ERROR)<<"TcpSocket uninitialize." ;
         return false;
     }
 
     if (_onConnectHandler)
     {
-        LOG(FATAL)<<"TcpSocket already connect." << logSection();
+        LOG(ERROR)<<"TcpSocket already connect." << logSection();
         return false;
     }
     _isIPV6 = remoteIP.find(':') != std::string::npos;
@@ -189,7 +189,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
     DWORD dwSize = 0;
     if (WSAIoctl(_socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &gid, sizeof(gid), &lpConnectEx, sizeof(lpConnectEx), &dwSize, NULL, NULL) != 0)
     {
-        LOG(FATAL)<<"TcpSocket::doConnect[" << this << "] Get ConnectEx pointer err!  ERRCODE= " << WSAGetLastError();
+        LOG(ERROR)<<"TcpSocket::doConnect[" << this << "] Get ConnectEx pointer err!  ERRCODE= " << WSAGetLastError();
         return false;
     }
 
@@ -214,7 +214,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         {
             if (WSAGetLastError() != ERROR_IO_PENDING)
             {
-                LOG(FATAL)<<"TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE=" << WSAGetLastError();
+                LOG(ERROR)<<"TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE=" << WSAGetLastError();
                 return false;
             }
 
@@ -234,7 +234,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         {
             if (WSAGetLastError() != ERROR_IO_PENDING)
             {
-                LOG(FATAL)<<"TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE=" << WSAGetLastError();
+                LOG(ERROR)<<"TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE=" << WSAGetLastError();
                 return false;
             }
 
@@ -271,7 +271,7 @@ bool TcpSocket::doSend(char * buf, unsigned int len, _OnSendHandler &&handler)
     }
     if (len == 0)
     {
-        LOG(FATAL)<<"TcpSocket param error. length is 0.";
+        LOG(ERROR)<<"TcpSocket param error. length is 0.";
         return false;
     }
 
@@ -303,17 +303,17 @@ bool TcpSocket::doRecv(char * buf, unsigned int len, _OnRecvHandler && handler)
     }
     if (!_summer)
     {
-        LOG(FATAL)<<"TcpSocket uninitialize." << logSection();
+        LOG(ERROR)<<"TcpSocket uninitialize." << logSection();
         return false;
     }
     if (_onRecvHandler)
     {
-        LOG(FATAL)<<"TcpSocket already recv. " << logSection();
+        LOG(ERROR)<<"TcpSocket already recv. " << logSection();
         return false;
     }
     if (len == 0)
     {
-        LOG(FATAL)<<"TcpSocket param error. length is 0.";
+        LOG(ERROR)<<"TcpSocket param error. length is 0.";
         return false;
     }
 

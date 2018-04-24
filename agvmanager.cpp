@@ -111,7 +111,7 @@ void AgvManager::interList(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head),&msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
     UserLogManager::getInstance()->push(conn->getUserName()+"请求AGV列表");
@@ -136,7 +136,7 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_FAIL;
 
@@ -155,12 +155,12 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 
         UserLogManager::getInstance()->push(conn->getUserName()+"添加AGV.name:"+ baseinfo.name+" ip:"+baseinfo.ip+intToString(baseinfo.port));
         char buf[SQL_MAX_LENGTH];
-        sprintf_s(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values(%s,%s,%d);", baseinfo.name, baseinfo.ip,baseinfo.port);
+        sprintf_s(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values('%s','%s',%d);", baseinfo.name, baseinfo.ip,baseinfo.port);
         try{
             g_db.execDML(buf);
             int id = g_db.execScalar("select max(id) from agv_agv;");
             response.head.body_length = sizeof(int);
-            memcpy(response.body,&id,sizeof(int));
+            memcpy_s(response.body, MSG_RESPONSE_BODY_MAX_SIZE,&id,sizeof(int));
             response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 
             AgvPtr agv = AgvPtr(new Agv(id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port));
@@ -169,11 +169,11 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
             sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(FATAL)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
             sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(FATAL)<<"sqlerr code:"<<e.what();
+            LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
     conn->send(response);
@@ -183,7 +183,7 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_FAIL;
 
@@ -193,7 +193,7 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     }
     else {
         uint32_t id;
-        memcpy(&id, msg.body, sizeof(uint32_t));
+        memcpy_s(&id, sizeof(uint32_t), msg.body, sizeof(uint32_t));
         UserLogManager::getInstance()->push(conn->getUserName()+"删除AGV.ID:"+ intToString(id));
         char buf[SQL_MAX_LENGTH];
         sprintf_s(buf,SQL_MAX_LENGTH, "delete from agv_agv where id=%d;", id);
@@ -203,11 +203,11 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
             sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(FATAL)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
             sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(FATAL)<<"sqlerr code:"<<e.what();
+            LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
     conn->send(response);
@@ -217,7 +217,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 {
     MSG_Response response;
     memset(&response, 0, sizeof(MSG_Response));
-    memcpy(&response.head, &msg.head, sizeof(MSG_Head));
+    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
     response.head.body_length = 0;
     response.return_head.result = RETURN_MSG_RESULT_FAIL;
 
@@ -227,7 +227,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     }
     else {
         AGV_BASE_INFO baseinfo;
-        memcpy(&baseinfo, msg.body, sizeof(AGV_BASE_INFO));
+        memcpy_s(&baseinfo, sizeof(AGV_BASE_INFO), msg.body, sizeof(AGV_BASE_INFO));
         UserLogManager::getInstance()->push(conn->getUserName()+"修改AGV信息.ID:"+ intToString(baseinfo.id)+" newname:"+ baseinfo.name+" newip:"+baseinfo.ip+" newport:"+intToString( baseinfo.port));
         char buf[SQL_MAX_LENGTH];
         sprintf_s(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", baseinfo.name, baseinfo.ip,baseinfo.port,baseinfo.id);
@@ -238,11 +238,11 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
             sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(FATAL)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
             sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(FATAL)<<"sqlerr code:"<<e.what();
+            LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
     conn->send(response);

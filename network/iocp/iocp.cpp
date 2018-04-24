@@ -13,13 +13,13 @@ bool EventLoop::initialize()
 {
     if (_io != NULL)
     {
-        LOG(FATAL)<<"iocp already craeted !  " << logSection();
+        LOG(ERROR)<<"iocp already craeted !  " << logSection();
         return false;
     }
     _io = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 1);
     if (!_io)
     {
-        LOG(FATAL)<<"CreateIoCompletionPort false!  " ;
+        LOG(ERROR)<<"CreateIoCompletionPort false!  " ;
         return false;
     }
     return true;
@@ -44,7 +44,7 @@ void EventLoop::runOnce(bool isImmediately)
 {
     if (_io == NULL)
     {
-        LOG(FATAL)<<"iocp handle not initialize. " <<logSection();
+        LOG(ERROR)<<"iocp handle not initialize. " <<logSection();
         return;
     }
 

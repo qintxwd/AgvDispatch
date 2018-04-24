@@ -238,12 +238,11 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
                 read_position -= head_position;
             }
             if(read_position>=sizeof(MSG_Head)){
-                memcpy(&read_one_msg,read_buffer,read_position);
+				memset(&read_one_msg, 0, sizeof(read_one_msg));
+                memcpy_s(&read_one_msg,sizeof(MSG_Request),read_buffer,read_position);
                 if(read_one_msg.head.body_length<= read_position - sizeof(MSG_Head)){
-                    //一条完整的消息//入队一条消息
-                    //TODO
-                    MsgProcess::getInstance()->processOneMsg(read_one_msg,shared_from_this());
-                    //enqueue(read_one_msg);
+                    MsgProcess::getInstance()->processOneMsg(read_one_msg,shared_from_this());                
+					memmove(read_buffer, read_buffer + sizeof(MSG_Head)+ read_one_msg.head.body_length, read_position - sizeof(MSG_Head)- read_one_msg.head.body_length);
                     read_position -= sizeof(MSG_Head)+read_one_msg.head.body_length;
                 }
             }

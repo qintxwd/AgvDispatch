@@ -61,7 +61,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 
     if (_eventData._fd == InvalidFD)
     {
-        LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket create err errno =" << strerror(errno);
+        LOG(ERROR)<<"TcpAccept::openAccept[this0x" << this << "] listen socket create err errno =" << strerror(errno);
         return false;
     }
 
@@ -85,7 +85,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
         }
         addr.sin6_port = htons(listenPort);
         if (bind(_eventData._fd, (sockaddr *)&addr, sizeof(addr)) != 0) {
-            LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno = " << strerror(errno);
+            LOG(ERROR)<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno = " << strerror(errno);
             ::close(_eventData._fd);
             _eventData._fd = InvalidFD;
             return false;
@@ -103,7 +103,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
         }
         addr.sin_port = htons(listenPort);
         if (bind(_eventData._fd, (sockaddr *)&addr, sizeof(addr)) != 0) {
-            LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno=" << strerror(errno);
+            LOG(ERROR)<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno=" << strerror(errno);
             ::close(_eventData._fd);
             _eventData._fd = InvalidFD;
             return false;
@@ -112,7 +112,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 
     if (listen(_eventData._fd, 200) != 0)
     {
-        LOG(FATAL)<<"TcpAccept::openAccept[this0x" << this << "] listen socket listen err, errno=" << strerror(errno);
+        LOG(ERROR)<<"TcpAccept::openAccept[this0x" << this << "] listen socket listen err, errno=" << strerror(errno);
         ::close(_eventData._fd);
         _eventData._fd = InvalidFD;
         return false;
@@ -128,12 +128,12 @@ bool TcpAccept::doAccept(const TcpSocketPtr &s, _OnAcceptHandler &&handle)
 {
     if (_onAcceptHandler)
     {
-        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection();
+        LOG(ERROR)<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection();
         return false;
     }
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state";
+        LOG(ERROR)<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state";
         return false;
     }
 
@@ -148,12 +148,12 @@ void TcpAccept::onEPOLLMessage(uint32_t event)
     //
     if (!_onAcceptHandler)
     {
-        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection();
+        LOG(ERROR)<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection();
         return ;
     }
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LOG(FATAL)<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state";
+        LOG(ERROR)<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state";
         return ;
     }
 
