@@ -5,7 +5,7 @@
 #include "taskmanager.h"
 #include "userlogmanager.h"
 
-MapManager::MapManager():image_colors(NULL),mapModifying(false)
+MapManager::MapManager():mapModifying(false)
 {
 }
 
@@ -60,10 +60,7 @@ bool MapManager::load()
         mapModifying = false;
         return false;
     }
-    //        if(!loadFromImg()){
-    //            mapModifying = false;
-    //            return false;
-    //        }
+
     mapModifying = false;
     return true;
 }
@@ -86,11 +83,11 @@ bool MapManager::save()
         g_db.execDML("begin transaction;");
         char buf[SQL_MAX_LENGTH];
         for(auto station:m_stations){
-            sprintf_s(buf, SQL_MAX_LENGTH, "insert into agv_station values (%d, %d,%d,%s);", station->id, station->x,station->y,station->name.c_str());
+            snprintf(buf, SQL_MAX_LENGTH, "insert into agv_station values (%d, %d,%d,%s);", station->id, station->x,station->y,station->name.c_str());
             g_db.execDML(buf);
         }
         for(auto line:m_lines){
-            sprintf_s(buf, SQL_MAX_LENGTH, "insert into agv_line values (%d,%d,%d,%d);", line->id, line->startStation->id,line->endStation->id,line->length);
+            snprintf(buf, SQL_MAX_LENGTH, "insert into agv_line values (%d,%d,%d,%d);", line->id, line->startStation->id,line->endStation->id,line->length);
             g_db.execDML(buf);
         }
         g_db.execDML("commit transaction;");
@@ -163,44 +160,6 @@ bool MapManager::loadFromDb()
     return true;
 }
 
-bool  MapManager::IsThisColor(cv::Mat gridMap, int x,int y, cv::Scalar color)
-{
-    bool bflag = false;
-
-    if(
-            (gridMap.ptr<cv::Vec3b>(y)[x][0]==color[0]) &&
-            (gridMap.ptr<cv::Vec3b>(y)[x][1]==color[1]) &&
-            (gridMap.ptr<cv::Vec3b>(y)[x][2]==color[2])   )
-        bflag = true;
-
-    return  bflag;
-}
-
-
-bool MapManager::loadFromImg(std::string imgfile, int _gridsize)
-{
-    imageGridSize = _gridsize;
-    try{
-        //载入图像
-        cv::Mat  gridmap = cv::imread(imgfile);
-        //标记每个栅格的颜色
-        getImgColors(gridmap);
-        //获取交叉点，作为站点
-        getImgStations();
-        //对其他点作成线路
-        getImgLines();
-        //对所有线路标记反向线
-        getReverseLines();
-        //对所有线路可到达的其他线路
-        getAdj();
-        //保存到数据库
-        save();
-    }catch(std::exception e){
-        LOG(ERROR)<<e.what();
-        return false;
-    }
-    return true;
-}
 
 //获取最优路径
 std::vector<AgvLinePtr> MapManager::getBestPath(AgvPtr agv,AgvStationPtr lastStation, AgvStationPtr startStation, AgvStationPtr endStation, int &distance, bool changeDirect)
@@ -404,166 +363,6 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
 }
 
 
-
-//对图像中每个栅格的颜色做标记
-void MapManager::getImgColors(cv::Mat &gridmap)
-{
-    if(gridmap.cols<=0||gridmap.rows<0){
-        throw std::runtime_error(std::string("空图像"));
-    }
-    imageGridColumn    = gridmap.cols / imageGridSize;
-    imageGridRow    = gridmap.rows / imageGridSize;
-    imageGridHalfSize = (imageGridSize/2);
-    if(imageGridSize%2!=0)++imageGridHalfSize;
-
-    image_colors = new ImageColors(imageGridColumn,imageGridRow);
-    for(int i=0;i<imageGridRow;++i) {
-        for(int j = 0;j<imageGridColumn;++j){
-            int posY = i*imageGridSize+imageGridHalfSize;
-            int posX = j*imageGridSize+imageGridHalfSize;
-            for(int k = 1;k<MAP_GRID_COLOR_LENGTH;++k){
-                if(IsThisColor(gridmap,posX,posY,color_table[k].scalar)){
-                    image_colors->setColor(i,j,color_table[k].colorId);
-                    break;
-                }
-            }
-        }
-    }
-}
-
-
-void MapManager::getImgStations()
-{
-    for(int i=0;i<imageGridRow;++i) {
-        for(int j = 0;j<imageGridColumn;++j){
-            if(image_colors->getColor(i,j) != MAP_GRID_COLOR_BLUE)continue;
-
-            int lineAmount = 0;
-            bool first = false;
-            bool last = false;
-            bool temp;
-            for(int k=0;k<sizeof(around_pos)/sizeof(around_pos[0]);++k)
-            {
-                int row = i+around_pos[k].row;
-                int column = j+around_pos[k].column;
-                if(row<0||column<0||row>=imageGridRow||column>imageGridColumn)
-                {
-                    temp = false;
-                }else{
-                    temp = image_colors->getColor(row,column) == MAP_GRID_COLOR_BLUE;
-                }
-                if(k == 0){
-                    if(temp)lineAmount++;
-                    first = temp;
-                }else{
-                    if(!last && temp){
-                        lineAmount++;
-                        if(k+1 == sizeof(around_pos)/sizeof(around_pos[0])){
-                            if(first)lineAmount--;
-                        }
-                    }
-                }
-                last = temp;
-            }
-
-            if(lineAmount >2){
-                //这个是交叉点
-                AgvStationPtr station =AgvStationPtr(new AgvStation);
-                station->id = m_stations.size();
-                station->x = j;
-                station->y = i;
-                m_stations.push_back(station);
-            }else if(lineAmount == 1){
-                //这个是端点
-                AgvStationPtr station = AgvStationPtr(new AgvStation);
-                station->id = m_stations.size()+1;//ID>0
-                station->x = j;
-                station->y = i;
-                m_stations.push_back(station);
-            }
-        }
-    }
-
-    for(auto station:m_stations){
-        LOG(INFO)<<"x="<<station->x<<" y="<<station->y<<" id="<<station->id;
-    }
-}
-
-//返回下一个站点
-AgvStationPtr MapManager::recrsion(int row,int column,int stationId,int ***pps,int &l_length,int s_length){
-    for(int k=0;k<sizeof(around_pos)/sizeof(around_pos[0]);++k)
-    {
-        int rrow = row+around_pos[k].row;
-        int ccolumn = column+around_pos[k].column;
-        if(rrow<0||ccolumn<0||rrow>=imageGridRow||ccolumn>imageGridColumn)continue;
-        if(image_colors->getColor(row,column) == MAP_GRID_COLOR_BLUE){
-            if((*pps)[rrow][ccolumn]!=stationId){
-
-                if(k%2 == 0)s_length+=1;
-                else l_length +=1;
-                for(auto station:m_stations){
-                    if(station->x == ccolumn && station->y == rrow)return station;
-                }
-                (*pps)[rrow][ccolumn] = stationId;
-                return recrsion(rrow,ccolumn,stationId,pps,l_length,s_length);
-            }
-        }
-    }
-
-    return nullptr;
-}
-
-void MapManager::getImgLines()
-{
-    int **ppps =new int*[imageGridRow];
-    for(auto i=0;i<imageGridRow;i++)
-        ppps[i]=new int[imageGridColumn];
-
-
-
-    for(auto station:m_stations){
-        //对于一个站点
-        for(int i=0;i<imageGridRow;++i){
-            for(int j=0;j<imageGridColumn;++j){
-                ppps[i][j] = 0;
-            }
-        }
-        //自身点位的站点ID
-        ppps[station->y][station->x] = station->id;
-        //周围相邻点位的站点ID
-        for(int k=0;k<sizeof(around_pos)/sizeof(around_pos[0]);++k)
-        {
-            int row = station->y +around_pos[k].row;
-            int column = station->x+around_pos[k].column;
-            if(row<0||column<0||row>=imageGridRow||column>imageGridColumn)continue;
-            if(image_colors->getColor(row,column) == MAP_GRID_COLOR_BLUE){
-                ppps[row][column] = station->id;
-            }
-        }
-        //周围相邻点位的站点ID
-        for(int k=0;k<sizeof(around_pos)/sizeof(around_pos[0]);++k)
-        {
-            int row = station->y +around_pos[k].row;
-            int column = station->x+around_pos[k].column;
-            if(row<0||column<0||row>=imageGridRow||column>imageGridColumn)continue;
-            if(image_colors->getColor(row,column) == MAP_GRID_COLOR_BLUE){
-                int l_length = 0;
-                int s_length = 0;
-                AgvStationPtr nextStationId = recrsion(row,column,station->id,&ppps,l_length,s_length);
-                if(nextStationId!=0){
-                    AgvLinePtr line = AgvLinePtr(new AgvLine);
-                    line->id = m_lines.size()+1;
-                    line->startStation = station;
-                    line->endStation = nextStationId;
-                    line->length = l_length+sqrt(2)*s_length;
-
-                    m_lines.push_back(line);
-                }
-            }
-        }
-    }
-}
-
 void MapManager::getReverseLines()
 {
     for(auto a:m_lines){
@@ -613,7 +412,7 @@ void MapManager::interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
     if (TaskManager::getInstance()->hasTaskDoing())
     {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_TASKING;
-        sprintf_s(response.return_head.error_info, "%s","there are some task is taking");
+        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN,"%s","there are some task is taking");
     }
     else {
         UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图");
@@ -626,11 +425,11 @@ void MapManager::interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
             response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
@@ -648,28 +447,28 @@ void MapManager::interCreateAddStation(qyhnetwork::TcpSessionPtr conn, MSG_Reque
 
     if (!mapModifying) {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
     }
     else {
         if (msg.head.body_length != sizeof(STATION_INFO)) {
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error STATION_INFO length");
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error STATION_INFO length");
         }
         else {
             STATION_INFO station;
             memcpy_s(&station, sizeof(STATION_INFO),msg.body, sizeof(STATION_INFO));
             char buf[MSG_LONG_LONG_STRING_LEN];
-            sprintf_s(buf,MSG_LONG_LONG_STRING_LEN, "insert into agv_station values (%d, %d,%d,%s);", station.id, station.x,station.y,station.name);
+            snprintf(buf,MSG_LONG_LONG_STRING_LEN, "insert into agv_station values (%d, %d,%d,%s);", station.id, station.x,station.y,station.name);
             try{
                 g_db.execDML(buf);
                 response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
             }catch(CppSQLite3Exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
                 LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
             }catch(std::exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
                 LOG(ERROR)<<"sqlerr code:"<<e.what();
             }
         }
@@ -687,28 +486,28 @@ void MapManager::interCreateAddLine(qyhnetwork::TcpSessionPtr conn, MSG_Request 
 
     if (!mapModifying) {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
     }
     else {
         if (msg.head.body_length != sizeof(AGV_LINE)) {
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
         }
         else {
             AGV_LINE line;
             memcpy_s(&line,sizeof(AGV_LINE), msg.body, sizeof(AGV_LINE));
             char buf[SQL_MAX_LENGTH];
-            sprintf_s(buf,SQL_MAX_LENGTH, "INSERT INTO agv_line (id,line_startStation,line_endStation,line_length) VALUES (%d,%d,%d,%d);", line.id, line.startStation,line.endStation,line.length);
+            snprintf(buf,SQL_MAX_LENGTH, "INSERT INTO agv_line (id,line_startStation,line_endStation,line_length) VALUES (%d,%d,%d,%d);", line.id, line.startStation,line.endStation,line.length);
             try{
                 g_db.execDML(buf);
                 response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
             }catch(CppSQLite3Exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
                 LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
             }catch(std::exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
                 LOG(ERROR)<<"sqlerr code:"<<e.what();
             }
 
@@ -729,14 +528,14 @@ void MapManager::interCreateFinish(qyhnetwork::TcpSessionPtr conn, MSG_Request m
 
     if (!mapModifying) {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
     }
     else {
         UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图完成");
         if(!save()){
             response.return_head.result = RETURN_MSG_RESULT_FAIL;
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","save data to sql fail");
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","save data to sql fail");
         }else{
             getReverseLines();
             getAdj();
@@ -760,7 +559,7 @@ void MapManager::interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
 
     if (mapModifying) {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
     }
     else {
         UserLogManager::getInstance()->push(conn->getUserName()+"获取地图站点信息");
@@ -772,7 +571,7 @@ void MapManager::interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
             info.y = s->y;
             info.floorId = s->floorId;
             info.occuagv = s->occuAgv->getId();
-            sprintf_s(info.name,MSG_STRING_LEN,s->name.c_str(),s->name.length());
+            snprintf(info.name,MSG_STRING_LEN,s->name.c_str(),s->name.length());
             memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(STATION_INFO));
             response.head.flag = 1;
             response.head.body_length = sizeof(STATION_INFO);
@@ -794,7 +593,7 @@ void MapManager::interListLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 
     if (mapModifying) {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is creating map");
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is creating map");
     }
     else {
         UserLogManager::getInstance()->push(conn->getUserName()+"获取地图线路信息");
@@ -828,12 +627,12 @@ void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, MSG_
 
 	if (mapModifying) {
 		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-		sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
+        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
 	}
 	else {
 		if (msg.head.body_length != sizeof(int32_t)) {
 			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-			sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error station id length");
+            snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error station id length");
 		}
 		else {
 			int stationId = 0;
@@ -841,7 +640,7 @@ void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, MSG_
 			AgvStationPtr station = getStationById(stationId);
 			if (station == nullptr) {
 				response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
-				sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
+                snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
 			}
 			else {
 				//存库...
@@ -868,12 +667,12 @@ void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, MSG_Req
 
 	if (mapModifying) {
 		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-		sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
+        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
 	}
 	else {
 		if (msg.head.body_length != sizeof(int32_t)) {
 			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-			sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error line id length");
+            snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error line id length");
 		}
 		else {
 			int lineId = 0;
@@ -881,7 +680,7 @@ void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, MSG_Req
 			AgvLinePtr line = getLineById(lineId);
 			if (line == nullptr) {
 				response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
-				sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded line id");
+                snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded line id");
 			}
 			else {
 				//存库...
@@ -919,12 +718,12 @@ void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, MSG_
 
 	if (mapModifying) {
 		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-		sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
+        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
 	}
 	else {
 		if (msg.head.body_length != sizeof(int32_t)) {
 			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-			sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error station id length");
+            snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error station id length");
 		}
 		else {
 			int stationId = 0;
@@ -932,7 +731,7 @@ void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, MSG_
 			AgvStationPtr station = getStationById(stationId);
 			if (station == nullptr) {
 				response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
-				sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
+                snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
 			}
 			else {
 				//存库...
@@ -959,12 +758,12 @@ void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, MSG_Req
 
 	if (mapModifying) {
 		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-		sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
+        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
 	}
 	else {
 		if (msg.head.body_length != sizeof(int32_t)) {
 			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-			sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error line id length");
+            snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error line id length");
 		}
 		else {
 			int lineId = 0;
@@ -972,7 +771,7 @@ void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, MSG_Req
 			AgvLinePtr line = getLineById(lineId);
 			if (line == nullptr) {
 				response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
-				sprintf_s(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded line id");
+                snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded line id");
 			}
 			else {
 				for (auto itr = line->occuAgvs.begin(); itr != line->occuAgvs.end(); ) {

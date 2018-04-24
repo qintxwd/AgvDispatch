@@ -221,7 +221,7 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
         founder->second._totalAcceptCount++;
         _lastSessionID = nextSessionID(_lastSessionID);
 
-        LOG(ERROR)<<"onAcceptNewClient Accept New Client. Accept new Sessions sID=" << _lastSessionID << ". The new socket  remoteAddress=" << remoteIP << ":" << remotePort
+        LOG(INFO)<<"onAcceptNewClient Accept New Client. Accept new Sessions sID=" << _lastSessionID << ". The new socket  remoteAddress=" << remoteIP << ":" << remotePort
                  << ", Aready linked sessions = " << founder->second._currentLinked << ", extend=" << founder->second;
 
         s->initialize(_summer);

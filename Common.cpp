@@ -75,3 +75,12 @@ std::string intToString(int i)
     out<<i;
     return out.str();
 }
+
+#ifndef _WIN32
+
+void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, size_t __n)
+{
+    memcpy(__dest,__src,__m<__n?__m:__n);
+}
+
+#endif

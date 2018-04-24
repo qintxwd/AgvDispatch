@@ -47,8 +47,8 @@ void UserLogManager::push(const std::string &s)
 {
     std::string time = getTimeStrNow();
     USER_LOG log;
-    sprintf_s(log.time,MSG_TIME_STRING_LEN,"%s", time.c_str());
-    sprintf_s(log.msg,MSG_LOG_MAX_LENGTH,"%s", s.c_str());
+    snprintf(log.time,MSG_TIME_STRING_LEN,"%s", time.c_str());
+    snprintf(log.msg,MSG_LOG_MAX_LENGTH,"%s", s.c_str());
     mtx.lock();
     logQueue.push(log);
     mtx.unlock();
@@ -78,10 +78,10 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request 
                 for(int i=0;i<table.numRows();++i){
                     table.setRow(i);
                     USER_LOG log;
-                    sprintf_s(log.time,MSG_TIME_STRING_LEN, table.fieldValue(0));
-                    sprintf_s(log.msg,MSG_LOG_MAX_LENGTH, table.fieldValue(1));
-                    sprintf_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,"%s",log.time);
-                    sprintf_s(response.body+MSG_TIME_STRING_LEN,MSG_LOG_MAX_LENGTH,"%s",log.msg);
+                    snprintf(log.time,MSG_TIME_STRING_LEN, table.fieldValue(0));
+                    snprintf(log.msg,MSG_LOG_MAX_LENGTH, table.fieldValue(1));
+                    snprintf(response.body,MSG_RESPONSE_BODY_MAX_SIZE,"%s",log.time);
+                    snprintf(response.body+MSG_TIME_STRING_LEN,MSG_LOG_MAX_LENGTH,"%s",log.msg);
                     response.head.body_length = MSG_TIME_STRING_LEN+strlen(log.msg);
 					response.head.flag = 1;
                     conn->send(response);
@@ -91,11 +91,11 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request 
             }
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }

@@ -16,7 +16,6 @@ public:
     TcpSocket();
     ~TcpSocket();
     bool setNoDelay();
-    inline void setFloodSendOptimize(bool enable){_floodSendOptimize = enable;}
     bool initialize(const EventLoopPtr& summer);
     inline bool getPeerInfo(std::string& remoteIP, unsigned short &remotePort)
     {
@@ -41,7 +40,6 @@ private:
     unsigned short _remotePort = 0;
     bool _isIPV6 = false;
     bool _daemonRecv = false;
-    bool _floodSendOptimize = true;
     EventData _eventData;
 
     _OnConnectHandler _onConnectHandler;
@@ -51,7 +49,6 @@ private:
     char    *     _recvBuf = NULL;
     unsigned int _recvOffset = 0;
 
-    _OnSendHandler _onSendHandler;
     unsigned int _sendLen = 0;
     char *         _sendBuf = NULL;
 };

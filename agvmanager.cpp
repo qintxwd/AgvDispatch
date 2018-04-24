@@ -119,8 +119,8 @@ void AgvManager::interList(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     for (auto agv : agvs) {
         AGV_BASE_INFO info;
         info.id = agv->getId();
-        sprintf_s(info.ip,MSG_STRING_LEN,"%s",agv->getIp().c_str());
-        sprintf_s(info.name,MSG_STRING_LEN,"%s",agv->getName().c_str());
+        snprintf(info.ip,MSG_STRING_LEN,"%s",agv->getIp().c_str());
+        snprintf(info.name,MSG_STRING_LEN,"%s",agv->getName().c_str());
         info.port = agv->getPort();
         memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(AGV_BASE_INFO));
         response.head.flag = 1;
@@ -143,19 +143,19 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
     //TODO:添加到数据库，获取ID返回
     if (msg.head.body_length != sizeof(AGV_BASE_INFO)) {
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_BASE_INFO length");
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_BASE_INFO length");
     }
     else {
         AGV_BASE_INFO baseinfo;
         memcpy_s(&baseinfo,sizeof(AGV_BASE_INFO), msg.body, sizeof(AGV_BASE_INFO));
         if (msg.head.body_length != sizeof(AGV_LINE)) {
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
         }
 
         UserLogManager::getInstance()->push(conn->getUserName()+"添加AGV.name:"+ baseinfo.name+" ip:"+baseinfo.ip+intToString(baseinfo.port));
         char buf[SQL_MAX_LENGTH];
-        sprintf_s(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values('%s','%s',%d);", baseinfo.name, baseinfo.ip,baseinfo.port);
+        snprintf(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values('%s','%s',%d);", baseinfo.name, baseinfo.ip,baseinfo.port);
         try{
             g_db.execDML(buf);
             int id = g_db.execScalar("select max(id) from agv_agv;");
@@ -168,11 +168,11 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
             addAgv(agv);
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
@@ -196,17 +196,17 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         memcpy_s(&id, sizeof(uint32_t), msg.body, sizeof(uint32_t));
         UserLogManager::getInstance()->push(conn->getUserName()+"删除AGV.ID:"+ intToString(id));
         char buf[SQL_MAX_LENGTH];
-        sprintf_s(buf,SQL_MAX_LENGTH, "delete from agv_agv where id=%d;", id);
+        snprintf(buf,SQL_MAX_LENGTH, "delete from agv_agv where id=%d;", id);
         try{
             g_db.execDML(buf);
             removeAgv(id);
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
@@ -230,18 +230,18 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         memcpy_s(&baseinfo, sizeof(AGV_BASE_INFO), msg.body, sizeof(AGV_BASE_INFO));
         UserLogManager::getInstance()->push(conn->getUserName()+"修改AGV信息.ID:"+ intToString(baseinfo.id)+" newname:"+ baseinfo.name+" newip:"+baseinfo.ip+" newport:"+intToString( baseinfo.port));
         char buf[SQL_MAX_LENGTH];
-        sprintf_s(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", baseinfo.name, baseinfo.ip,baseinfo.port,baseinfo.id);
+        snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", baseinfo.name, baseinfo.ip,baseinfo.port,baseinfo.id);
 
         try{
             g_db.execDML(buf);
             updateAgv(baseinfo.id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port);
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }

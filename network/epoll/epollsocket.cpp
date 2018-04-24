@@ -35,7 +35,7 @@ std::string TcpSocket::logSection()
     os << ";; Status: summer.user_count()=" << _summer.use_count() << ", remoteIP=" << _remoteIP << ", remotePort=" << _remotePort
         << ", _onConnectHandler = " << (bool)_onConnectHandler
         << ", _onRecvHandler = " << (bool)_onRecvHandler << ", _recvBuf=" << (void*)_recvBuf << ", _recvLen=" << _recvLen
-        << ", _onSendHandler = " << (bool)_onSendHandler << ", _sendBuf=" << (void*)_sendBuf << ", _sendLen=" << _sendLen
+        << ", _sendBuf=" << (void*)_sendBuf << ", _sendLen=" << _sendLen
         << "; _eventData=" << _eventData;
     return os.str();
 }
@@ -159,27 +159,20 @@ bool TcpSocket::doSend(char * buf, unsigned int len)
         return false;
     }
 
-    if (len == 0)
+    if (buf == NULL || len == 0)
     {
-        LOG(ERROR)<<"TcpSocket::doSend[this0x" << this << "] argument err! len ==0" ;
-        return false;
-    }
-    if (_sendBuf != NULL || _sendLen != 0)
-    {
-        LOG(ERROR)<<"TcpSocket::doSend[this0x" << this << "] (_sendBuf != NULL || _sendLen != 0) == TRUE" << logSection();
+        LOG(ERROR)<<"TcpSocket::doSend[this0x" << this << "] (_sendBuf == NULL || _sendLen == 0) == TRUE" << logSection();
         return false;
     }
 
     int ret = 0;
-    if (!_floodSendOptimize)
-    {
-        ret = send(_eventData._fd, buf, len, 0);
-    }
+
+    ret = send(_eventData._fd, buf, len, 0);
+
     if (ret <= 0)
     {
         _sendBuf = buf;
         _sendLen = len;
-
 
         _eventData._event.events = _eventData._event.events|EPOLLOUT;
         _summer->registerEvent(EPOLL_CTL_MOD, _eventData);
@@ -187,8 +180,6 @@ bool TcpSocket::doSend(char * buf, unsigned int len)
     else
     {
         LOG(TRACE)<<"TcpSocket::doSend direct sent=" << ret;
-        _OnSendHandler onSend(std::move(handler));
-        onSend(NEC_SUCCESS, ret);
     }
     return true;
 }
@@ -347,7 +338,6 @@ bool TcpSocket::doClose()
         }
         _onConnectHandler = nullptr;
         _onRecvHandler = nullptr;
-        _onSendHandler = nullptr;
         _eventData._tcpSocketPtr.reset();
     }
     return true;

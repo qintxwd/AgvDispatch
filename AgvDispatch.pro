@@ -14,10 +14,6 @@ TEMPLATE = app
 
 
 unix{
-#LIBS=-ldl
-LIBS += -lopencv_core
-LIBS += -lopencv_highgui
-LIBS += -lopencv_imgproc
 LIBS += -lsqlite3
 }
 

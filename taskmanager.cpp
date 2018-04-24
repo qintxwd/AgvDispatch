@@ -232,16 +232,16 @@ bool TaskManager::saveTask(AgvTaskPtr task)
 
         g_db.execDML("begin transaction;");
         char buf[SQL_MAX_LENGTH];
-        sprintf_s(buf, SQL_MAX_LENGTH, "insert into agv_task values (%d,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d);", task->getId(),task->getProduceTime().c_str(),task->getDoTime().c_str(),task->getDoneTime().c_str(),task->getCancelTime().c_str(),task->getErrorTime().c_str(),task->getErrorInfo().c_str(),task->getErrorCode(),task->getAgv()->getId(),task->getStatus(),task->getPriority(),task->getDoingIndex());
+        snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task values (%d,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d);", task->getId(),task->getProduceTime().c_str(),task->getDoTime().c_str(),task->getDoneTime().c_str(),task->getCancelTime().c_str(),task->getErrorTime().c_str(),task->getErrorInfo().c_str(),task->getErrorCode(),task->getAgv()->getId(),task->getStatus(),task->getPriority(),task->getDoingIndex());
         g_db.execDML(buf);
 
         for(auto node:task->getTaskNode()){
             int node__id = ++node_id;
-            sprintf_s(buf, SQL_MAX_LENGTH,"insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(),node->getStation()->id);
+            snprintf(buf, SQL_MAX_LENGTH,"insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(),node->getStation()->id);
             g_db.execDML(buf);
             for(auto thing:node->getDoThings()){
                 int thing__id = ++thing_id;
-                sprintf_s(buf, SQL_MAX_LENGTH, "insert into agv_task_node_thing values (%d, %d,%s);", thing__id, node__id,thing->discribe().c_str());
+                snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task_node_thing values (%d, %d,%s);", thing__id, node__id,thing->discribe().c_str());
                 g_db.execDML(buf);
             }
         }
@@ -444,9 +444,9 @@ void TaskManager::interListUndo(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
             for(auto task:mmaptask.second){
                 TASK_INFO info;
                 info.id = task->getId();
-                sprintf_s(info.produceTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
-                sprintf_s(info.doTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
-                sprintf_s(info.doneTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
+                snprintf(info.produceTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
+                snprintf(info.doTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
+                snprintf(info.doneTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
                 info.excuteAgv = task->getAgv()->getId();
                 info.status = AgvTask::AGV_TASK_STATUS_EXCUTING;
                 memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(TASK_INFO));
@@ -480,9 +480,9 @@ void TaskManager::interListDoing(qyhnetwork::TcpSessionPtr conn, MSG_Request msg
         for(auto task: doingTask){
             TASK_INFO info;
             info.id = task->getId();
-            sprintf_s(info.produceTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
-            sprintf_s(info.doTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
-            sprintf_s(info.doneTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
+            snprintf(info.produceTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
+            snprintf(info.doTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
+            snprintf(info.doneTime,MSG_TIME_STRING_LEN,"%s",task->getProduceTime().c_str());
             info.excuteAgv = task->getAgv()->getId();
             info.status = AgvTask::AGV_TASK_STATUS_EXCUTING;
             memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(TASK_INFO));
@@ -516,9 +516,9 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, MSG_Request
             table.setRow(i);
             TASK_INFO info;
             info.id = std::atoi( table.fieldValue(0));
-            sprintf_s(info.produceTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(1));
-            sprintf_s(info.doTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(2));
-            sprintf_s(info.doneTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(3));
+            snprintf(info.produceTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(1));
+            snprintf(info.doTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(2));
+            snprintf(info.doneTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(3));
             info.excuteAgv = std::atoi( table.fieldValue(4));
             info.status = AgvTask::AGV_TASK_STATUS_DONE;
             memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(TASK_INFO));
@@ -528,11 +528,11 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, MSG_Request
         }
     }catch(CppSQLite3Exception e){
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
         LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
     }catch(std::exception e){
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
         LOG(ERROR)<<"sqlerr code:"<<e.what();
     }
     response.head.flag = 0;
@@ -566,9 +566,9 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
                 table.setRow(i);
                 TASK_INFO info;
                 info.id = std::atoi( table.fieldValue(0));
-                sprintf_s(info.produceTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(1));
-                sprintf_s(info.doTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(2));
-                sprintf_s(info.doneTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(3));
+                snprintf(info.produceTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(1));
+                snprintf(info.doTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(2));
+                snprintf(info.doneTime,MSG_TIME_STRING_LEN,"%s",table.fieldValue(3));
                 info.excuteAgv = std::atoi( table.fieldValue(4));
                 info.status = AgvTask::AGV_TASK_STATUS_DONE;
                 memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(TASK_INFO));
@@ -578,11 +578,11 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
             }
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
         response.head.flag = 0;

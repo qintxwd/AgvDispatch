@@ -69,8 +69,8 @@ void UserManager::interLogin(TcpSessionPtr conn, MSG_Request msg)
                     u.id = id;
                     u.role = role;
                     u.status = 1;
-                    sprintf_s(u.username,MSG_STRING_LEN,"%s",username.c_str());
-					sprintf_s(u.password,MSG_STRING_LEN,"%s", password.c_str());
+                    snprintf(u.username,MSG_STRING_LEN,"%s",username.c_str());
+                    snprintf(u.password,MSG_STRING_LEN,"%s", password.c_str());
 
                     memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE, &u, sizeof(u));
                     response.head.body_length = sizeof(u);
@@ -84,15 +84,15 @@ void UserManager::interLogin(TcpSessionPtr conn, MSG_Request msg)
                 }
             }else{
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_USERNAME_NOT_EXIST;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","username not exist");
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","username not exist");
             }
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
@@ -116,11 +116,11 @@ void UserManager::interLogout(TcpSessionPtr conn, MSG_Request msg)
         g_db.execDML(ss.str().c_str());
     }catch(CppSQLite3Exception e){
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
         LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
     }catch(std::exception e){
         response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-        sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
         LOG(ERROR)<<"sqlerr code:"<<e.what();
     }
 
@@ -158,11 +158,11 @@ void UserManager::interChangePassword(TcpSessionPtr conn, MSG_Request msg)
             conn->setUserId(0);
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
@@ -197,8 +197,8 @@ void UserManager::interList(TcpSessionPtr conn, MSG_Request msg)
                     USER_INFO u;
                     memset(&u, 0, sizeof(USER_INFO));
                     u.id = std::atoi(table.fieldValue(0));
-                    sprintf_s(u.username,MSG_STRING_LEN, "%s",table.fieldValue(1));
-                    sprintf_s(u.password,MSG_STRING_LEN, "%s",table.fieldValue(2));
+                    snprintf(u.username,MSG_STRING_LEN, "%s",table.fieldValue(1));
+                    snprintf(u.password,MSG_STRING_LEN, "%s",table.fieldValue(2));
                     u.role = std::atoi(table.fieldValue(3));
                     u.status = (uint8_t)std::atoi(table.fieldValue(4));
                     memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&u, sizeof(USER_INFO));
@@ -211,11 +211,11 @@ void UserManager::interList(TcpSessionPtr conn, MSG_Request msg)
             }
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
@@ -267,11 +267,11 @@ void UserManager::interRemove(TcpSessionPtr conn, MSG_Request msg)
             }
         }catch(CppSQLite3Exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
             LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
         }catch(std::exception e){
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
             LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
     }
@@ -309,7 +309,7 @@ void UserManager::interAdd(TcpSessionPtr conn, MSG_Request msg)
         if(conn->getUserRole()<u.role){
             response.return_head.result = RETURN_MSG_RESULT_FAIL;
             response.return_head.error_code = RETURN_MSG_ERROR_CODE_PERMISSION_DENIED;
-            sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","you cannot add a user with higher permission than you");
+            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","you cannot add a user with higher permission than you");
         }else{
             try{
                 //插入数据库
@@ -328,11 +328,11 @@ void UserManager::interAdd(TcpSessionPtr conn, MSG_Request msg)
                 response.head.body_length = sizeof(int);
             }catch(CppSQLite3Exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
                 LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
             }catch(std::exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
                 LOG(ERROR)<<"sqlerr code:"<<e.what();
             }
         }
@@ -372,11 +372,11 @@ void UserManager::interModify(TcpSessionPtr conn, MSG_Request msg)
                 g_db.execDML(ss.str().c_str());
             }catch(CppSQLite3Exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
                 LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
             }catch(std::exception e){
                 response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                sprintf_s(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
+                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
                 LOG(ERROR)<<"sqlerr code:"<<e.what();
             }
         }

@@ -9,6 +9,7 @@
 #include <mutex>
 #include <algorithm>
 #include <memory>
+#include <limits.h>
 #include "utils/Log/easylogging.h"
 #include "utils/threadpool.h"
 #include "sqlite3/CppSQLite3.h"
@@ -40,5 +41,11 @@ std::string intToString(int i);
 
 extern ThreadPool g_threadPool;
 extern CppSQLite3DB g_db;
+
+#ifndef _WIN32
+
+void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, size_t __n);
+
+#endif
 
 #endif // COMMON_H

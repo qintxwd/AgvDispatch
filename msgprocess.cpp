@@ -398,7 +398,7 @@ void MsgProcess::notifyAll(ENUM_NOTIFY_ALL_TYPE type)
         errorMtx.lock();
         info.needConfirm = needConfirm;
         info.code = error_code;
-        sprintf_s(info.msg,MSG_RESPONSE_BODY_MAX_SIZE-4-sizeof(bool),"%s",error_info.c_str());
+        snprintf(info.msg,MSG_RESPONSE_BODY_MAX_SIZE-4-sizeof(bool),"%s",error_info.c_str());
         memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(NOTIFY_ERROR));
         response.head.body_length = sizeof(int32_t)+sizeof(bool)+error_info.length();
         errorMtx.unlock();
