@@ -7,7 +7,6 @@
 #ifndef WIN32
 namespace qyhnetwork
 {
-using _OnSendHandler = std::function<void(NetErrorCode, int)>;
 using _OnRecvHandler = std::function<unsigned int(NetErrorCode, int)>;
 using _OnConnectHandler = std::function<void(NetErrorCode)>;
 
@@ -26,14 +25,13 @@ public:
         return true;
     }
     bool doConnect(const std::string &remoteIP, unsigned short remotePort, _OnConnectHandler && handler);
-    bool doSend(char * buf, unsigned int len, _OnSendHandler && handler);
+    bool doSend(char * buf, unsigned int len);
     bool doRecv(char * buf, unsigned int len, _OnRecvHandler && handler, bool daemonRecv = false);
     bool doClose();
 
 
 public:
-    void OnPostClose();
-    void onEPOLLMessage(uint32_t event);
+	void onEPOLLMessage(uint32_t event);
     bool attachSocket(int fd, const std::string& remoteIP, unsigned short remotePort, bool isIPV6);
 private:
     std::string logSection();

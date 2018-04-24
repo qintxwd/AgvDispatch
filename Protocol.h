@@ -98,12 +98,6 @@ typedef enum Msg_Todo
     MSG_TODO_MAP_CREATE_FINISH,//创建地图完成
     MSG_TODO_MAP_LIST_STATION,//请求所有站点//none
     MSG_TODO_MAP_LIST_LINE,//请求所有直线//none
-    //MSG_TODO_HAND_REQUEST,//请求控制权//none
-    //MSG_TODO_HAND_RELEASE,//释放控制权//none
-    //MSG_TODO_HAND_FORWARD,//前进//none
-    //MSG_TODO_HAND_BACKWARD,//后退//none
-    //MSG_TODO_HAND_TURN_LEFT,//左转//none
-    //MSG_TODO_HAND_TURN_RIGHT,//右转//none
     MSG_TODO_AGV_MANAGE_LIST,//车辆列表//none
     MSG_TODO_AGV_MANAGE_ADD,//增加//name[MSG_STRING_LEN]+ip[MSG_STRING_LEN]+port[4]
     MSG_TODO_AGV_MANAGE_DELETE,//删除//id[4]

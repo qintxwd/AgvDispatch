@@ -265,24 +265,11 @@ void TcpSession::send(const MSG_Response &msg)
 {
     SessionManager::getInstance()->_statInfo[STAT_SEND_COUNT]++;
     SessionManager::getInstance()->_statInfo[STAT_SEND_PACKS]++;
-    bool sendRet = _sockptr->doSend((char *)&msg,sizeof(MSG_Head)+sizeof(MSG_RESPONSE_HEAD)+msg.head.body_length , std::bind(&TcpSession::onSend, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+    bool sendRet = _sockptr->doSend((char *)&msg,sizeof(MSG_Head)+sizeof(MSG_RESPONSE_HEAD)+msg.head.body_length);
     if (!sendRet)
     {
         LOG(WARNING)<<"send error ";
     }
-}
-
-
-void TcpSession::onSend(qyhnetwork::NetErrorCode ec, int sent)
-{
-    LOG(TRACE)<<"TcpSession::onSend session id=" << getSessionID() << ", sent=" << sent;
-    if (ec)
-    {
-        LOG(INFO)<<"remote socket closed";
-        return ;
-    }
-
-    SessionManager::getInstance()->_statInfo[STAT_SEND_BYTES] += sent;
 }
 
 void TcpSession::onPulse()

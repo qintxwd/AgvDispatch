@@ -32,7 +32,7 @@ TcpSocket::TcpSocket()
 TcpSocket::~TcpSocket()
 {
     g_networkEnvironment.addClosedSocketCount();
-    if (_onConnectHandler || _onRecvHandler || _onSendHandler)
+    if (_onConnectHandler || _onRecvHandler)
     {
         LOG(WARNING)<<"Destruct TcpSocket Error. socket handle not invalid and some request was not completed. " << logSection();
     }
@@ -50,7 +50,7 @@ std::string TcpSocket::logSection()
         << ", _remoteIP=" << _remoteIP << ", _remotePort=" << _remotePort
         << ", _recvHandle=" << _recvHandle << ", _recvWSABuf[0x" << (void*)_recvWSABuf.buf << "," << _recvWSABuf.len
         << "], _onRecvHandler=" << (bool)_onRecvHandler << ", _sendHandle=" << _sendHandle
-        << ", _sendWsaBuf[0x" << (void*)_sendWsaBuf.buf << "," << _sendWsaBuf.len << "], _onSendHandler=" << (bool)_onSendHandler
+        << ", _sendWsaBuf[0x" << (void*)_sendWsaBuf.buf << "," << _sendWsaBuf.len << "],"
         << ", _connectHandle=" << _connectHandle << ", _onConnectHandler=" << (bool)_onConnectHandler
         << ", _linkStatus=" << _linkStatus << ", Notes: HANDLE_ACCEPT=0, HANDLE_RECV,HANDLE_SEND,HANDLE_CONNECT,HANDLE_RECVFROM,HANDLE_SENDTO=5"
         << " LS_UNINITIALIZE=0,    LS_WAITLINK,LS_ESTABLISHED,LS_CLOSED";
@@ -252,7 +252,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 
 
 
-bool TcpSocket::doSend(char * buf, unsigned int len, _OnSendHandler &&handler)
+bool TcpSocket::doSend(char * buf, unsigned int len)
 {
     if (_linkStatus != LS_ESTABLISHED)
     {
@@ -262,11 +262,6 @@ bool TcpSocket::doSend(char * buf, unsigned int len, _OnSendHandler &&handler)
     if (!_summer)
     {
         LOG(WARNING)<<"TcpSocket uninitialize." << logSection();
-        return false;
-    }
-    if (_onSendHandler)
-    {
-        LOG(WARNING)<<"TcpSocket already send." << logSection();
         return false;
     }
     if (len == 0)
@@ -288,7 +283,6 @@ bool TcpSocket::doSend(char * buf, unsigned int len, _OnSendHandler &&handler)
             return false;
         }
     }
-    _onSendHandler = std::move(handler);
     _sendHandle._tcpSocket = shared_from_this();
     return true;
 }
@@ -370,12 +364,7 @@ void TcpSocket::onIOCPMessage(BOOL bSuccess, DWORD dwTranceBytes, unsigned char 
 
     if (cType == ExtendHandle::HANDLE_SEND)
     {
-        _OnSendHandler onSend(std::move(_onSendHandler));
         std::shared_ptr<TcpSocket> guard(std::move(_sendHandle._tcpSocket));
-        if (!onSend)
-        {
-            return;
-        }
         if (!bSuccess || _linkStatus != LS_ESTABLISHED)
         {
             if (_socket != INVALID_SOCKET)
@@ -385,7 +374,6 @@ void TcpSocket::onIOCPMessage(BOOL bSuccess, DWORD dwTranceBytes, unsigned char 
             }
             return;
         }
-        onSend(NetErrorCode::NEC_SUCCESS, dwTranceBytes);
         return;
     }
     else if (cType == ExtendHandle::HANDLE_RECV)

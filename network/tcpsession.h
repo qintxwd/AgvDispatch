@@ -22,7 +22,6 @@ private:
 
     bool doRecv();
     unsigned int onRecv(qyhnetwork::NetErrorCode ec, int received);
-    void onSend(qyhnetwork::NetErrorCode ec, int sent);
     void onConnected(qyhnetwork::NetErrorCode ec);
     void onPulse();
 

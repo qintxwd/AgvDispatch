@@ -306,19 +306,16 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         { MSG_TODO_USER_DELTE,std::bind(&UserManager::interRemove,userManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_USER_ADD,std::bind(&UserManager::interAdd,userManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_USER_MODIFY,std::bind(&UserManager::interModify,userManager,std::placeholders::_1,std::placeholders::_2) },
-
         { MSG_TODO_MAP_CREATE_START,std::bind(&MapManager::interCreateStart,mapManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_MAP_CREATE_ADD_STATION,std::bind(&MapManager::interCreateAddStation,mapManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_MAP_CREATE_ADD_LINE,std::bind(&MapManager::interCreateAddLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_MAP_CREATE_FINISH,std::bind(&MapManager::interCreateFinish,mapManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_MAP_LIST_STATION,std::bind(&MapManager::interListStation,mapManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_MAP_LIST_LINE,std::bind(&MapManager::interListLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
-
         { MSG_TODO_AGV_MANAGE_LIST,std::bind(&AgvManager::interList,agvManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_AGV_MANAGE_ADD,std::bind(&AgvManager::interAdd,agvManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_AGV_MANAGE_DELETE,std::bind(&AgvManager::interDelete,agvManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_AGV_MANAGE_MODIFY,std::bind(&AgvManager::interModify,agvManager,std::placeholders::_1,std::placeholders::_2) },
-
         { MSG_TODO_TASK_CREATE,std::bind(&TaskManager::interCreate,taskManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_TASK_QUERY_STATUS,std::bind(&TaskManager::interQueryStatus,taskManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_TASK_CANCEL,std::bind(&TaskManager::interCancel,taskManager,std::placeholders::_1,std::placeholders::_2) },
@@ -326,10 +323,7 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         { MSG_TODO_TASK_LIST_DOING,std::bind(&TaskManager::interListDoing,taskManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_TASK_LIST_DONE_TODAY,std::bind(&TaskManager::interListDoneToday,taskManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_TASK_LIST_DURING,std::bind(&TaskManager::interListDuring,taskManager,std::placeholders::_1,std::placeholders::_2) },
-
         { MSG_TODO_LOG_LIST_DURING,std::bind(&UserLogManager::interLogDuring,userLogManager,std::placeholders::_1,std::placeholders::_2) },
-
-        //订阅类
         { MSG_TODO_SUB_AGV_POSITION,std::bind(&MsgProcess::interAddSubAgvPosition,msgProcess,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_CANCEL_SUB_AGV_POSITION,std::bind(&MsgProcess::interRemoveSubAgvPosition,msgProcess,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_SUB_AGV_STATSU,std::bind(&MsgProcess::interAddSubAgvStatus,msgProcess,std::placeholders::_1,std::placeholders::_2) },
@@ -338,7 +332,6 @@ void MsgProcess::processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr ses
         { MSG_TODO_CANCEL_SUB_LOG,std::bind(&MsgProcess::interRemoveSubLog,msgProcess,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_SUB_TASK,std::bind(&MsgProcess::interAddSubTask,msgProcess,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_CANCEL_SUB_TASK,std::bind(&MsgProcess::interRemoveSubTask,msgProcess,std::placeholders::_1,std::placeholders::_2) },
-
 		{ MSG_TODO_TRAFFIC_CONTROL_STATION,std::bind(&MapManager::interTrafficControlStation,mapManager,std::placeholders::_1,std::placeholders::_2) },
 		{ MSG_TODO_TRAFFIC_CONTROL_LINE,std::bind(&MapManager::interTrafficControlLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
 		{ MSG_TODO_TRAFFIC_RELEASE_STATION,std::bind(&MapManager::interTrafficReleaseStation,mapManager,std::placeholders::_1,std::placeholders::_2) },
