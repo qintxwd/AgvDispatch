@@ -26,6 +26,8 @@ public:
         return m_ins;
     }
 
+    AgvPtr getAgvById(int id);
+
     void addAgv(AgvPtr agv);
 
     void updateAgv(int id,std::string name,std::string ip,int port);

@@ -58,7 +58,12 @@ HEADERS += \
     msgprocess.h \
     usermanager.h \
     utils/threadpool.h \
-    userlogmanager.h
+    userlogmanager.h \
+    Jacking/jackingagv.h \
+    Jacking/jackingagvthingturn.h \
+    usermanager.h \
+    taskmaker.h \
+    Jacking/jacktaskmaker.h
 
 SOURCES += \
     agv.cpp \
@@ -82,6 +87,10 @@ SOURCES += \
     utils/Log/easylogging.cpp \
     msgprocess.cpp \
     usermanager.cpp \
-    userlogmanager.cpp
+    userlogmanager.cpp \
+    Jacking/jackingagv.cpp \
+    Jacking/jackingagvthingturn.cpp \
+    taskmaker.cpp \
+    Jacking/jacktaskmaker.cpp
 
 

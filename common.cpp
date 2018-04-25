@@ -1,5 +1,6 @@
 ﻿#include "common.h"
 
+
 ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
 
@@ -61,7 +62,7 @@ std::string getTimeStrTomorrow()
 
 std::string toHexString(char *data,int len)
 {
-    std::ostringstream out;
+    std::stringstream out;
     out<<std::hex<<std::setfill('0');
     for(int i=0;i<len;++i){
         out<<std::setw(2)<<(0xff &(data[i]))<<std::setw(1)<<" ";
@@ -71,9 +72,46 @@ std::string toHexString(char *data,int len)
 
 std::string intToString(int i)
 {
-    std::ostringstream out;
+    std::stringstream out;
     out<<i;
     return out.str();
+}
+
+int stringToInt(std::string str)
+{
+    std::stringstream out;
+    out<<str;
+    int i;
+    out>>i;
+    return i;
+}
+
+bool stringToBool(std::string str)
+{
+    if(str.length()<=0)return false;
+    if(str == "0"||str == "false")return false;
+    return true;
+}
+
+std::vector<std::string> splite(std::string src,std::string sp)
+{
+    std::vector<std::string> result;
+    if(sp.length()==0){
+        result.push_back(src);
+        return result;
+    }
+
+    size_t pos;
+    while(true){
+        pos = src.find_first_not_of(sp);
+        if(pos == std::string::npos){
+            break;
+        }
+        result.push_back(src.substr(0,pos));
+        src = src.substr(pos+sp.length());
+    }
+    result.push_back(src);
+    return result;
 }
 
 #ifndef _WIN32
@@ -82,5 +120,8 @@ void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, 
 {
     memcpy(__dest,__src,__m<__n?__m:__n);
 }
+
+
+const  int  G_AGV_TYPE = AGV_TYPE_JACKING;
 
 #endif

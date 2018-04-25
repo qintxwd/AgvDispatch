@@ -4,6 +4,7 @@
 #include "agvmanager.h"
 #include "sqlite3/CppSQLite3.h"
 #include "userlogmanager.h"
+#include "taskmaker.h"
 
 TaskManager::TaskManager():
     node_id(0),
@@ -375,9 +376,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 
 void TaskManager::interCreate(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
 {
-    //TODO:
-
-
+    TaskMaker::getInstance()->makeTask(conn,msg);
 }
 
 void TaskManager::interQueryStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
@@ -397,7 +396,7 @@ void TaskManager::interQueryStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request m
         memcpy_s(&id,sizeof(int32_t),msg.body,sizeof(int32_t));
         UserLogManager::getInstance()->push(conn->getUserName()+"请求任务状态，任务ID:"+intToString(id));
         int32_t status = queryTaskStatus(id);
-		memcpy_s(response.body, MSG_RESPONSE_BODY_MAX_SIZE,&status,sizeof(int32_t));
+        memcpy_s(response.body, MSG_RESPONSE_BODY_MAX_SIZE,&status,sizeof(int32_t));
         response.head.body_length = sizeof(int32_t);
     }
     conn->send(response);
