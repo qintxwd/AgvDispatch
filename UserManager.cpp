@@ -314,13 +314,13 @@ void UserManager::interAdd(TcpSessionPtr conn, MSG_Request msg)
             try{
                 //插入数据库
                 std::stringstream ss;
-                ss<<"insert into agv_user user_username, user_password,user_role,user_status values("<<u.username <<","<<u.password <<","<<u.role <<",0);";
+                ss<<"insert into agv_user (user_username, user_password,user_role,user_status) values('"<<u.username <<"','"<<u.password <<"',"<<u.role <<",0);";
                 g_db.execDML(ss.str().c_str());
 
                 //获取插入后的ID，返回
                 std::stringstream ss2;
-                ss2<<"select id from agv_user where user_username = "<<u.username<<" and user_password = "<<u.password<<";";
-                int id = g_db.execScalar(ss2.str().c_str());
+                ss2<<"select max(id) from agv_user ;";
+                int id = g_db.execScalar("select max(id) from agv_user ;");
                 response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
                 response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
                 UserLogManager::getInstance()->push(conn->getUserName()+"添加用户 id:"+intToString(id)+" 用户名:"+std::string(u.username));

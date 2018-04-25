@@ -226,7 +226,7 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
     SessionManager::getInstance()->_statInfo[STAT_RECV_BYTES] += received;
 
     //解析
-    if(read_position>=sizeof(MSG_Head)){
+    while(read_position>=sizeof(MSG_Head)){
         int head_position = findHead((unsigned char *)read_buffer,read_position);
         if(head_position == -1){
             //未找到头，丢弃数据
@@ -234,6 +234,7 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
             read_position = 0;
         }else{
             if(head_position != 0){
+                //找到的消息头，消息头前面的数据丢弃
                 memmove(read_buffer, read_buffer + head_position, read_position - head_position );
                 read_position -= head_position;
             }
@@ -244,7 +245,13 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
                     MsgProcess::getInstance()->processOneMsg(read_one_msg,shared_from_this());                
 					memmove(read_buffer, read_buffer + sizeof(MSG_Head)+ read_one_msg.head.body_length, read_position - sizeof(MSG_Head)- read_one_msg.head.body_length);
                     read_position -= sizeof(MSG_Head)+read_one_msg.head.body_length;
+                }else{
+                    //读取的数据不够
+                    break;
                 }
+            }else{
+                //读取的数据不够
+                break;
             }
         }
     }
