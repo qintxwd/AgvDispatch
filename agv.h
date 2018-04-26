@@ -28,9 +28,15 @@ public:
 
     virtual ~Agv();
 
+    enum { Type = 0 };
+
+    virtual int type(){return Type;}
+
     virtual void excutePath(std::vector<AgvLinePtr> lines);
 
     virtual void cancelTask();
+
+    bool send(const char *data, int len);
 
     //状态
     enum {
@@ -64,7 +70,7 @@ public:
     void setPort(int _port){port=_port;}
 
     //回调
-    void onRead(const char *data,int len);
+    virtual void onRead(const char *data,int len);
     void onConnect();
     void onDisconnect();
 
@@ -80,9 +86,9 @@ private:
     std::string ip;
     int port;
 
-    void goStation(AgvStationPtr station, bool stop = false);
-    void stop();
-    void callMapChange(AgvStationPtr station);
+    virtual void goStation(AgvStationPtr station, bool stop = false);
+    virtual void stop();
+    virtual void callMapChange(AgvStationPtr station);
 
     QyhTcpClient *tcpClient;
 

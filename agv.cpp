@@ -37,11 +37,6 @@ void Agv::init(){
     tcpClient = new QyhTcpClient(ip,port,onread,onconnect,ondisconnect);
 }
 
-void Agv::onRead(const char *data,int len)
-{
-    //TODO:
-}
-
 void Agv::onConnect()
 {
     //TODO
@@ -78,6 +73,11 @@ void Agv::goStation(AgvStationPtr station, bool stop)
 
 }
 
+void Agv::stop()
+{
+
+}
+
 void Agv::onArriveStation(int stationid)
 {
     arriveStation = stationid;
@@ -101,11 +101,6 @@ void Agv::onLeaveStation(int stationid)
     if(nowStation->getId() == stationid)nowStation = nullptr;
     AgvStationPtr s= MapManager::getInstance()->getStationById(stationid);
     lastStation = s;
-}
-
-void Agv::stop()
-{
-
 }
 
 void Agv::onError(int code, std::string msg)
@@ -221,5 +216,14 @@ void Agv::excutePath(std::vector<AgvLinePtr> lines)
 
 void Agv::cancelTask()
 {
-    stop();
+}
+
+void Agv::onRead(const char *data,int len)
+{
+
+}
+
+bool Agv::send(const char *data,int len)
+{
+    return tcpClient->sendToServer(data,len);
 }

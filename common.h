@@ -24,6 +24,7 @@ typedef std::chrono::duration<int,std::milli> duration_millisecond;
 typedef std::chrono::duration<int> duration_second;
 typedef std::chrono::duration<int,std::ratio<60*60>> duration_hour;
 typedef std::unique_lock<std::mutex>  UNIQUE_LCK;
+
 enum {
     AGV_LINE_COLOR_WHITE = 0,  //未算出路径最小值
     AGV_LINE_COLOR_GRAY,       //已经计算出一定的值，在Q队列中，但是尚未计算出最小值
@@ -36,6 +37,10 @@ std::string getTimeStrTomorrow();
 
 std::string toHexString(char *data, int len);
 std::string intToString(int i);
+int stringToInt(std::string str);
+bool stringToBool(std::string str);
+
+std::vector<std::string> splite(std::string src,std::string sp = " ");
 
 extern ThreadPool g_threadPool;
 extern CppSQLite3DB g_db;
@@ -45,5 +50,13 @@ extern CppSQLite3DB g_db;
 void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, size_t __n);
 
 #endif
+
+//定义AGV的种类
+enum{
+    AGV_TYPE_JACKING = 0,
+    //...
+};
+extern  const  int  G_AGV_TYPE;
+
 
 #endif // COMMON_H

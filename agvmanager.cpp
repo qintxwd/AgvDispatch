@@ -42,7 +42,7 @@ bool AgvManager::init()
             std::string name = std::string(table_agv.fieldValue(1));
             std::string ip = std::string(table_agv.fieldValue(2));
             int port = atoi(table_agv.fieldValue(3));
-            AgvPtr agv = AgvPtr(new Agv(id,name,ip,port));
+            AgvPtr agv(new Agv(id,name,ip,port));
             agvs.push_back(agv);
         }
     }catch(CppSQLite3Exception e){
@@ -68,6 +68,14 @@ void AgvManager::updateAgv(int id, std::string name, std::string ip, int port)
             }
         }
     }
+}
+
+AgvPtr AgvManager::getAgvById(int id)
+{
+    for(auto agv:agvs){
+        if(agv->getId() == id)return agv;
+    }
+    return nullptr;
 }
 
 void AgvManager::addAgv(AgvPtr agv)
@@ -163,7 +171,7 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
             memcpy_s(response.body, MSG_RESPONSE_BODY_MAX_SIZE,&id,sizeof(int));
             response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 
-            AgvPtr agv = AgvPtr(new Agv(id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port));
+            AgvPtr agv(new Agv(id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port));
             agv->init();
             addAgv(agv);
         }catch(CppSQLite3Exception e){
