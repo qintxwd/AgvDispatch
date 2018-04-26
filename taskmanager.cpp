@@ -237,7 +237,7 @@ bool TaskManager::saveTask(AgvTaskPtr task)
 
         for(auto node:task->getTaskNode()){
             int node__id = ++node_id;
-            snprintf(buf, SQL_MAX_LENGTH,"insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(),node->getStation()->id);
+            snprintf(buf, SQL_MAX_LENGTH,"insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(),node->getStation()->getId());
             g_db.execDML(buf);
             for(auto thing:node->getDoThings()){
                 int thing__id = ++thing_id;

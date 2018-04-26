@@ -37,7 +37,7 @@ AgvLinePtr MapManager::getReverseLine(AgvLinePtr line)
 AgvLinePtr MapManager::getLineById(int id)
 {
 	for (auto l : m_lines) {
-		if (l->id == id)return l;
+        if (l->getId() == id)return l;
 	}
 	return nullptr;
 }
@@ -45,7 +45,7 @@ AgvLinePtr MapManager::getLineById(int id)
 AgvStationPtr MapManager::getStationById(int id)
 {
     for(auto s:m_stations){
-        if(s->id == id)return s;
+        if(s->getId() == id)return s;
     }
     return nullptr;
 }
@@ -83,11 +83,11 @@ bool MapManager::save()
         g_db.execDML("begin transaction;");
         char buf[SQL_MAX_LENGTH];
         for(auto station:m_stations){
-            snprintf(buf, SQL_MAX_LENGTH, "insert into agv_station values (%d, %d,%d,%s);", station->id, station->x,station->y,station->name.c_str());
+            snprintf(buf, SQL_MAX_LENGTH, "insert into agv_station values (%d, %d,%d,%s);", station->getId(), station->getX(),station->getY(),station->getName().c_str());
             g_db.execDML(buf);
         }
         for(auto line:m_lines){
-            snprintf(buf, SQL_MAX_LENGTH, "insert into agv_line values (%d,%d,%d,%d);", line->id, line->startStation->id,line->endStation->id,line->length);
+            snprintf(buf, SQL_MAX_LENGTH, "insert into agv_line values (%d,%d,%d,%d);", line->getId(), line->getStartStation()->getId(),line->getEndStation()->getId(),line->getLength());
             g_db.execDML(buf);
         }
         g_db.execDML("commit transaction;");
@@ -120,11 +120,11 @@ bool MapManager::loadFromDb()
 
             if(table_station.fieldIsNull(0) ||table_station.fieldIsNull(1) ||table_station.fieldIsNull(2))return false;
             AgvStationPtr station = AgvStationPtr(new AgvStation);
-            station->id = atoi(table_station.fieldValue(0));
-            station->x = atoi(table_station.fieldValue(1));
-            station->y = atoi(table_station.fieldValue(2));
+            station->setId(atoi(table_station.fieldValue(0)));
+            station->setX(atoi(table_station.fieldValue(1)));
+            station->setY(atoi(table_station.fieldValue(2)));
             if(!table_station.fieldIsNull(3))
-                station->name = std::string(table_station.fieldValue(0));
+                station->setName(std::string(table_station.fieldValue(0)));
             m_stations.push_back(station);
         }
 
@@ -136,15 +136,15 @@ bool MapManager::loadFromDb()
 
             if(table_line.fieldIsNull(0) ||table_line.fieldIsNull(1) ||table_line.fieldIsNull(2) ||table_line.fieldIsNull(3))return false;
             AgvLinePtr line = AgvLinePtr(new AgvLine);
-            line->id = atoi(table_line.fieldValue(0));
+            line->setId(atoi(table_line.fieldValue(0)));
             int sId = atoi(table_line.fieldValue(1));
             int eId = atoi(table_line.fieldValue(2));
-            line->length = atoi(table_line.fieldValue(3));
+            line->setLength(atoi(table_line.fieldValue(3)));
             for(auto station:m_stations){
-                if(station->id == sId)line->startStation = station;
-                if(station->id == eId)line->endStation = station;
+                if(station->getId() == sId)line->setStartStation(station);
+                if(station->getId() == eId)line->setEndStation(station);
             }
-            if(line->startStation==NULL||line->endStation==NULL)return false;
+            if(line->getStartStation()==nullptr||line->getEndStation()==nullptr)return false;
             m_lines.push_back(line);
         }
 
@@ -198,15 +198,15 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
     if (lastStation == nullptr)return result;
     if (startStation == nullptr)return result;
     if (endStation == nullptr)return result;
-    if(startStation->occuAgv>0 && startStation->occuAgv!=agv)return result;
-    if(startStation->occuAgv>0 && endStation->occuAgv!=agv)return result;
+    if(startStation->getOccuAgv()!=nullptr && startStation->getOccuAgv()!=agv)return result;
+    if(startStation->getOccuAgv()!=nullptr && endStation->getOccuAgv()!=agv)return result;
 
     if (startStation == endStation) {
         if (changeDirect && lastStation != startStation) {
             for(auto line:m_lines){
-                if(line->startStation == lastStation && line->endStation == startStation){
+                if(line->getStartStation() == lastStation && line->getEndStation() == startStation){
                     result.push_back(line);
-                    distance = line->length;
+                    distance = line->getLength();
                 }
             }
         }
@@ -231,8 +231,8 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
     //endPoint是终点，lastPoint是到达endPoint的上一站。
     {
         for(auto templine:m_lines){
-            if(templine->startStation == endStation){
-                if (templine->occuAgvs.size() > 1 || (templine->occuAgvs.size() == 1 && (*(templine->occuAgvs.begin())) != agv)) {
+            if(templine->getStartStation() == endStation){
+                if (templine->getOccuAgvs().size() > 1 || (templine->getOccuAgvs().size() == 1 && (*(templine->getOccuAgvs().begin())) != agv)) {
                     //TODO:该方式到达这个地方 不可行.该线路 置黑、
                     AgvLinePtr  llid = m_reverseLines[templine];
                     llid->color = AGV_LINE_COLOR_BLACK;
@@ -245,11 +245,11 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
 
     if (lastStation == startStation) {
         for (auto l : m_lines) {
-            if (l->startStation == lastStation) {
+            if (l->getStartStation() == lastStation) {
                 AgvLinePtr reverse = m_reverseLines[l];
-                if (reverse->occuAgvs.size() == 0 && (l->endStation->occuAgv == nullptr || l->endStation->occuAgv == agv)) {
+                if (reverse->getOccuAgvs().size() == 0 && (l->getEndStation()->getOccuAgv() == nullptr || l->getEndStation()->getOccuAgv() == agv)) {
                     if (l->color == AGV_LINE_COLOR_BLACK)continue;
-                    l->distance = l->length;
+                    l->distance = l->getLength();
                     l->color = AGV_LINE_COLOR_GRAY;
                     Q.insert(std::make_pair(l->distance, l));
                 }
@@ -258,9 +258,9 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
     }
     else {
         for (auto l : m_lines) {
-            if (l->startStation == lastStation && l->endStation == lastStation) {
+            if (l->getStartStation() == lastStation && l->getEndStation() == lastStation) {
                 AgvLinePtr reverse = m_reverseLines[l];
-                if (reverse->occuAgvs.size() == 0 && (l->endStation->occuAgv == nullptr || l->endStation->occuAgv == agv)) {
+                if (reverse->getOccuAgvs().size() == 0 && (l->getEndStation()->getOccuAgv() == nullptr || l->getEndStation()->getOccuAgv() == agv)) {
                     if (l->color == AGV_LINE_COLOR_BLACK)continue;
                     l->distance = 0;
                     l->color = AGV_LINE_COLOR_GRAY;
@@ -291,19 +291,19 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
             if (line->color == AGV_LINE_COLOR_BLACK)continue;
             if (line->color == AGV_LINE_COLOR_WHITE) {
                 AgvLinePtr reverse = m_reverseLines[line];
-                if (reverse->occuAgvs.size() == 0 && (line->endStation->occuAgv == nullptr || line->endStation->occuAgv == agv)) {
-                    line->distance = startLine->distance + line->length;
+                if (reverse->getOccuAgvs().size() == 0 && (line->getEndStation()->getOccuAgv() == nullptr || line->getEndStation()->getOccuAgv() == agv)) {
+                    line->distance = startLine->distance + line->getLength();
                     line->color = AGV_LINE_COLOR_GRAY;
                     line->father = startLine;
                     Q.insert(std::make_pair(line->distance, line));
                 }
             }
             else if (line->color == AGV_LINE_COLOR_GRAY) {
-                if (line->distance > startLine->distance + line->length) {
+                if (line->distance > startLine->distance + line->getLength()) {
                     AgvLinePtr reverse = m_reverseLines[line];
-                    if (reverse->occuAgvs.size() == 0 && (line->endStation->occuAgv == nullptr || line->endStation->occuAgv == agv)) {
+                    if (reverse->getOccuAgvs().size() == 0 && (line->getEndStation()->getOccuAgv() == nullptr || line->getEndStation()->getOccuAgv() == agv)) {
                         int old_distance = line->distance;
-                        line->distance = startLine->distance + line->length;
+                        line->distance = startLine->distance + line->getLength();
                         line->father = startLine;
                         //删除旧的
                         for (auto iiitr = Q.begin();iiitr != Q.end();) {
@@ -333,7 +333,7 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
     int minDis = DISTANCE_INFINITY;
 
     for (auto ll : m_lines) {
-        if (ll->endStation == endStation) {
+        if (ll->getEndStation() == endStation) {
             if (ll->distance < minDis) {
                 minDis = ll->distance;
                 index = ll;
@@ -353,7 +353,7 @@ std::vector<AgvLinePtr> MapManager::getPath(AgvPtr agv, AgvStationPtr lastStatio
     if (result.size() > 0 && lastStation != startStation) {
         if (!changeDirect) {
             AgvLinePtr  agv_line = *(result.begin());
-            if (agv_line->startStation == lastStation && agv_line->endStation == startStation) {
+            if (agv_line->getStartStation() == lastStation && agv_line->getEndStation() == startStation) {
                 result.erase(result.begin());
             }
         }
@@ -367,8 +367,8 @@ void MapManager::getReverseLines()
 {
     for(auto a:m_lines){
         for(auto b:m_lines){
-            if(a->id == b->id)continue;
-            if(a->startStation == b->endStation && a->endStation == b->startStation){
+            if(a->getId() == b->getId())continue;
+            if(a->getStartStation() == b->getEndStation() && a->getEndStation() == b->getStartStation()){
                 m_reverseLines[a] = b;
             }
         }
@@ -380,7 +380,7 @@ void MapManager::getAdj()
     for(auto a:m_lines){
         for(auto b:m_lines){
             if(a == b)continue;
-            if(a->endStation == b->startStation && a->endStation != b->startStation){
+            if(a->getEndStation() == b->getStartStation() && a->getEndStation() != b->getStartStation()){
                 if(m_adj.find(a)!=m_adj.end()){
                     m_adj[a].push_back(b);
                 }else{
@@ -566,12 +566,14 @@ void MapManager::interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
         response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
         for (auto s : m_stations) {
             STATION_INFO info;
-            info.id = s->id;
-            info.x = s->x;
-            info.y = s->y;
-            info.floorId = s->floorId;
-            info.occuagv = s->occuAgv->getId();
-            snprintf(info.name,MSG_STRING_LEN,s->name.c_str(),s->name.length());
+            info.id = s->getId();
+            info.x = s->getX();
+            info.y = s->getY();
+            info.floorId = s->getFloorId();
+            info.occuagv = 0;
+            if(s->getOccuAgv()!=nullptr)
+                info.occuagv = s->getOccuAgv()->getId();
+            snprintf(info.name,MSG_STRING_LEN,s->getName().c_str(),s->getName().length());
             memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(STATION_INFO));
             response.head.flag = 1;
             response.head.body_length = sizeof(STATION_INFO);
@@ -600,10 +602,10 @@ void MapManager::interListLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
         response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
         for (auto l : m_lines) {
             AGV_LINE line;
-            line.id = l->id;
-            line.startStation = l->startStation->id;
-            line.endStation = l->endStation->id;
-            line.length = l->length;
+            line.id = l->getId();
+            line.startStation = l->getStartStation()->getId();
+            line.endStation = l->getEndStation()->getId();
+            line.length = l->getLength();
 
             memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&line,sizeof(AGV_LINE));
 
@@ -647,9 +649,7 @@ void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, MSG_
 				//TODO
 
 				//设置
-				AgvPtr occagv = AgvPtr(new Agv(TRAFFIC_OCCUR_AGV_ID, "", "", 0));
-				station->occuAgv = occagv;
-
+                station->setLocked(true);
 				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 			}			
 		}
@@ -687,19 +687,7 @@ void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, MSG_Req
 				//TODO
 				//设置
 				//是否已经被管制了
-				bool already = false;
-				for (auto agv : line->occuAgvs) {
-					if (agv->getId() == TRAFFIC_OCCUR_AGV_ID) {
-						already = true;
-						break;
-					}
-				}
-
-				if (!already) {
-					AgvPtr occagv = AgvPtr(new Agv(TRAFFIC_OCCUR_AGV_ID, "", "", 0));
-					line->occuAgvs.push_back(occagv);
-				}
-
+                line->setLocked(false);
 				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 			}
 		}
@@ -738,8 +726,8 @@ void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, MSG_
 				//TODO
 
 				//设置
-				if (station->occuAgv != nullptr && station->occuAgv->getId() == TRAFFIC_OCCUR_AGV_ID) {
-					station->occuAgv = nullptr;
+                if (station->getOccuAgv() != nullptr/* && station->getOccuAgv()->getId() == TRAFFIC_OCCUR_AGV_ID*/) {
+                    station->setOccuAgv(nullptr);
 				}
 				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 			}
@@ -774,16 +762,7 @@ void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, MSG_Req
                 snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded line id");
 			}
 			else {
-				for (auto itr = line->occuAgvs.begin(); itr != line->occuAgvs.end(); ) {
-					if ((*itr)->getId() == TRAFFIC_OCCUR_AGV_ID)
-					{
-						itr = line->occuAgvs.erase(itr);
-					}
-					else {
-						++itr;
-					}
-				}
-
+                line->setLocked(true);
 				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 			}
 		}

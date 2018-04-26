@@ -18,8 +18,6 @@
 
 #define  DISTANCE_INFINITY INT_MAX
 
-#define TRAFFIC_OCCUR_AGV_ID			(999999)
-
 #define DB_File ("agv.db")
 
 typedef std::chrono::duration<int,std::milli> duration_millisecond;

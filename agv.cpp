@@ -98,7 +98,7 @@ void Agv::onArriveStation(int stationid)
 
 void Agv::onLeaveStation(int stationid)
 {
-    if(nowStation->id == stationid)nowStation = nullptr;
+    if(nowStation->getId() == stationid)nowStation = nullptr;
     AgvStationPtr s= MapManager::getInstance()->getStationById(stationid);
     lastStation = s;
 }
@@ -132,7 +132,7 @@ void Agv::onWarning(int code, std::string msg)
 //请求切换地图(呼叫电梯)
 void Agv::callMapChange(AgvStationPtr station)
 {
-    if(!station->mapChangeStation)return ;
+    if(!station->getMapChangeStation())return ;
     //例如:
     //1楼电梯内坐标 (100,100)
     //2楼电梯内坐标 (200,200)
@@ -161,7 +161,7 @@ void Agv::excutePath(std::vector<AgvLinePtr> lines)
     stationMtx.lock();
     excutestations.clear();
     for(auto line:lines){
-        excutestations.push_back(line->endStation);
+        excutestations.push_back(line->getEndStation());
     }
     stationMtx.unlock();
     //告诉小车接下来要执行的路径
@@ -186,12 +186,12 @@ void Agv::excutePath(std::vector<AgvLinePtr> lines)
 
         //还有下一站。
         //分类讨论
-        if(!now->mapChangeStation && !next->mapChangeStation)
+        if(!now->getMapChangeStation() && !next->getMapChangeStation())
         {
             //两个都不是地图切换点
             goStation(now,false);
         }
-        else if(!now->mapChangeStation && next->mapChangeStation){
+        else if(!now->getMapChangeStation() && next->getMapChangeStation()){
             //下一站是 地图切换点，例如三楼电梯点
 
             //到达电梯口停下，
@@ -203,13 +203,13 @@ void Agv::excutePath(std::vector<AgvLinePtr> lines)
             callMapChange(next);
         }
 
-        else if(now->mapChangeStation && next->mapChangeStation){
+        else if(now->getMapChangeStation() && next->getMapChangeStation()){
             //下一站是地图切换点，下下站还是，例如下一站是三楼电梯点，而下下站是1楼电梯点
             goStation(now,true);//进电梯
             callMapChange(next);//呼叫到1楼
         }
 
-        else if(now->mapChangeStation && !next->mapChangeStation){
+        else if(now->getMapChangeStation() && !next->getMapChangeStation()){
             //下一站是电梯内，但是下下站不是
             goStation(now,true);
             callMapChange(next);//开门
