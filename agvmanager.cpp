@@ -115,143 +115,168 @@ void AgvManager::foreachAgv(AgvEachCallback cb)
     }
 }
 
-void AgvManager::interList(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+void AgvManager::interList(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head),&msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+
     UserLogManager::getInstance()->push(conn->getUserName()+"请求AGV列表");
+
+    Json::Value agv_infos;
     UNIQUE_LCK lck(mtx);
     for (auto agv : agvs) {
-        AGV_BASE_INFO info;
-        info.id = agv->getId();
-        snprintf(info.ip,MSG_STRING_LEN,"%s",agv->getIp().c_str());
-        snprintf(info.name,MSG_STRING_LEN,"%s",agv->getName().c_str());
-        info.port = agv->getPort();
-        memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&info,sizeof(AGV_BASE_INFO));
-        response.head.flag = 1;
-        response.head.body_length = sizeof(AGV_BASE_INFO);
-        conn->send(response);
+        Json::Value info;
+        info["id"] = agv->getId();
+        info["ip"] = agv->getIp();
+        info["name"] = agv->getName();
+        info["port"] = agv->getPort();
+        agv_infos.append(info);
     }
-    response.head.body_length = 0;
-    response.head.flag = 0;
+    response["agvs"] = agv_infos;
     conn->send(response);
 }
 
-void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
-    //TODO:添加到数据库，获取ID返回
-    if (msg.head.body_length != sizeof(AGV_BASE_INFO)) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_BASE_INFO length");
+    if(request["id"].isNull()||
+            request["name"].isNull()||
+            request["ip"].isNull()||
+            request["port"].isNull()||
+            request["type"].isNull()){
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+        response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
     }
     else {
-        AGV_BASE_INFO baseinfo;
-        memcpy_s(&baseinfo,sizeof(AGV_BASE_INFO), msg.body, sizeof(AGV_BASE_INFO));
-        if (msg.head.body_length != sizeof(AGV_LINE)) {
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
-        }
-
-        UserLogManager::getInstance()->push(conn->getUserName()+"添加AGV.name:"+ baseinfo.name+" ip:"+baseinfo.ip+intToString(baseinfo.port));
+        UserLogManager::getInstance()->push(conn->getUserName()+"添加AGV.name:"+ request["name"].asString() +" ip:"+request["ip"].asString()+intToString(request["port"].asInt()));
         char buf[SQL_MAX_LENGTH];
-        snprintf(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values('%s','%s',%d);", baseinfo.name, baseinfo.ip,baseinfo.port);
+        snprintf(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values('%s','%s',%d);", request["name"].asString().c_str(), request["ip"].asString().c_str(), request["port"].asInt());
         try{
             g_db.execDML(buf);
             int id = g_db.execScalar("select max(id) from agv_agv;");
-            response.head.body_length = sizeof(int);
-            memcpy_s(response.body, MSG_RESPONSE_BODY_MAX_SIZE,&id,sizeof(int));
-            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+			response["id"] = id;
 
-            AgvPtr agv(new Agv(id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port));
+            AgvPtr agv(new Agv(id, request["name"].asString(), request["ip"].asString(), request["port"].asInt()));
             agv->init();
             addAgv(agv);
-        }catch(CppSQLite3Exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-        }catch(std::exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
+		catch (CppSQLite3Exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+		}
+		catch (std::exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "info:" << e.what();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.what();
+		}
     }
     conn->send(response);
 }
 
-void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
     //TODO:添加到数据库，获取ID返回
-    if (msg.head.body_length != sizeof(int)) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-    }
+	if (request["id"].isNull()) {
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
+	}
     else {
-        uint32_t id;
-        memcpy_s(&id, sizeof(uint32_t), msg.body, sizeof(uint32_t));
+        int id = request["id"].asInt();
         UserLogManager::getInstance()->push(conn->getUserName()+"删除AGV.ID:"+ intToString(id));
         char buf[SQL_MAX_LENGTH];
         snprintf(buf,SQL_MAX_LENGTH, "delete from agv_agv where id=%d;", id);
         try{
             g_db.execDML(buf);
             removeAgv(id);
-        }catch(CppSQLite3Exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-        }catch(std::exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(ERROR)<<"sqlerr code:"<<e.what();
         }
+		catch (CppSQLite3Exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+		}
+		catch (std::exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "info:" << e.what();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.what();
+		}
     }
     conn->send(response);
 }
 
-void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
     //TODO:添加到数据库，获取ID返回
-    if (msg.head.body_length != sizeof(AGV_BASE_INFO)) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-    }
+	if (request["id"].isNull() ||
+		request["name"].isNull() ||
+		request["ip"].isNull() ||
+		request["port"].isNull() ||
+		request["type"].isNull()) {
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
+	}
     else {
-        AGV_BASE_INFO baseinfo;
-        memcpy_s(&baseinfo, sizeof(AGV_BASE_INFO), msg.body, sizeof(AGV_BASE_INFO));
-        UserLogManager::getInstance()->push(conn->getUserName()+"修改AGV信息.ID:"+ intToString(baseinfo.id)+" newname:"+ baseinfo.name+" newip:"+baseinfo.ip+" newport:"+intToString( baseinfo.port));
+		int id = request["name"].asInt();
+		std::string name = request["name"].asString();
+		int port = request["port"].asInt();
+		std::string ip = request["ip"].asString();
+
+        UserLogManager::getInstance()->push(conn->getUserName()+"修改AGV信息.ID:"+ intToString(id)+" newname:"+ name +" newip:"+ ip +" newport:"+intToString(port));
         char buf[SQL_MAX_LENGTH];
-        snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", baseinfo.name, baseinfo.ip,baseinfo.port,baseinfo.id);
+        snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", name.c_str(), ip.c_str(),port,id);
 
         try{
             g_db.execDML(buf);
-            updateAgv(baseinfo.id,std::string(baseinfo.name),std::string(baseinfo.ip),baseinfo.port);
-        }catch(CppSQLite3Exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-        }catch(std::exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(ERROR)<<"sqlerr code:"<<e.what();
+            updateAgv(id,std::string(name),std::string(ip),port);
         }
+		catch (CppSQLite3Exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+		}
+		catch (std::exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "info:" << e.what();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.what();
+		}
     }
     conn->send(response);
 }

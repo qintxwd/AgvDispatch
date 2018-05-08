@@ -74,7 +74,7 @@ public:
     void onConnect();
     void onDisconnect();
 
-    void onArriveStation(int stationid);
+    void onArriveStation(AgvStationPtr station);
     void onLeaveStation(int stationid);
     void onError(int code,std::string msg);
     void onWarning(int code, std::string msg);
@@ -86,6 +86,7 @@ private:
     std::string ip;
     int port;
 
+    virtual void arrve(int x,int y);
     virtual void goStation(AgvStationPtr station, bool stop = false);
     virtual void stop();
     virtual void callMapChange(AgvStationPtr station);

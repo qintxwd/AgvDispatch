@@ -61,15 +61,15 @@ void Agv::goStation(AgvStationPtr station, bool stop)
     //stringstream ss;
     //ss<<"x:"<<x<<",y:"<<y<<".";
     //tcpsocket.write(ss.str().c_str());
-//    while(true)
-//    {
-//        if(currentTask->getIsCancel())break;//任务取消
-//        if(status == AGV_STATUS_HANDING)break;//手动控制
-//        if(status == AGV_STATUS_ERROR)break;//发生错误
+    //    while(true)
+    //    {
+    //        if(currentTask->getIsCancel())break;//任务取消
+    //        if(status == AGV_STATUS_HANDING)break;//手动控制
+    //        if(status == AGV_STATUS_ERROR)break;//发生错误
 
-//        if(arriveStation == station->id)break;
-//        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-//    }
+    //        if(arriveStation == station->id)break;
+    //        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    //    }
 
 }
 
@@ -78,17 +78,26 @@ void Agv::stop()
 
 }
 
-void Agv::onArriveStation(int stationid)
+void Agv::arrve(int x,int y){
+
+    for(auto station:excutestations){
+        if(sqrt(pow(x-station->getX(),2)+pow(x-station->getX(),2))<20){
+            onArriveStation(station);
+            break;
+        }
+    }
+}
+
+void Agv::onArriveStation(AgvStationPtr station)
 {
-    arriveStation = stationid;
-    AgvStationPtr s= MapManager::getInstance()->getStationById(stationid);
-    if(s!=nullptr){
+    arriveStation = station->getId();
+    if(station!=nullptr){
         if(nowStation){
             lastStation = nowStation;
         }
-        nowStation = s;
+        nowStation = station;
         stationMtx.lock();
-        auto itr = std::find(excutestations.begin(),excutestations.end(),s);
+        auto itr = std::find(excutestations.begin(),excutestations.end(),station);
         if(itr!=excutestations.end() && (itr+1)!=excutestations.end()){
             nextStation = *(++itr);
         }

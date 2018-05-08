@@ -72,9 +72,9 @@ public:
     unsigned short getRemotePort(SessionID sID);
 
     //send data.
-    void sendSessionData(SessionID sID, const MSG_Response &msg);
+    void sendSessionData(SessionID sID, const Json::Value &response);
     //send data to all session
-    void sendData(const MSG_Response &msg);
+    void sendData(const Json::Value &response);
 
     //close session socket.
     void kickSessionByUserId(int userId);

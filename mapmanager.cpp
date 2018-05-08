@@ -401,18 +401,18 @@ void MapManager::clear()
     m_lines.clear();
 }
 
-void MapManager::interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
     if (TaskManager::getInstance()->hasTaskDoing())
     {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_TASKING;
-        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN,"%s","there are some task is taking");
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_TASKING;
     }
     else {
         UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图");
@@ -422,155 +422,222 @@ void MapManager::interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
         try{
             g_db.execDML("delete from agv_station;");
             g_db.execDML("delete from agv_line;");
-            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-        }catch(CppSQLite3Exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-        }catch(std::exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(ERROR)<<"sqlerr code:"<<e.what();
+			g_db.execDML("delete from agv_bkg");
+			g_db.execDML("delete from agv_block");
+			g_db.execDML("delete from agv_group_group");
+			g_db.execDML("delete from agv_group_agv");
+
+			//TODO: 
+			//1.解析站点
+			for (int i = 0; i < request["stations"].size(); ++i)
+			{
+				Json::Value station = request["stations"][i];
+				int id = station["id"].asInt();
+				std::string name = station["name"].asString();
+				int station_type = station["point_type"].asInt();
+				int x = station["x"].asInt();
+				int y = station["y"].asInt();
+				int realX = station["realX"].asInt();
+				int realY = station["realY"].asInt();
+				int labelXoffset = station["labelXoffset"].asInt();
+				int labelYoffset = station["labelYoffset"].asInt();
+				bool mapchanged = station["mapchanged"].asBool();
+				bool locked = station["locked"].asBool();
+				//TODO:
+
+				//TODO:
+
+
+			}
+
+			//2.解析线路
+
+			//3.解析楼层
+
+			//4.解析背景图片
+
+			//5.解析block
+
+			//6.解析group
+
+			//7.解析背景图片
+
+
         }
+		catch (CppSQLite3Exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+		}
+		catch (std::exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "info:" << e.what();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.what();
+		}
     }
+
+	mapModifying = false;
 
     conn->send(response);
 }
 
-void MapManager::interCreateAddStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+//void MapManager::interCreateAddStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+//{
+//	Json::Value response;
+//	response["type"] = MSG_TYPE_RESPONSE;
+//	response["todo"] = request["todo"];
+//	response["queuenumber"] = request["queuenumber"];
+//	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+//
+//    if (!mapModifying) {
+//        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
+//        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+//    }
+//    else {
+//        if (msg.head.body_length != sizeof(STATION_INFO)) {
+//            response.return_head.error_code = RETURN_MSG_ERROR_CODE_PARAMS;
+//            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error STATION_INFO length");
+//        }
+//        else {
+//            STATION_INFO station;
+//            memcpy_s(&station, sizeof(STATION_INFO),msg.body, sizeof(STATION_INFO));
+//            char buf[MSG_LONG_LONG_STRING_LEN];
+//            snprintf(buf,MSG_LONG_LONG_STRING_LEN, "insert into agv_station values (%d, %d,%d,%s);", station.id, station.x,station.y,station.name);
+//            try{
+//                g_db.execDML(buf);
+//                response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+//            }
+//			catch (CppSQLite3Exception e) {
+//				response["result"] = RETURN_MSG_RESULT_FAIL;
+//				response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+//				std::stringstream ss;
+//				ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+//				response["error_info"] = ss.str();
+//				LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+//			}
+//			catch (std::exception e) {
+//				response["result"] = RETURN_MSG_RESULT_FAIL;
+//				response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+//				std::stringstream ss;
+//				ss << "info:" << e.what();
+//				response["error_info"] = ss.str();
+//				LOG(ERROR) << "sqlerr code:" << e.what();
+//			}
+//        }
+//    }
+//    conn->send(response);
+//}
+//
+//void MapManager::interCreateAddLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+//{
+//	Json::Value response;
+//	response["type"] = MSG_TYPE_RESPONSE;
+//	response["todo"] = request["todo"];
+//	response["queuenumber"] = request["queuenumber"];
+//	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+//
+//    if (!mapModifying) {
+//        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
+//        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+//    }
+//    else {
+//        if (msg.head.body_length != sizeof(AGV_LINE)) {
+//            response.return_head.error_code = RETURN_MSG_ERROR_CODE_PARAMS;
+//            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
+//        }
+//        else {
+//            AGV_LINE line;
+//            memcpy_s(&line,sizeof(AGV_LINE), msg.body, sizeof(AGV_LINE));
+//            char buf[SQL_MAX_LENGTH];
+//            snprintf(buf,SQL_MAX_LENGTH, "INSERT INTO agv_line (id,line_startStation,line_endStation,line_length) VALUES (%d,%d,%d,%d);", line.id, line.startStation,line.endStation,line.length);
+//            try{
+//                g_db.execDML(buf);
+//                response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+//            }
+//			catch (CppSQLite3Exception e) {
+//				response["result"] = RETURN_MSG_RESULT_FAIL;
+//				response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+//				std::stringstream ss;
+//				ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+//				response["error_info"] = ss.str();
+//				LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+//			}
+//			catch (std::exception e) {
+//				response["result"] = RETURN_MSG_RESULT_FAIL;
+//				response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+//				std::stringstream ss;
+//				ss << "info:" << e.what();
+//				response["error_info"] = ss.str();
+//				LOG(ERROR) << "sqlerr code:" << e.what();
+//			}
+//
+//            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+//        }
+//
+//    }
+//    conn->send(response);
+//}
+//
+//void MapManager::interCreateFinish(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+//{
+//	Json::Value response;
+//	response["type"] = MSG_TYPE_RESPONSE;
+//	response["todo"] = request["todo"];
+//	response["queuenumber"] = request["queuenumber"];
+//	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+//
+//    if (!mapModifying) {
+//        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
+//        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+//    }
+//    else {
+//        UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图完成");
+//        if(!save()){
+//            response.return_head.result = RETURN_MSG_RESULT_FAIL;
+//            response.return_head.error_code = RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL;
+//            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","save data to sql fail");
+//        }else{
+//            getReverseLines();
+//            getAdj();
+//            mapModifying = false;
+//            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+//        }
+//    }
+//    conn->send(response);
+//
+//    //通知所有客户端，map更新了
+//    MsgProcess::getInstance()->notifyAll(ENUM_NOTIFY_ALL_TYPE_MAP_UPDATE);
+//}
+
+void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
-
-    if (!mapModifying) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
-        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
-    }
-    else {
-        if (msg.head.body_length != sizeof(STATION_INFO)) {
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error STATION_INFO length");
-        }
-        else {
-            STATION_INFO station;
-            memcpy_s(&station, sizeof(STATION_INFO),msg.body, sizeof(STATION_INFO));
-            char buf[MSG_LONG_LONG_STRING_LEN];
-            snprintf(buf,MSG_LONG_LONG_STRING_LEN, "insert into agv_station values (%d, %d,%d,%s);", station.id, station.x,station.y,station.name);
-            try{
-                g_db.execDML(buf);
-                response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-            }catch(CppSQLite3Exception e){
-                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-                LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-            }catch(std::exception e){
-                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-                LOG(ERROR)<<"sqlerr code:"<<e.what();
-            }
-        }
-    }
-    conn->send(response);
-}
-
-void MapManager::interCreateAddLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
-{
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
-
-    if (!mapModifying) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
-        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
-    }
-    else {
-        if (msg.head.body_length != sizeof(AGV_LINE)) {
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","error AGV_LINE length");
-        }
-        else {
-            AGV_LINE line;
-            memcpy_s(&line,sizeof(AGV_LINE), msg.body, sizeof(AGV_LINE));
-            char buf[SQL_MAX_LENGTH];
-            snprintf(buf,SQL_MAX_LENGTH, "INSERT INTO agv_line (id,line_startStation,line_endStation,line_length) VALUES (%d,%d,%d,%d);", line.id, line.startStation,line.endStation,line.length);
-            try{
-                g_db.execDML(buf);
-                response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-            }catch(CppSQLite3Exception e){
-                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-                LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-            }catch(std::exception e){
-                response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-                snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-                LOG(ERROR)<<"sqlerr code:"<<e.what();
-            }
-
-            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-        }
-
-    }
-    conn->send(response);
-}
-
-void MapManager::interCreateFinish(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
-{
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
-
-    if (!mapModifying) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_NOT_CTREATING;
-        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
-    }
-    else {
-        UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图完成");
-        if(!save()){
-            response.return_head.result = RETURN_MSG_RESULT_FAIL;
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","save data to sql fail");
-        }else{
-            getReverseLines();
-            getAdj();
-            mapModifying = false;
-            response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-        }
-    }
-    conn->send(response);
-
-    //通知所有客户端，map更新了
-    MsgProcess::getInstance()->notifyAll(ENUM_NOTIFY_ALL_TYPE_MAP_UPDATE);
-}
-
-void MapManager::interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
-{
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
     if (mapModifying) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is not creating map");
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_CTREATING;
     }
     else {
         UserLogManager::getInstance()->push(conn->getUserName()+"获取地图站点信息");
-        response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+        /*response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+		Json::Value agv_stations;
         for (auto s : m_stations) {
-            STATION_INFO info;
-            info.id = s->getId();
-            info.x = s->getX();
-            info.y = s->getY();
-            info.floorId = s->getFloorId();
-            info.occuagv = 0;
+			Json::Value info;
+            info["id"]= s->getId();
+            info["x"] = s->getX();
+            info["y"] = s->getY();
+            info["floorId"] = s->getFloorId();
+			info["occuagv"] = s->getOccuAgv.getId();;
             if(s->getOccuAgv()!=nullptr)
                 info.occuagv = s->getOccuAgv()->getId();
             snprintf(info.name,MSG_STRING_LEN,s->getName().c_str(),s->getName().length());
@@ -580,177 +647,177 @@ void MapManager::interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request ms
             conn->send(response);
         }
         response.head.body_length = 0;
-        response.head.flag = 0;
+        response.head.flag = 0;*/
     }
     conn->send(response);
 }
 
-void MapManager::interListLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+//void MapManager::interListLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+//{
+//	Json::Value response;
+//	response["type"] = MSG_TYPE_RESPONSE;
+//	response["todo"] = request["todo"];
+//	response["queuenumber"] = request["queuenumber"];
+//	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+//
+//    if (mapModifying) {
+//		response["result"] = RETURN_MSG_RESULT_FAIL;
+//		response["error_code"] = RETURN_MSG_ERROR_CODE_CTREATING;
+//    }
+//    else {
+//        UserLogManager::getInstance()->push(conn->getUserName()+"获取地图线路信息");
+//        response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+//        for (auto l : m_lines) {
+//            AGV_LINE line;
+//            line.id = l->getId();
+//            line.startStation = l->getStartStation()->getId();
+//            line.endStation = l->getEndStation()->getId();
+//            line.length = l->getLength();
+//
+//            memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&line,sizeof(AGV_LINE));
+//
+//            response.head.flag = 1;
+//            response.head.body_length = sizeof(AGV_LINE);
+//            conn->send(response);
+//        }
+//        response.head.flag = 0;
+//        response.head.body_length = 0;
+//    }
+//    conn->send(response);
+//}
+
+void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_FAIL;
-
-    if (mapModifying) {
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "%s","is creating map");
-    }
-    else {
-        UserLogManager::getInstance()->push(conn->getUserName()+"获取地图线路信息");
-        response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-        for (auto l : m_lines) {
-            AGV_LINE line;
-            line.id = l->getId();
-            line.startStation = l->getStartStation()->getId();
-            line.endStation = l->getEndStation()->getId();
-            line.length = l->getLength();
-
-            memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&line,sizeof(AGV_LINE));
-
-            response.head.flag = 1;
-            response.head.body_length = sizeof(AGV_LINE);
-            conn->send(response);
-        }
-        response.head.flag = 0;
-        response.head.body_length = 0;
-    }
-    conn->send(response);
-}
-
-void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
-{
-	MSG_Response response;
-	memset(&response, 0, sizeof(MSG_Response));
-	memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-	response.head.body_length = 0;
-	response.return_head.result = RETURN_MSG_RESULT_FAIL;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
 	if (mapModifying) {
-		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_CTREATING;
 	}
 	else {
-		if (msg.head.body_length != sizeof(int32_t)) {
-			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
+		//if (msg.head.body_length != sizeof(int32_t)) {
+  //          response.return_head.error_code = RETURN_MSG_ERROR_CODE_PARAMS;
+  //          snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error station id length");
+		//}
+		//else {
+		//	int stationId = 0;
+		//	memcpy_s(&stationId, sizeof(int32_t), msg.body, sizeof(int32_t));
+		//	AgvStationPtr station = getStationById(stationId);
+		//	if (station == nullptr) {
+		//		response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
+  //              snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
+		//	}
+		//	else {
+		//		//存库...
+		//		//TODO
+
+		//		//设置
+  //              station->setLocked(true);
+		//		response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+		//	}			
+		//}
+	}
+	conn->send(response);
+}
+
+void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+{
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+
+	if (mapModifying) {
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_CTREATING;
+	}
+	else {
+  //      if (request.head.body_length != sizeof(int32_t)) {
+  //          response.return_head.error_code = RETURN_MSG_ERROR_CODE_PARAMS;
+  //          snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error line id length");
+		//}
+		//else {
+		//	int lineId = 0;
+  //          memcpy_s(&lineId, sizeof(int32_t), request.body, sizeof(int32_t));
+		//	AgvLinePtr line = getLineById(lineId);
+		//	if (line == nullptr) {
+		//		response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
+  //              snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded line id");
+		//	}
+		//	else {
+		//		//存库...
+		//		//TODO
+		//		//设置
+		//		//是否已经被管制了
+  //              line->setLocked(false);
+		//		response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+		//	}
+		//}
+	}
+	conn->send(response);
+}
+
+
+void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+{
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+
+	if (mapModifying) {
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_CTREATING;
+	}
+	else {
+		/*if (msg.head.body_length != sizeof(int32_t)) {
+            response.return_head.error_code = RETURN_MSG_ERROR_CODE_PARAMS;
             snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error station id length");
 		}
-		else {
-			int stationId = 0;
-			memcpy_s(&stationId, sizeof(int32_t), msg.body, sizeof(int32_t));
-			AgvStationPtr station = getStationById(stationId);
-			if (station == nullptr) {
-				response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
-                snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
-			}
-			else {
-				//存库...
-				//TODO
+		else {*/
+			//int stationId = 0;
+			//memcpy_s(&stationId, sizeof(int32_t), msg.body, sizeof(int32_t));
+			//AgvStationPtr station = getStationById(stationId);
+			//if (station == nullptr) {
+			//	response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
+   //             snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
+			//}
+			//else {
+			//	//存库...
+			//	//TODO
 
-				//设置
-                station->setLocked(true);
-				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-			}			
-		}
+			//	//设置
+   //             if (station->getOccuAgv() != nullptr/* && station->getOccuAgv()->getId() == TRAFFIC_OCCUR_AGV_ID*/) {
+   //                 station->setOccuAgv(nullptr);
+			//	}
+			//	response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
+			//}
+		//}
 	}
 	conn->send(response);
 }
 
-void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
-	MSG_Response response;
-	memset(&response, 0, sizeof(MSG_Response));
-	memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-	response.head.body_length = 0;
-	response.return_head.result = RETURN_MSG_RESULT_FAIL;
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
 	if (mapModifying) {
-		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_CTREATING;
 	}
 	else {
-		if (msg.head.body_length != sizeof(int32_t)) {
-			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error line id length");
-		}
-		else {
-			int lineId = 0;
-			memcpy_s(&lineId, sizeof(int32_t), msg.body, sizeof(int32_t));
-			AgvLinePtr line = getLineById(lineId);
-			if (line == nullptr) {
-				response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
-                snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded line id");
-			}
-			else {
-				//存库...
-				//TODO
-				//设置
-				//是否已经被管制了
-                line->setLocked(false);
-				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-			}
-		}
-	}
-	conn->send(response);
-}
-
-
-void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
-{
-	MSG_Response response;
-	memset(&response, 0, sizeof(MSG_Response));
-	memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-	response.head.body_length = 0;
-	response.return_head.result = RETURN_MSG_RESULT_FAIL;
-
-	if (mapModifying) {
-		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
-	}
-	else {
-		if (msg.head.body_length != sizeof(int32_t)) {
-			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-            snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error station id length");
-		}
-		else {
-			int stationId = 0;
-			memcpy_s(&stationId, sizeof(int32_t), msg.body, sizeof(int32_t));
-			AgvStationPtr station = getStationById(stationId);
-			if (station == nullptr) {
-				response.return_head.error_code = RETURN_MSG_ERROR_CODE_UNFINDED;
-                snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "unfinded station id");
-			}
-			else {
-				//存库...
-				//TODO
-
-				//设置
-                if (station->getOccuAgv() != nullptr/* && station->getOccuAgv()->getId() == TRAFFIC_OCCUR_AGV_ID*/) {
-                    station->setOccuAgv(nullptr);
-				}
-				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-			}
-		}
-	}
-	conn->send(response);
-}
-
-void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
-{
-	MSG_Response response;
-	memset(&response, 0, sizeof(MSG_Response));
-	memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-	response.head.body_length = 0;
-	response.return_head.result = RETURN_MSG_RESULT_FAIL;
-
-	if (mapModifying) {
-		response.return_head.error_code = RETURN_MSG_ERROR_CODE_CTREATING;
-        snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "is creating map");
-	}
-	else {
-		if (msg.head.body_length != sizeof(int32_t)) {
-			response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
+		/*if (msg.head.body_length != sizeof(int32_t)) {
+            response.return_head.error_code = RETURN_MSG_ERROR_CODE_PARAMS;
             snprintf(response.return_head.error_info, MSG_LONG_STRING_LEN, "%s", "error line id length");
 		}
 		else {
@@ -765,7 +832,7 @@ void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, MSG_Req
                 line->setLocked(true);
 				response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 			}
-		}
+		}*/
 	}
 	conn->send(response);
 }

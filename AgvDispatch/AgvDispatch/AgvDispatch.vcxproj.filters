@@ -111,6 +111,15 @@
     <ClInclude Include="..\..\utils\Log\easylogging.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Jacking\jackingagv.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Jacking\jackingagvthingturn.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Jacking\jacktaskmaker.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp">
@@ -177,6 +186,18 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\utils\Log\easylogging.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\taskmaker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Jacking\jackingagv.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Jacking\jackingagvthingturn.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Jacking\jacktaskmaker.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

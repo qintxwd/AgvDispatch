@@ -387,7 +387,7 @@ TcpSessionPtr SessionManager::getTcpSession(SessionID sID)
 
 
 
-void SessionManager::sendSessionData(SessionID sID, const MSG_Response &msg)
+void SessionManager::sendSessionData(SessionID sID, const Json::Value &response)
 {
     auto iter = _mapTcpSessionPtr.find(sID);
     if (iter == _mapTcpSessionPtr.end())
@@ -395,14 +395,14 @@ void SessionManager::sendSessionData(SessionID sID, const MSG_Response &msg)
         LOG(WARNING)<<"sendSessionData NOT FOUND SessionID.  SessionID=" << sID;
         return;
     }
-    iter->second->send(msg);
+    iter->second->send(response);
 }
 
-void SessionManager::sendData(const MSG_Response &msg)
+void SessionManager::sendData(const Json::Value &response)
 {
     for (auto &ms : _mapTcpSessionPtr)
     {
-        ms.second->send(msg);
+        ms.second->send(response);
     }
 }
 

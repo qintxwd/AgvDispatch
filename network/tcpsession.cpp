@@ -10,13 +10,18 @@ using std::max;
 namespace qyhnetwork {
 
 
-TcpSession::TcpSession():read_position(0),username("")
+TcpSession::TcpSession():username(""),
+    read_len(0),
+    json_len(0),
+    read_position(0),
+    isContinueRecving(false)
 {
     SessionManager::getInstance()->_statInfo[STAT_SESSION_CREATED]++;
 }
 
 TcpSession::~TcpSession()
 {
+    if(ofs.is_open())ofs.close();
     SessionManager::getInstance()->_statInfo[STAT_SESSION_DESTROYED]++;
     if (_sockptr)
     {
@@ -55,6 +60,10 @@ void TcpSession::reconnect()
     }
 
     read_position = 0;
+    read_len = 0;
+    json_len = 0;
+    if(ofs.is_open())ofs.close();
+    isContinueRecving = false;
 
     if (!_sockptr->doConnect(_remoteIP, _remotePort, std::bind(&TcpSession::onConnected, shared_from_this(), std::placeholders::_1)))
     {
@@ -146,9 +155,9 @@ bool TcpSession::doRecv()
         return false;
     }
 #ifndef WIN32
-    return _sockptr->doRecv(read_buffer + read_position, ONE_MSG_MAX_LENGTH - read_position, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2), true);
+    return _sockptr->doRecv(read_buffer, MSG_READ_BUFFER_LENGTH, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2), true);
 #else
-    return _sockptr->doRecv(read_buffer + read_position, ONE_MSG_MAX_LENGTH - read_position, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+    return _sockptr->doRecv(read_buffer, MSG_READ_BUFFER_LENGTH, std::bind(&TcpSession::onRecv, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
 #endif
 }
 
@@ -187,22 +196,8 @@ void TcpSession::close()
     LOG(WARNING)<<"TcpSession::close closing. sID=" << _sessionID;
 }
 
-int findHead(unsigned char *data,int len){
-    if(len<sizeof(MSG_Head))return -1;
-    for(int i=0;i<len;++i){
-        if(data[i] == MSG_MSG_Head_HEAD)
-        {
-            if(i+11>=len)return i;
-            if(data[i+11] ==MSG_MSG_Head_TAIL )
-                return i;
-        }
-    }
-    return -1;
-}
-
 unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 {
-    LOG(TRACE)<<"TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
     if (ec)
     {
         _lastRecvError = ec;
@@ -218,41 +213,81 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
         return 0 ;
     }
 
-    //只输出部分信息
-    LOG(INFO)<<"recv:"<<toHexString(read_buffer+read_position,received<sizeof(MSG_Head)?received:sizeof(MSG_Head));
+    LOG(TRACE)<<"TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
 
-    read_position += received;
     SessionManager::getInstance()->_statInfo[STAT_RECV_COUNT]++;
     SessionManager::getInstance()->_statInfo[STAT_RECV_BYTES] += received;
 
-    //解析
-    while(read_position>=sizeof(MSG_Head)){
-        int head_position = findHead((unsigned char *)read_buffer,read_position);
-        if(head_position == -1){
-            //未找到头，丢弃数据
-            LOG(INFO)<<" msg head not found , discard read data";
-            read_position = 0;
+    read_len += received;
+    read_position += received;
+
+    //分包、黏包处理{包长 为 json_len+5 }
+    if(isContinueRecving){
+        if(read_len >= json_len+5){
+            //接收完成，甚至超出
+            ofs.write(read_buffer,received-read_len+(json_len+5));
+            ofs.close();
+            //TODO:处理这个文件的json消息
+            memmove(read_buffer, read_buffer+received+json_len+5-read_len, read_len - 5- json_len);
+            read_len -= json_len+5;
+            isContinueRecving = false;
+            read_position = read_len;
+            json_len = 0;
         }else{
-            if(head_position != 0){
-                //找到的消息头，消息头前面的数据丢弃
-                memmove(read_buffer, read_buffer + head_position, read_position - head_position );
-                read_position -= head_position;
-            }
-            if(read_position>=sizeof(MSG_Head)){
-				memset(&read_one_msg, 0, sizeof(read_one_msg));
-                memcpy_s(&read_one_msg,sizeof(MSG_Request),read_buffer,read_position);
-                if(read_one_msg.head.body_length<= read_position - sizeof(MSG_Head)){
-                    MsgProcess::getInstance()->processOneMsg(read_one_msg,shared_from_this());                
-					memmove(read_buffer, read_buffer + sizeof(MSG_Head)+ read_one_msg.head.body_length, read_position - sizeof(MSG_Head)- read_one_msg.head.body_length);
-                    read_position -= sizeof(MSG_Head)+read_one_msg.head.body_length;
+            //接收未完成
+            ofs.write(read_buffer,received);
+            read_position = 0;
+        }
+    }else{
+        if(read_buffer[0] == MSG_MSG_HEAD){
+            snprintf((char *)&json_len,sizeof(json_len),read_buffer+1,sizeof(int32_t));
+            if(json_len>0){//找到长度信息
+                if(read_len>=json_len+5){//判断这个消息是否完整
+                    //独立的简单的json数据
+                    Json::Reader reader;
+                    Json::Value root;
+                    if (reader.parse(std::string(read_buffer+5,json_len), root))
+                    {
+                        //必备要素检查
+                        if(!root["type"].isNull()&&!root["queuenumber"].isNull()&&!root["todo"].isNull()){
+                            //处理消息数据
+                            MsgProcess::getInstance()->processOneMsg(root,shared_from_this());
+                            memmove(read_buffer, read_buffer + 5+json_len, read_len - 5- json_len);
+                            read_len -= 5+json_len;
+                            read_position -= 5 + json_len;
+                            json_len = 0;
+                        }
+                    }
+                    memmove(read_buffer, read_buffer + 5+json_len, read_len - 5- json_len);
+                    read_len -= 5+json_len;
+                    read_position -= 5 + json_len;
+                    json_len = 0;
+                }else if(json_len <= MSG_JSON_MEMORY_LENGTH){
+                    //没有超出一个json的最大缓存
+                    //继续接收就可以了
                 }else{
-                    //读取的数据不够
-                    break;
+                    //如果超出了，那么需要写文件
+                    //1.打开临时文件
+                    if(ofs.is_open())ofs.close();
+                    std::string sidfile = "temp_"+intToString(_sessionID)+".json";
+                    ofs.open(sidfile.c_str(),std::ios_base::out);
+                    //2.写入json数据
+                    ofs.write(read_buffer+5,read_len-5);
+                    //3.置位
+                    read_position -= read_len - 5;
+                    isContinueRecving = true;
                 }
             }else{
-                //读取的数据不够
-                break;
+                //数据长度不正确，//忽略数据
+                read_position = 0;
+                read_len = 0;
+                json_len = 0;
             }
+        }else{
+            //在未找到头信息时，开头还不是头信息，//忽略数据
+            read_position = 0;
+            read_len = 0;
+            json_len = 0;
         }
     }
 
@@ -268,15 +303,30 @@ unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 
 }
 
-void TcpSession::send(const MSG_Response &msg)
+void TcpSession::send(const Json::Value &json)
 {
+    char headLeng[5] = {0xAA};
     SessionManager::getInstance()->_statInfo[STAT_SEND_COUNT]++;
     SessionManager::getInstance()->_statInfo[STAT_SEND_PACKS]++;
-    bool sendRet = _sockptr->doSend((char *)&msg,sizeof(MSG_Head)+sizeof(MSG_RESPONSE_HEAD)+msg.head.body_length);
+    int length = json.asString().length();
+    //send head and length
+    snprintf(headLeng+1,4, (char *)&length,sizeof(length));
+    bool sendRet = _sockptr->doSend(headLeng,5);
+    if (!sendRet)
+    {
+        LOG(WARNING)<<"send error ";
+        return ;
+    }
+	char *copy_temp = new char[json.toStyledString().size() + 1];
+	std::copy(json.toStyledString().begin(), json.toStyledString().end(), copy_temp);
+	copy_temp[json.toStyledString().size()] = '\0';
+
+    sendRet = _sockptr->doSend(copy_temp,json.toStyledString().length());
     if (!sendRet)
     {
         LOG(WARNING)<<"send error ";
     }
+	delete[] copy_temp;
 }
 
 void TcpSession::onPulse()

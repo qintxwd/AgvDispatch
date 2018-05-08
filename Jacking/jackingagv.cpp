@@ -1,5 +1,5 @@
 #include "jackingagv.h"
-#include "common.h"
+#include "../common.h"
 JackingAgv::JackingAgv(int id, std::string name, std::string ip, int port):
     Agv(id,name,ip,port)
 {

@@ -56,7 +56,7 @@ enum{
     AGV_TYPE_JACKING = 0,
     //...
 };
-extern  const  int  G_AGV_TYPE;
+extern  int  GLOBAL_AGV_TYPE;
 
 
 #endif // COMMON_H

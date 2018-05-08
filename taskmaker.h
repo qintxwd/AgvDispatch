@@ -1,4 +1,4 @@
-#ifndef TASKMAKER_H
+﻿#ifndef TASKMAKER_H
 #define TASKMAKER_H
 
 #include "network/tcpsession.h"
@@ -9,7 +9,7 @@ class TaskMaker
 public:
     static  TaskMaker* getInstance();
     virtual ~TaskMaker();
-    virtual void makeTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    virtual void makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
 protected:
     TaskMaker();
 };
