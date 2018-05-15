@@ -1,4 +1,4 @@
-#include "taskmaker.h"
+﻿#include "taskmaker.h"
 #include "Jacking/jacktaskmaker.h"
 #include "common.h"
 
@@ -14,7 +14,7 @@ TaskMaker::~TaskMaker()
 
 TaskMaker* TaskMaker::getInstance()
 {
-    if(G_AGV_TYPE == AGV_TYPE_JACKING){
+    if(GLOBAL_AGV_PROJECT == AGV_PROJECT_QINGDAO){
         //不同的AGV，调用不同的子类，即可
         static JackTaskMaker *m_ins = nullptr;
         if(m_ins == nullptr){
@@ -23,8 +23,4 @@ TaskMaker* TaskMaker::getInstance()
         return m_ins;
     }
     return nullptr;
-}
-
-void TaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
-{
 }

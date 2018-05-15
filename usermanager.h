@@ -20,19 +20,19 @@ public:
 
     void init();
 
-    void interLogin(TcpSessionPtr conn, MSG_Request msg);
+    void interLogin(TcpSessionPtr conn, const Json::Value &request);
 
-    void interLogout(TcpSessionPtr conn, MSG_Request msg);
+    void interLogout(TcpSessionPtr conn, const Json::Value &request);
 
-    void interChangePassword(TcpSessionPtr conn, MSG_Request msg);
+    void interChangePassword(TcpSessionPtr conn, const Json::Value &request);
 
-    void interList(TcpSessionPtr conn, MSG_Request msg);
+    void interList(TcpSessionPtr conn, const Json::Value &request);
 
-    void interRemove(TcpSessionPtr conn, MSG_Request msg);
+    void interRemove(TcpSessionPtr conn, const Json::Value &request);
 
-    void interAdd(TcpSessionPtr conn, MSG_Request msg);
+    void interAdd(TcpSessionPtr conn, const Json::Value &request);
 
-    void interModify(TcpSessionPtr conn, MSG_Request msg);
+    void interModify(TcpSessionPtr conn, const Json::Value &request);
 
 	virtual ~UserManager();
 private:

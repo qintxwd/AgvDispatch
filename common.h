@@ -51,12 +51,17 @@ void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, 
 
 #endif
 
-//定义AGV的种类
+//考虑到有些项目可能是多种车一起调度，那么根据项目来区分不同的taskmaker
 enum{
-    AGV_TYPE_JACKING = 0,
+    AGV_PROJECT_QUNCHUANG = 0,
+    AGV_PROJECT_DONGYAO,
+    AGV_PROJECT_QINGDAO,
     //...
 };
-extern  const  int  G_AGV_TYPE;
+
+extern const int GLOBAL_AGV_PROJECT;
+
+
 
 
 #endif // COMMON_H

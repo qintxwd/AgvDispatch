@@ -39,10 +39,10 @@ public:
     void foreachAgv(AgvEachCallback cb);
 
     //用户接口
-    void interList(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interAdd(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interDelete(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interModify(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interList(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interDelete(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
 protected:
     AgvManager();
 private:

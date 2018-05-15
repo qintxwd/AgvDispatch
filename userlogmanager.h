@@ -26,7 +26,7 @@ public:
 
     void push(const std::string &s);
 
-    void interLogDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interLogDuring(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
 
 private:
     UserLogManager();

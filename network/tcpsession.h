@@ -3,6 +3,8 @@
 
 #include "networkconfig.h"
 #include "../protocol.h"
+#include <json/json.h>
+#include <fstream>
 
 namespace qyhnetwork{
 
@@ -15,7 +17,7 @@ public:
     void connect();
     void reconnect();
     bool attatch(const TcpSocketPtr &sockptr, AccepterID aID, SessionID sID);
-    void send(const MSG_Response &msg);
+    void send(const Json::Value &json);
     void close();
 
 private:
@@ -54,9 +56,18 @@ private:
     AccepterID _acceptID = InvalidAccepterID;
     qyhnetwork::TimerID _pulseTimerID = qyhnetwork::InvalidTimerID;
 
-    MSG_Request read_one_msg;//读取一条请求消息的缓存(大小1024)
-    char read_buffer[ONE_MSG_MAX_LENGTH];
+    //读取数据缓存区[一个小的消息就直接处理了，过长的消息，放入big_msg_buffer中]
+    char read_buffer[MSG_READ_BUFFER_LENGTH];
+
+    //读取的长度
+    int read_len;
+
+    //要读取的json的数据长度
+    int json_len;
+
     int read_position;
+
+    bool isContinueRecving;//持续接收,json过长时，写入big_msg_buffer中，等待接收完成
 
     unsigned long long _reconnects = 0;
 
@@ -66,6 +77,9 @@ private:
     int user_id = 0;
     int user_role = 0;
     std::string username;
+
+	char *big_msg_buffer;//
+	int big_msg_buffer_position;
 };
 using TcpSessionPtr = std::shared_ptr<TcpSession>;
 

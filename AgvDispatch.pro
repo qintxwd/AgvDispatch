@@ -15,15 +15,16 @@ TEMPLATE = app
 
 unix{
 LIBS += -lsqlite3
+LIBS += -ljsoncpp
 }
 
 win32{
 win32:DEFINES += _CRT_SECURE_NO_WARNINGS
 win32:DEFINES += _WINSOCK_DEPRECATED_NO_WARNINGS
 INCLUDEPATH+=D:\thirdparty\sqlite\include
-INCLUDEPATH+=D:\thirdparty\opencv\opencv3.3\include
+INCLUDEPATH+=D:\thirdparty\jsoncpp\include
 LIBS+=D:\thirdparty\sqlite\lib\Debug\sqlite3.lib
-LIBS+=D:\thirdparty\opencv\opencv3.3\lib\opencv_world330d.lib
+LIBS+=D:\thirdparty\jsoncpp\lib\Debug\jsoncpp_static.lib
 }
 
 HEADERS += \

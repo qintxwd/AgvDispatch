@@ -67,19 +67,16 @@ public:
 
 	AgvLinePtr getLineById(int id);
 
-    //用户接口
-    void interCreateStart(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interCreateAddStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interCreateAddLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interCreateAddArc(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interCreateFinish(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interListStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interListLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    std::vector<AgvStationPtr> getStations(){return  m_stations;}
 
-	void interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-	void interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-	void interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-	void interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    //用户接口
+    void interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+
+    void interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
 protected:
     MapManager();
 private:

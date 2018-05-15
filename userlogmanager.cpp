@@ -45,31 +45,30 @@ void UserLogManager::init()
 
 void UserLogManager::push(const std::string &s)
 {
-    std::string time = getTimeStrNow();
     USER_LOG log;
-    snprintf(log.time,MSG_TIME_STRING_LEN,"%s", time.c_str());
-    snprintf(log.msg,MSG_LOG_MAX_LENGTH,"%s", s.c_str());
+    log.time = getTimeStrNow();
+    log.msg = s;
     mtx.lock();
     logQueue.push(log);
     mtx.unlock();
 }
 
-void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request msg)
+void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn,const Json::Value &request)
 {
-    MSG_Response response;
-    memset(&response, 0, sizeof(MSG_Response));
-    memcpy_s(&response.head, sizeof(MSG_Head), &msg.head, sizeof(MSG_Head));
-    response.head.body_length = 0;
-    response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
-    response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
-
-    if(msg.head.body_length!=MSG_TIME_STRING_LEN *2){
-        response.return_head.result = RETURN_MSG_RESULT_FAIL;
-        response.return_head.error_code = RETURN_MSG_ERROR_CODE_LENGTH;
-    }else{
-        std::string startTime = std::string(msg.body);
-        std::string endTime = std::string(msg.body+MSG_TIME_STRING_LEN);
+	Json::Value response;
+	response["type"] = MSG_TYPE_RESPONSE;
+	response["todo"] = request["todo"];
+	response["queuenumber"] = request["queuenumber"];
+	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+	if (request["startTime"].isNull() ||
+		request["endTime"].isNull()) {
+		response["result"] = RETURN_MSG_RESULT_FAIL;
+		response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
+	}else{
+        std::string startTime = request["startTime"].asString();
+        std::string endTime = request["endTime"].asString();
         push(conn->getUserName()+"查询历史日志，时间是从"+startTime+" 到"+endTime);
+		Json::Value agv_logs;
         try{
             std::stringstream ss;
             ss<<"select log_time,log_msg from agv_log where log_time >= \'"<<startTime<<"\' and log_time<=\'"<<endTime<<"\' ;";
@@ -77,27 +76,30 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request 
             if(table.numRows()>0 && table.numFields() == 2 ){
                 for(int i=0;i<table.numRows();++i){
                     table.setRow(i);
-                    USER_LOG log;
-                    snprintf(log.time,MSG_TIME_STRING_LEN, table.fieldValue(0));
-                    snprintf(log.msg,MSG_LOG_MAX_LENGTH, table.fieldValue(1));
-                    snprintf(response.body,MSG_RESPONSE_BODY_MAX_SIZE,"%s",log.time);
-                    snprintf(response.body+MSG_TIME_STRING_LEN,MSG_LOG_MAX_LENGTH,"%s",log.msg);
-                    response.head.body_length = MSG_TIME_STRING_LEN+strlen(log.msg);
-					response.head.flag = 1;
-                    conn->send(response);
+					Json::Value agv_log;
+					agv_log["time"] = std::string(table.fieldValue(0));
+					agv_log["msg"] = std::string(table.fieldValue(1));
+					agv_logs.append(agv_log);
                 }
-				response.head.body_length = 0;
-				response.head.flag = 0;
             }
-        }catch(CppSQLite3Exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN, "code:%d msg:%s",e.errorCode(),e.errorMessage());
-            LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-        }catch(std::exception e){
-            response.return_head.error_code = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-            snprintf(response.return_head.error_info,MSG_LONG_STRING_LEN,"%s", e.what());
-            LOG(ERROR)<<"sqlerr code:"<<e.what();
+			response["logs"] = agv_logs;
         }
+		catch (CppSQLite3Exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+		}
+		catch (std::exception e) {
+			response["result"] = RETURN_MSG_RESULT_FAIL;
+			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+			std::stringstream ss;
+			ss << "info:" << e.what();
+			response["error_info"] = ss.str();
+			LOG(ERROR) << "sqlerr code:" << e.what();
+		}
     }
 
     conn->send(response);

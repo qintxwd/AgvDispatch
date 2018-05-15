@@ -49,13 +49,13 @@ public:
     void excuteTask(AgvTaskPtr task);
 
     //用户接口
-    void interCreate(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interQueryStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interCancel(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interListUndo(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interListDoing(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interListDoneToday(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interListDuring(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interCreate(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interQueryStatus(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interCancel(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interListUndo(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interListDoing(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
 protected:
     TaskManager();
 private:

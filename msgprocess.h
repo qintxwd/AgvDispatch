@@ -27,7 +27,7 @@ public:
     void removeSubSession(int session);
 
     //进来一个消息,分配给一个线程去处理它
-    void processOneMsg(MSG_Request request,qyhnetwork::TcpSessionPtr session);
+    void processOneMsg(const Json::Value &request,qyhnetwork::TcpSessionPtr session);
 
     //发布一个日志消息
     void publishOneLog(USER_LOG log);
@@ -39,14 +39,14 @@ public:
     void errorOccur(int code,std::string msg,bool needConfirm);
 
     //用户接口
-    void interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interAddSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interAddSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
-    void interRemoveSubLog(qyhnetwork::TcpSessionPtr conn, MSG_Request msg);
+    void interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interAddSubTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interAddSubLog(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn,const Json::Value &request);
+    void interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interRemoveSubLog(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
 
     void addSubAgvPosition(int id);
     void addSubAgvStatus(int id);

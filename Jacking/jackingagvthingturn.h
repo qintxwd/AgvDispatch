@@ -1,7 +1,7 @@
 #ifndef JACKINGAGVTHINGTURN_H
 #define JACKINGAGVTHINGTURN_H
 
-#include "agvtasknodedothing.h"
+#include "../agvtasknodedothing.h"
 //顶升agv 旋转,参数例如
 //wait ms//超时时间2000//2秒超时
 //params 发给agv的参数，例如 left 90//左转90度

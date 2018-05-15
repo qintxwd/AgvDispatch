@@ -4,6 +4,7 @@
 ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
 
+const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
 
 std::string getTimeStrNow()
 {
