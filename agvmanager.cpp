@@ -255,7 +255,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 
         UserLogManager::getInstance()->push(conn->getUserName()+" modify AGV.ID:"+ intToString(id)+" newname:"+ name +" newip:"+ ip +" newport:"+intToString(port));
         char buf[SQL_MAX_LENGTH];
-        snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", name, ip,port,id);
+        snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", name.c_str(), ip.c_str(),port,id);
 
         try{
             g_db.execDML(buf);

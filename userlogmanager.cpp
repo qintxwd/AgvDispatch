@@ -35,9 +35,9 @@ void UserLogManager::init()
                 ss<<"insert into agv_log (log_time,log_msg) values ("<<log.time<<" ,"<<log.msg<<" );";
                 g_db.execDML(ss.str().c_str());
             }catch(CppSQLite3Exception &e){
-                //LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+                std::cerr << e.errorCode() << ":" << e.errorMessage();
             }catch(std::exception e){
-                //LOG(ERROR) << e.what();
+				std::cerr << e.what();
             }
             //2.发布
             MsgProcess::getInstance()->publishOneLog(log);

@@ -281,7 +281,7 @@ void UserManager::interRemove(TcpSessionPtr conn, const Json::Value &request)
 		try {
 			//查询权限
 			std::stringstream ss;
-			ss << "select user_role from agv_user where id <=" << id;
+			ss << "select user_role from agv_user where id =" << id;
 			CppSQLite3Table table = g_db.getTable(ss.str().c_str());
 			if (table.numRows() == 1) {
 				table.setRow(0);
@@ -298,6 +298,10 @@ void UserManager::interRemove(TcpSessionPtr conn, const Json::Value &request)
 					response["result"] = RETURN_MSG_RESULT_FAIL;
 					response["error_code"] = RETURN_MSG_ERROR_CODE_PERMISSION_DENIED;
 				}
+			}
+			else {
+				response["result"] = RETURN_MSG_RESULT_FAIL;
+				response["error_code"] = RETURN_MSG_ERROR_CODE_PERMISSION_DENIED;
 			}
 		}
 		catch (CppSQLite3Exception e) {

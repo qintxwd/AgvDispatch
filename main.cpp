@@ -10,6 +10,7 @@ INITIALIZE_EASYLOGGINGPP
 
 void initLog()
 {
+	//TODO: 用spd log 替换 easylog
     //日志配置文件
     el::Configurations fileConf("log-conf.conf");
     el::Loggers::reconfigureAllLoggers(fileConf);

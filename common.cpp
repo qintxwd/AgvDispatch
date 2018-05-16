@@ -127,5 +127,3 @@ const  int  G_AGV_TYPE = AGV_TYPE_JACKING;
 
 #endif
 
-
-int  GLOBAL_AGV_TYPE = AGV_TYPE_JACKING;

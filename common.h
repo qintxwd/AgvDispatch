@@ -62,6 +62,4 @@ enum{
 extern const int GLOBAL_AGV_PROJECT;
 
 
-
-
 #endif // COMMON_H
