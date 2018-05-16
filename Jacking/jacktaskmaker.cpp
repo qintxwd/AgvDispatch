@@ -1,4 +1,4 @@
-﻿#include "jacktaskmaker.h"
+#include "jacktaskmaker.h"
 #include "../taskmanager.h"
 #include "../mapmanager.h"
 #include "../agvmanager.h"
