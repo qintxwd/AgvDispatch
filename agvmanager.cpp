@@ -123,7 +123,7 @@ void AgvManager::interList(qyhnetwork::TcpSessionPtr conn, const Json::Value &re
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
-    UserLogManager::getInstance()->push(conn->getUserName()+"请求AGV列表");
+    UserLogManager::getInstance()->push(conn->getUserName()+" list agv");
 
     Json::Value agv_infos;
     UNIQUE_LCK lck(mtx);
@@ -156,7 +156,7 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &req
         response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
     }
     else {
-        UserLogManager::getInstance()->push(conn->getUserName()+"添加AGV.name:"+ request["name"].asString() +" ip:"+request["ip"].asString()+intToString(request["port"].asInt()));
+        UserLogManager::getInstance()->push(conn->getUserName()+" add AGV.name:"+ request["name"].asString() +" ip:"+request["ip"].asString()+intToString(request["port"].asInt()));
         char buf[SQL_MAX_LENGTH];
         snprintf(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values('%s','%s',%d);", request["name"].asString().c_str(), request["ip"].asString().c_str(), request["port"].asInt());
         try{
@@ -203,7 +203,7 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 	}
     else {
         int id = request["id"].asInt();
-        UserLogManager::getInstance()->push(conn->getUserName()+"删除AGV.ID:"+ intToString(id));
+        UserLogManager::getInstance()->push(conn->getUserName()+" delete AGV.ID:"+ intToString(id));
         char buf[SQL_MAX_LENGTH];
         snprintf(buf,SQL_MAX_LENGTH, "delete from agv_agv where id=%d;", id);
         try{
@@ -253,7 +253,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 		int port = request["port"].asInt();
 		std::string ip = request["ip"].asString();
 
-        UserLogManager::getInstance()->push(conn->getUserName()+"修改AGV信息.ID:"+ intToString(id)+" newname:"+ name +" newip:"+ ip +" newport:"+intToString(port));
+        UserLogManager::getInstance()->push(conn->getUserName()+" modify AGV.ID:"+ intToString(id)+" newname:"+ name +" newip:"+ ip +" newport:"+intToString(port));
         char buf[SQL_MAX_LENGTH];
         snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", name, ip,port,id);
 

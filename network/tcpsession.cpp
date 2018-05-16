@@ -159,7 +159,7 @@ namespace qyhnetwork {
 
 	bool TcpSession::doRecv()
 	{
-		LOG(TRACE) << "TcpSession::doRecv sessionID=" << getSessionID();
+		//LOG(TRACE) << "TcpSession::doRecv sessionID=" << getSessionID();
 		if (!_sockptr)
 		{
 			return false;
@@ -223,7 +223,7 @@ namespace qyhnetwork {
 			return 0;
 		}
 
-		LOG(TRACE) << "TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
+		//LOG(TRACE) << "TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
 
 		SessionManager::getInstance()->_statInfo[STAT_RECV_COUNT]++;
 		SessionManager::getInstance()->_statInfo[STAT_RECV_BYTES] += received;
@@ -238,14 +238,13 @@ namespace qyhnetwork {
 					//接收完成，甚至超出
 					memcpy(big_msg_buffer + big_msg_buffer_position, read_buffer, received - read_len + (json_len + 5));
 					
-					//big_msg_buffer_position += received - read_len + (json_len + 5);
-					
-					Json::CharReaderBuilder builder;
-					builder["collectComments"] = false;
-					Json::CharReader* reader(builder.newCharReader());
-					JSONCPP_STRING errs;
+					std::string json_str = std::string(big_msg_buffer, json_len);
+					LOG(TRACE) << "RECV! session id=" << this->_sessionID << " len=" << json_len << " json=\n" << json_str;
+
+					Json::Reader reader;
 					Json::Value root;
-					if (reader->parse(big_msg_buffer, big_msg_buffer+json_len, &root, &errs))
+
+					if (reader.parse(json_str, root))
 					{
 						//必备要素检查
 						if (!root["type"].isNull() && !root["queuenumber"].isNull() && !root["todo"].isNull()) {
@@ -253,7 +252,6 @@ namespace qyhnetwork {
 							MsgProcess::getInstance()->processOneMsg(root, shared_from_this());
 						}
 					}
-					delete reader;
 					
 					delete big_msg_buffer;
 					big_msg_buffer = nullptr;
@@ -274,17 +272,19 @@ namespace qyhnetwork {
 				}
 			}
 			else {
-				if (read_buffer[0] == MSG_MSG_HEAD && read_len >= 5) {
+				if ((read_buffer[0] & 0xFF) == MSG_MSG_HEAD && read_len >= 5) {
 					snprintf((char *)&json_len, sizeof(json_len), read_buffer + 1, sizeof(int32_t));
 					if (json_len > 0) {//找到长度信息
 						if (read_len >= json_len + 5) {//判断这个消息是否完整
-							//独立的简单的json数据
-							Json::CharReaderBuilder builder;
-							builder["collectComments"] = false;
-							Json::CharReader* reader(builder.newCharReader());
-							JSONCPP_STRING errs;
+
+							std::string json_str = std::string(read_buffer + 5, json_len);
+
+							LOG(TRACE) << "RECV! session id=" << this->_sessionID << " len=" << json_len << " json=\n" << json_str;
+;
+							Json::Reader reader;
 							Json::Value root;
-							if (reader->parse(read_buffer + 5, read_buffer + 5 + json_len, &root, &errs))
+							
+							if (reader.parse( json_str, root))
 							{
 								//必备要素检查
 								if (!root["type"].isNull() && !root["queuenumber"].isNull() && !root["todo"].isNull()) {
@@ -292,7 +292,6 @@ namespace qyhnetwork {
 									MsgProcess::getInstance()->processOneMsg(root, shared_from_this());
 								}
 							}
-							delete reader;
 							memmove(read_buffer, read_buffer + 5 + json_len, read_len - 5 - json_len);
 							read_len -= 5 + json_len;
 							read_position -= 5 + json_len;
@@ -355,11 +354,14 @@ namespace qyhnetwork {
 	void TcpSession::send(const Json::Value &json)
 	{
 		char headLeng[5];
-		headLeng[0] = 0xAA;
+		headLeng[0] = MSG_MSG_HEAD;
 		SessionManager::getInstance()->_statInfo[STAT_SEND_COUNT]++;
 		SessionManager::getInstance()->_statInfo[STAT_SEND_PACKS]++;
 		std::string msg = json.toStyledString();
 		int length = msg.length();
+		
+		LOG(TRACE) << "SEND! session id=" << this->_sessionID << " len=" << length << " json=\n" << msg;
+
 		//send head and length
 		snprintf(headLeng + 1, 4, (char *)&length, sizeof(length));
 		bool sendRet = _sockptr->doSend(headLeng, 5);

@@ -18,7 +18,7 @@ void MsgProcess::interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, const Js
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "订阅AGV实时位置信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " sub AGV position info");
 	addSubAgvPosition(conn->getSessionID());
 	conn->send(response);
 }
@@ -28,7 +28,7 @@ void MsgProcess::interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, const Json
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "订阅AGV实时状态信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " sub AGV status info");
 	addSubAgvStatus(conn->getSessionID());
 	conn->send(response);
 }
@@ -38,7 +38,7 @@ void MsgProcess::interAddSubTask(qyhnetwork::TcpSessionPtr conn, const Json::Val
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "订阅任务信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " sub task info");
 	addSubTask(conn->getSessionID());
 	conn->send(response);
 }
@@ -48,7 +48,7 @@ void MsgProcess::interAddSubLog(qyhnetwork::TcpSessionPtr conn, const Json::Valu
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "订阅日志信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " sub log info");
 	addSubLog(conn->getSessionID());
 	conn->send(response);
 }
@@ -58,7 +58,7 @@ void MsgProcess::interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, const
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "取消订阅AGV实时位置信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " cancel AGV position info");
 	removeSubAgvPosition(conn->getSessionID());
 	conn->send(response);
 }
@@ -68,7 +68,7 @@ void MsgProcess::interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn, const J
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "取消订阅AGV实时状态信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " cancel AGV status info");
 	removeSubAgvStatus(conn->getSessionID());
 	conn->send(response);
 }
@@ -78,7 +78,7 @@ void MsgProcess::interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, const Json::
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "取消订阅任务信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " cancel task info");
 	removeSubTask(conn->getSessionID());
 	conn->send(response);
 }
@@ -88,7 +88,7 @@ void MsgProcess::interRemoveSubLog(qyhnetwork::TcpSessionPtr conn, const Json::V
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	UserLogManager::getInstance()->push(conn->getUserName() + "取消订阅日志信息");
+	UserLogManager::getInstance()->push(conn->getUserName() + " cancel sub log");
 	removeSubLog(conn->getSessionID());
 	conn->send(response);
 }
@@ -247,6 +247,14 @@ bool MsgProcess::init()
 	return true;
 }
 
+void MsgProcess::sessionLogout(int user_id)
+{
+	//设置用户登录状态为
+	std::stringstream ss;
+	ss << "update agv_user set user_status=1 where id= " << user_id;
+	g_db.execDML(ss.str().c_str());
+}
+
 void MsgProcess::removeSubSession(int session)
 {
 	psMtx.lock();
@@ -267,7 +275,7 @@ void MsgProcess::removeSubSession(int session)
 void MsgProcess::processOneMsg(const Json::Value &request, qyhnetwork::TcpSessionPtr session)
 {
 	//request需要copy一个到线程中。
-	g_threadPool.enqueue([&, request] {
+	g_threadPool.enqueue([&, request,session] {
 		//处理消息，如果有返回值，发送返回值
 		if ((session->getUserId() <= 0 || session->getUserRole() <= USER_ROLE_VISITOR)) {
 			if (request["todo"].asInt() != MSG_TODO_USER_LOGIN) {

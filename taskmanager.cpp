@@ -408,7 +408,7 @@ void TaskManager::interQueryStatus(qyhnetwork::TcpSessionPtr conn, const Json::V
 	}
 	else {
 		int id = request["id"].asInt();
-		UserLogManager::getInstance()->push(conn->getUserName() + "请求任务状态，任务ID:" + intToString(id));
+		UserLogManager::getInstance()->push(conn->getUserName() + " query task status,with task ID:" + intToString(id));
 		int status = queryTaskStatus(id);
 		response["status"] = status;
 	}
@@ -429,7 +429,7 @@ void TaskManager::interCancel(qyhnetwork::TcpSessionPtr conn, const Json::Value 
 	}
 	else {
 		int id = request["id"].asInt();
-		UserLogManager::getInstance()->push(conn->getUserName() + "取消任务，任务ID:" + intToString(id));
+		UserLogManager::getInstance()->push(conn->getUserName() + " cancel task，task ID:" + intToString(id));
 		//取消该任务
 		cancelTask(id);
 	}
@@ -444,7 +444,7 @@ void TaskManager::interListUndo(qyhnetwork::TcpSessionPtr conn, const Json::Valu
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
-	UserLogManager::getInstance()->push(conn->getUserName() + "请求排队任务列表");
+	UserLogManager::getInstance()->push(conn->getUserName() + " query undo tasks list");
 	Json::Value task_infos;
 	toDisMtx.lock();
 	for (auto mmaptask : toDistributeTasks) {
@@ -471,7 +471,7 @@ void TaskManager::interListDoing(qyhnetwork::TcpSessionPtr conn, const Json::Val
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
-	UserLogManager::getInstance()->push(conn->getUserName() + "请求正在执行任务列表");
+	UserLogManager::getInstance()->push(conn->getUserName() + " query doing task list");
 	Json::Value task_infos;
 	doingTaskMtx.lock();
 	for (auto task : doingTask) {
@@ -500,7 +500,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json:
 
 	std::stringstream ss;
 	ss << "select id,produce_time,do_time,done_time,agv from agv_task where done_time<= \'" << getTimeStrTomorrow() << "\' and done_time>= \'" << getTimeStrToday() << "\';";
-	UserLogManager::getInstance()->push(conn->getUserName() + "请求今天完成任务列表");
+	UserLogManager::getInstance()->push(conn->getUserName() + " query task done today list");
 	try {
 		CppSQLite3Table table = g_db.getTable(ss.str().c_str());
 		Json::Value task_infos;
@@ -555,7 +555,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Va
 	else {
 		std::string startTime = request["startTime"].asString();
 		std::string endTime = request["endTime"].asString();
-		UserLogManager::getInstance()->push(conn->getUserName() + "查询历史任务，时间是从" + startTime + " 到" + endTime);
+		UserLogManager::getInstance()->push(conn->getUserName() + " query history tasks list ，time from " + startTime + " to" + endTime);
 		std::stringstream ss;
 		ss << "select id,produce_time,do_time,done_time,agv from agv_task where done_time<= \'" << endTime << "\' and done_time>= \'" << startTime << "\';";
 

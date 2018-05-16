@@ -26,6 +26,9 @@ public:
 
     void removeSubSession(int session);
 
+	//用户断开连接导致 用户退出登录
+	void sessionLogout(int user_id);
+
     //进来一个消息,分配给一个线程去处理它
     void processOneMsg(const Json::Value &request,qyhnetwork::TcpSessionPtr session);
 
@@ -65,7 +68,7 @@ private:
 
     void publisher_task();
 
-    void publisher_log();
+    //void publisher_log();
 
     MsgProcess();
 

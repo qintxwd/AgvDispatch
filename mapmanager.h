@@ -8,6 +8,7 @@
 #include <vector>
 #include "agvstation.h"
 #include "agvline.h"
+#include "AgvBlock.h"
 #include "agv.h"
 #include "common.h"
 #include "utils/noncopyable.h"
@@ -84,6 +85,7 @@ private:
     AgvLinePtr  getLineId(AgvStationPtr startStation, AgvStationPtr endStation);
     std::vector<AgvStationPtr> m_stations;//站点
     std::vector<AgvLinePtr> m_lines;//线路
+	std::vector<AgvBlockPtr> m_blocks;//区块
     std::map<AgvLinePtr, std::vector<AgvLinePtr> > m_adj;  //从一条线路到另一条线路的关联表
     std::map<AgvLinePtr, AgvLinePtr> m_reverseLines;//线路和它的反方向线路的集合。
 

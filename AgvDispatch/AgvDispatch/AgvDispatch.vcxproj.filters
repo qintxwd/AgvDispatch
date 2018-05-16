@@ -111,6 +111,9 @@
     <ClInclude Include="..\..\utils\Log\easylogging.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\AgvBlock.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp">
@@ -183,6 +186,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\taskmaker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\AgvBlock.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

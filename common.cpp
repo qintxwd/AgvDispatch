@@ -1,5 +1,5 @@
 ﻿#include "common.h"
-
+#include <iomanip>
 
 ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
@@ -21,7 +21,7 @@ std::string getTimeStrNow()
 
 
     //gcc 4.9及之前版本不支持 std::put_time//需要gcc 5.0+
-    ss << std::put_time(std::localtime(&tt), "%Y-%m-%d %H:%M:%S") << "." << ms;
+    ss << std::put_time(std::localtime(&tt), "%Y-%m-%d %H:%M:%S") << "." << std::setw(3) << std::setfill('0') << ms;
 
     return ss.str();
 }

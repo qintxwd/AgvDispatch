@@ -20,8 +20,10 @@ void UserLogManager::init()
 
     g_threadPool.enqueue([&]{
         while(true){
-            if(logQueue.empty())
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+			if (logQueue.empty()) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(20));
+				continue;
+			}                
             mtx.lock();
             USER_LOG log = logQueue.front();
             logQueue.pop();
@@ -33,9 +35,9 @@ void UserLogManager::init()
                 ss<<"insert into agv_log (log_time,log_msg) values ("<<log.time<<" ,"<<log.msg<<" );";
                 g_db.execDML(ss.str().c_str());
             }catch(CppSQLite3Exception &e){
-                LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+                //LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
             }catch(std::exception e){
-                LOG(ERROR) << e.what();
+                //LOG(ERROR) << e.what();
             }
             //2.发布
             MsgProcess::getInstance()->publishOneLog(log);
@@ -67,7 +69,7 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn,const Json::V
 	}else{
         std::string startTime = request["startTime"].asString();
         std::string endTime = request["endTime"].asString();
-        push(conn->getUserName()+"查询历史日志，时间是从"+startTime+" 到"+endTime);
+        push(conn->getUserName()+"query history log，time from"+startTime+" to"+endTime);
 		Json::Value agv_logs;
         try{
             std::stringstream ss;

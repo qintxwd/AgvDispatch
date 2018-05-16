@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\agv.h" />
+    <ClInclude Include="..\..\AgvBlock.h" />
     <ClInclude Include="..\..\agvline.h" />
     <ClInclude Include="..\..\agvmanager.h" />
     <ClInclude Include="..\..\agvstation.h" />
@@ -54,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp" />
+    <ClCompile Include="..\..\AgvBlock.cpp" />
     <ClCompile Include="..\..\agvmanager.cpp" />
     <ClCompile Include="..\..\common.cpp" />
     <ClCompile Include="..\..\Jacking\jacktaskmaker.cpp" />

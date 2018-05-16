@@ -415,7 +415,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 		response["error_code"] = RETURN_MSG_ERROR_CODE_TASKING;
     }
     else {
-        UserLogManager::getInstance()->push(conn->getUserName()+"重新设置地图");
+        UserLogManager::getInstance()->push(conn->getUserName()+" set map");
 
         mapModifying = true;
         clear();
@@ -628,7 +628,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 		response["error_code"] = RETURN_MSG_ERROR_CODE_CTREATING;
     }
     else {
-        UserLogManager::getInstance()->push(conn->getUserName()+"获取地图站点信息");
+        UserLogManager::getInstance()->push(conn->getUserName()+" get map");
         /*response.return_head.result = RETURN_MSG_RESULT_SUCCESS;
 		Json::Value agv_stations;
         for (auto s : m_stations) {

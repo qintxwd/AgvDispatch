@@ -4,6 +4,7 @@
 #include "usermanager.h"
 #include "network/sessionmanager.h"
 #include "msgprocess.h"
+#include "userlogmanager.h"
 #include "utils/Log/easylogging.h"
 INITIALIZE_EASYLOGGINGPP
 
@@ -74,7 +75,10 @@ int main(int argc, char *argv[])
         return -5;
     }
 
-    //7.初始化tcp/ip 接口
+	//7.初始化日志发布
+	UserLogManager::getInstance()->init();
+
+    //8.初始化tcp/ip 接口
     qyhnetwork::SessionManager::getInstance()->start();
     auto aID = qyhnetwork::SessionManager::getInstance()->addAccepter("0.0.0.0", 9999);
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;

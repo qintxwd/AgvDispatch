@@ -66,6 +66,7 @@ void UserManager::interLogin(TcpSessionPtr conn, const Json::Value &request)
 
 				if (querypwd == password) {
 					conn->setUserId(id);
+					conn->setUserName(username);
 					conn->setUserRole(role);
 
 					response["result"] = RETURN_MSG_RESULT_SUCCESS;
@@ -77,7 +78,7 @@ void UserManager::interLogin(TcpSessionPtr conn, const Json::Value &request)
 					response["username"] = username;
 					response["password"] = password;
 
-					UserLogManager::getInstance()->push(username + "登录成功");
+					UserLogManager::getInstance()->push(username + " login success");
 					//更新登录状态
 					std::stringstream ss;
 					ss << "update agv_user set user_status=1 where id= " << id;
@@ -122,7 +123,7 @@ void UserManager::interLogout(TcpSessionPtr conn, const Json::Value &request)
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
 	try {
-		UserLogManager::getInstance()->push(conn->getUserName() + "注销");
+		UserLogManager::getInstance()->push(conn->getUserName() + " logout");
 		std::stringstream ss;
 		ss << "update agv_user set user_status=1 where id= " << conn->getUserId();
 		g_db.execDML(ss.str().c_str());
@@ -167,7 +168,7 @@ void UserManager::interChangePassword(TcpSessionPtr conn, const Json::Value &req
 	}
 	else {
 		std::string newPassword = request["password"].asString();
-		UserLogManager::getInstance()->push(conn->getUserName() + "修改密码");
+		UserLogManager::getInstance()->push(conn->getUserName() + " change password");
 		try {
 			std::stringstream ss;
 			ss << "update agv_user set user_password=" << newPassword << " where id = " << conn->getUserId();
@@ -207,7 +208,7 @@ void UserManager::interList(TcpSessionPtr conn, const Json::Value &request)
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
-	UserLogManager::getInstance()->push(conn->getUserName() + "请求用户列表");
+	UserLogManager::getInstance()->push(conn->getUserName() + " query users list");
 	if (conn->getUserRole() < USER_ROLE_ADMIN) {
 		response["result"] = RETURN_MSG_RESULT_FAIL;
 		response["error_code"] = RETURN_MSG_ERROR_CODE_PERMISSION_DENIED;
@@ -289,7 +290,7 @@ void UserManager::interRemove(TcpSessionPtr conn, const Json::Value &request)
 					//执行删除工作
 					std::stringstream ss;
 					ss << "delete from agv_user where id=" << id;
-					UserLogManager::getInstance()->push(conn->getUserName() + "删除用户" + intToString(id));
+					UserLogManager::getInstance()->push(conn->getUserName() + " delete user " + intToString(id));
 					g_db.execDML(ss.str().c_str());
 					deleteid = id;
 				}
@@ -364,7 +365,7 @@ void UserManager::interAdd(TcpSessionPtr conn, const Json::Value &request)
 				std::stringstream ss2;
 				ss2 << "select max(id) from agv_user ;";
 				int id = g_db.execScalar("select max(id) from agv_user ;");
-				UserLogManager::getInstance()->push(conn->getUserName() + "添加用户 id:" + intToString(id) + " 用户名:" + request["username"].asString());
+				UserLogManager::getInstance()->push(conn->getUserName() + " add user with id:" + intToString(id) + " username:" + request["username"].asString());
 				response["id"] = id;
 			}
 			catch (CppSQLite3Exception e) {
@@ -420,7 +421,7 @@ void UserManager::interModify(TcpSessionPtr conn, const Json::Value &request)
 		}
 		else {
 			try {
-				UserLogManager::getInstance()->push(conn->getUserName() + "修改其他用户信息 其他用户id" + intToString(id));
+				UserLogManager::getInstance()->push(conn->getUserName() + " modify user info with id " + intToString(id));
 				std::stringstream ss;
 				ss << "update agv_user set user_username=" << username << ",user_password=" << password << ",user_role=" << role << " where id=" << id;
 				g_db.execDML(ss.str().c_str());

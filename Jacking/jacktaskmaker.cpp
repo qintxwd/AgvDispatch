@@ -20,7 +20,7 @@ void JackTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &
     response["queuenumber"] = request["queuenumber"];
     response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
-    UserLogManager::getInstance()->push(conn->getUserName()+"产生一个任务");
+    UserLogManager::getInstance()->push(conn->getUserName()+" make one task");
 
 
     //生成任务
