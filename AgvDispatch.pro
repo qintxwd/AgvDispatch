@@ -64,7 +64,15 @@ HEADERS += \
     Jacking/jackingagvthingturn.h \
     usermanager.h \
     taskmaker.h \
-    Jacking/jacktaskmaker.h
+    Jacking/jacktaskmaker.h \
+    mapmap/mapbackground.h \
+    mapmap/mapblock.h \
+    mapmap/mapfloor.h \
+    mapmap/mapgroup.h \
+    mapmap/mappath.h \
+    mapmap/mappoint.h \
+    mapmap/mapspirit.h \
+    mapmap/onemap.h
 
 SOURCES += \
     agv.cpp \
@@ -92,6 +100,14 @@ SOURCES += \
     Jacking/jackingagv.cpp \
     Jacking/jackingagvthingturn.cpp \
     taskmaker.cpp \
-    Jacking/jacktaskmaker.cpp
+    Jacking/jacktaskmaker.cpp \
+    mapmap/mapbackground.cpp \
+    mapmap/mapblock.cpp \
+    mapmap/mapfloor.cpp \
+    mapmap/mapgroup.cpp \
+    mapmap/mappath.cpp \
+    mapmap/mappoint.cpp \
+    mapmap/mapspirit.cpp \
+    mapmap/onemap.cpp
 
 
