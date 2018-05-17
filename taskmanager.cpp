@@ -1,6 +1,6 @@
 ﻿#include "taskmanager.h"
 #include "common.h"
-#include "mapmanager.h"
+#include "mapmap/mapmanager.h"
 #include "agvmanager.h"
 #include "sqlite3/CppSQLite3.h"
 #include "userlogmanager.h"

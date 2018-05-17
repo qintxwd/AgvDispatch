@@ -18,16 +18,7 @@
     <ClInclude Include="..\..\agv.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\agvline.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\agvmanager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\agvstation.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\agvtask.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\agvtasknode.h">
@@ -37,9 +28,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\common.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\mapmanager.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\msgprocess.h">
@@ -111,7 +99,40 @@
     <ClInclude Include="..\..\utils\Log\easylogging.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\AgvBlock.h">
+    <ClInclude Include="..\..\mapmap\mapbackground.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\mapblock.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\mapfloor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\mapgroup.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\mappath.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\mappoint.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\mapspirit.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\onemap.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\agvline.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\mapmanager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\AgvBlock.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mapmap\agvstation.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -126,9 +147,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\mapmanager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\msgprocess.cpp">
@@ -188,7 +206,34 @@
     <ClCompile Include="..\..\taskmaker.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\AgvBlock.cpp">
+    <ClCompile Include="..\..\mapmap\mapbackground.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\mapblock.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\mapfloor.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\mapgroup.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\mappath.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\mappoint.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\mapspirit.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\onemap.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\mapmanager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mapmap\AgvBlock.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

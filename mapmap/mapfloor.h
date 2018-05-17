@@ -23,15 +23,15 @@ public:
     void removeBkg(){if(bkg!=nullptr)delete bkg;bkg = nullptr;}
 
     //复制地图（深copy）
-    MapFloor* clone();
+    MapFloor* clone() const;
 
-    MapPoint *getPointById(int id);
+    MapPoint *getPointById(int id) const;
 
-    MapPath *getPathById(int id);
+    MapPath *getPathById (int id)  const;
 
-    std::list<MapPoint *> getPoints(){return points;}
-    std::list<MapPath *> getPaths(){return paths;}
-    MapBackground *getBkg(){return bkg;}
+    std::list<MapPoint *> getPoints() const {return points;}
+    std::list<MapPath *> getPaths() const {return paths;}
+    MapBackground *getBkg() const {return bkg;}
 
 private:
     std::list<MapPoint *> points;///若干站点

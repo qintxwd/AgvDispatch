@@ -19,7 +19,7 @@ MapFloor::~MapFloor()
 }
 
 //复制地图（深copy）
-MapFloor* MapFloor::clone()
+MapFloor* MapFloor::clone() const
 {
     MapFloor *f = new MapFloor(getId(),getName());
     for(auto p : points) {
@@ -38,7 +38,7 @@ MapFloor* MapFloor::clone()
     return f;
 }
 
-MapPoint *MapFloor::getPointById(int id)
+MapPoint *MapFloor::getPointById(int id)  const
 {
     for (auto p : points) {
         if(p->getId() == id)return p;
@@ -46,7 +46,7 @@ MapPoint *MapFloor::getPointById(int id)
     return nullptr;
 }
 
-MapPath *MapFloor::getPathById(int id)
+MapPath *MapFloor::getPathById(int id)  const
 {
     for (auto p : paths) {
         if(p->getId() == id)return p;

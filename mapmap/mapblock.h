@@ -15,7 +15,7 @@ public:
         spirits.remove(spirit);
     }
     void clear(){spirits.clear();}
-    std::list<int> getSpirits(){return spirits;}
+    std::list<int> getSpirits() const {return spirits;}
 private:
     std::list<int> spirits;
 };

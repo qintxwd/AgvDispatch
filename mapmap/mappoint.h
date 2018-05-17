@@ -21,15 +21,15 @@ public:
     MapPoint(const MapPoint &p);
 
     void setPointType(Map_Point_Type _point_type){point_type=_point_type;}
-    Map_Point_Type getPointType(){return point_type;}
-    int getX(){return x;}
-    int getY(){return y;}
-    int getRealX(){return realX;}
-    int getRealY(){return realY;}
-    int getLabelXoffset(){return labelXoffset;}
-    int getLabelYoffset(){return labelYoffset;}
-    bool getMapChange(){return mapChange;}
-    bool getLocked(){return locked;}
+    Map_Point_Type getPointType() const {return point_type;}
+    int getX() const {return x;}
+    int getY() const {return y;}
+    int getRealX() const {return realX;}
+    int getRealY() const {return realY;}
+    int getLabelXoffset() const {return labelXoffset;}
+    int getLabelYoffset() const {return labelYoffset;}
+    bool getMapChange() const {return mapChange;}
+    bool getLocked() const {return locked;}
 
     void setRealX(int _realX){realX = _realX ;}
     void setRealY(int _realY){realY = _realY ;}

@@ -20,9 +20,8 @@ public:
 
     MapSpirit(const MapSpirit &s);
 
-    virtual MapSpirit::~MapSpirit()
+    virtual ~MapSpirit()
     {
-
     }
 
     bool operator ==(const MapSpirit &s){
@@ -35,10 +34,10 @@ public:
     }
     void setSpiritType(Map_Spirit_Type __type){spirit_type = __type;}
 
-    int getId(){return id;}
+    int getId() const{return id;}
     void setId(int _id){id=_id;}
 
-    std::string getName(){return name;}
+    std::string getName() const {return name;}
     void setName(std::string _name){name=_name;}
 private:
     int id;

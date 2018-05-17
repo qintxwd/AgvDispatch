@@ -20,15 +20,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\agv.h" />
-    <ClInclude Include="..\..\AgvBlock.h" />
-    <ClInclude Include="..\..\agvline.h" />
     <ClInclude Include="..\..\agvmanager.h" />
-    <ClInclude Include="..\..\agvstation.h" />
-    <ClInclude Include="..\..\agvtask.h" />
     <ClInclude Include="..\..\agvtasknode.h" />
     <ClInclude Include="..\..\agvtasknodedothing.h" />
     <ClInclude Include="..\..\common.h" />
-    <ClInclude Include="..\..\mapmanager.h" />
+    <ClInclude Include="..\..\mapmap\AgvBlock.h" />
+    <ClInclude Include="..\..\mapmap\agvline.h" />
+    <ClInclude Include="..\..\mapmap\agvstation.h" />
+    <ClInclude Include="..\..\mapmap\mapbackground.h" />
+    <ClInclude Include="..\..\mapmap\mapblock.h" />
+    <ClInclude Include="..\..\mapmap\mapfloor.h" />
+    <ClInclude Include="..\..\mapmap\mapgroup.h" />
+    <ClInclude Include="..\..\mapmap\mapmanager.h" />
+    <ClInclude Include="..\..\mapmap\mappath.h" />
+    <ClInclude Include="..\..\mapmap\mappoint.h" />
+    <ClInclude Include="..\..\mapmap\mapspirit.h" />
+    <ClInclude Include="..\..\mapmap\onemap.h" />
     <ClInclude Include="..\..\msgprocess.h" />
     <ClInclude Include="..\..\network\common\networkcommon.h" />
     <ClInclude Include="..\..\network\epoll\epoll.h" />
@@ -55,12 +62,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp" />
-    <ClCompile Include="..\..\AgvBlock.cpp" />
     <ClCompile Include="..\..\agvmanager.cpp" />
     <ClCompile Include="..\..\common.cpp" />
     <ClCompile Include="..\..\Jacking\jacktaskmaker.cpp" />
     <ClCompile Include="..\..\main.cpp" />
-    <ClCompile Include="..\..\mapmanager.cpp" />
+    <ClCompile Include="..\..\mapmap\AgvBlock.cpp" />
+    <ClCompile Include="..\..\mapmap\mapbackground.cpp" />
+    <ClCompile Include="..\..\mapmap\mapblock.cpp" />
+    <ClCompile Include="..\..\mapmap\mapfloor.cpp" />
+    <ClCompile Include="..\..\mapmap\mapgroup.cpp" />
+    <ClCompile Include="..\..\mapmap\mapmanager.cpp" />
+    <ClCompile Include="..\..\mapmap\mappath.cpp" />
+    <ClCompile Include="..\..\mapmap\mappoint.cpp" />
+    <ClCompile Include="..\..\mapmap\mapspirit.cpp" />
+    <ClCompile Include="..\..\mapmap\onemap.cpp" />
     <ClCompile Include="..\..\msgprocess.cpp" />
     <ClCompile Include="..\..\network\common\networkcommon.cpp" />
     <ClCompile Include="..\..\network\epoll\epoll.cpp" />
