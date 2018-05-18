@@ -14,19 +14,19 @@ class AgvTaskNode : public std::enable_shared_from_this<AgvTaskNode>
 {
 public:
     AgvTaskNode():
-        aimStation(nullptr)
+        aimStation(0)
     {
     }
 
-    AgvStationPtr getStation(){return aimStation;}
-    void setStation(AgvStationPtr station){aimStation = station;}
+    int getStation(){return aimStation;}
+    void setStation(int station){aimStation = station;}
 
     std::vector<AgvTaskNodeDoThingPtr> getDoThings(){return doThings;}
     void setDoThings(std::vector<AgvTaskNodeDoThingPtr> _doThings){doThings=_doThings;}
     void push_backDoThing(AgvTaskNodeDoThingPtr doThing){doThings.push_back(doThing);}
 
 private:
-    AgvStationPtr aimStation;
+    int aimStation;
     std::vector<AgvTaskNodeDoThingPtr> doThings;
 };
 

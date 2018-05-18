@@ -78,29 +78,28 @@ bool TaskManager::init()
 					}
 					else {
 						AgvTaskNodePtr node = nodes[index];
-						AgvStationPtr aimStation = node->getStation();
-						if (aimStation == nullptr && task->getAgv()->getTask() == task) {
+						int aimStation = node->getStation();
+						AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+						if (agv != nullptr && aimStation == 0 && agv->getTask() == task) {
 							//拿去执行//从未分配队列中拿出去agv
 							pos = itr->second.erase(pos);
 							excuteTask(task);
 							continue;
 						}
 						else {
-							//获取执行路径
-							AgvPtr agv = task->getAgv();
-							if (agv == NULL) {
+							if (agv == nullptr) {
 								//未分配AGV
-								AgvPtr bestAgv = NULL;
+								AgvPtr bestAgv = nullptr;
 								int minDis = DISTANCE_INFINITY;
-								std::vector<AgvLinePtr > result;
+								std::vector<int> result;
 								//遍历所有的agv
 								AgvManager::getInstance()->foreachAgv(
 									[&](AgvPtr tempagv) {
 									if (tempagv->status != Agv::AGV_STATUS_IDLE)
 										return;
-									if (tempagv->nowStation != nullptr) {
+									if (tempagv->nowStation != 0) {
 										int tempDis;
-										std::vector<AgvLinePtr> result_temp = MapManager::getInstance()->getBestPath(agv, agv->lastStation, agv->nowStation, aimStation, tempDis, CAN_CHANGE_DIRECTION);
+										std::vector<int> result_temp = MapManager::getInstance()->getBestPath(agv->getId(), agv->lastStation, agv->nowStation, aimStation, tempDis, CAN_CHANGE_DIRECTION);
 										if (result_temp.size() > 0 && tempDis < minDis) {
 											minDis = tempDis;
 											bestAgv = agv;
@@ -109,7 +108,7 @@ bool TaskManager::init()
 									}
 									else {
 										int tempDis;
-										std::vector<AgvLinePtr> result_temp = MapManager::getInstance()->getBestPath(agv, agv->lastStation, agv->nextStation, aimStation, tempDis, CAN_CHANGE_DIRECTION);
+										std::vector<int> result_temp = MapManager::getInstance()->getBestPath(agv->getId(), agv->lastStation, agv->nextStation, aimStation, tempDis, CAN_CHANGE_DIRECTION);
 										if (result_temp.size() > 0 && tempDis < minDis) {
 											minDis = tempDis;
 											bestAgv = agv;
@@ -135,7 +134,7 @@ bool TaskManager::init()
 										continue;
 								}
 								int distance;
-								std::vector<AgvLinePtr > result = MapManager::getInstance()->getBestPath(agv, agv->lastStation, agv->nowStation, aimStation, distance, CAN_CHANGE_DIRECTION);
+								std::vector<int> result = MapManager::getInstance()->getBestPath(agv->getId(), agv->lastStation, agv->nowStation, aimStation, distance, CAN_CHANGE_DIRECTION);
 
 								if (distance != DISTANCE_INFINITY && result.size() > 0) {
 									//拿去执行//从未分配队列中拿出去
@@ -241,12 +240,12 @@ bool TaskManager::saveTask(AgvTaskPtr task)
 
 		g_db.execDML("begin transaction;");
 		char buf[SQL_MAX_LENGTH];
-		snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task values (%d,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d);", task->getId(), task->getProduceTime().c_str(), task->getDoTime().c_str(), task->getDoneTime().c_str(), task->getCancelTime().c_str(), task->getErrorTime().c_str(), task->getErrorInfo().c_str(), task->getErrorCode(), task->getAgv()->getId(), task->getStatus(), task->getPriority(), task->getDoingIndex());
+		snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task values (%d,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d);", task->getId(), task->getProduceTime().c_str(), task->getDoTime().c_str(), task->getDoneTime().c_str(), task->getCancelTime().c_str(), task->getErrorTime().c_str(), task->getErrorInfo().c_str(), task->getErrorCode(), task->getAgv(), task->getStatus(), task->getPriority(), task->getDoingIndex());
 		g_db.execDML(buf);
 
 		for (auto node : task->getTaskNode()) {
 			int node__id = ++node_id;
-			snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(), node->getStation()->getId());
+			snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(), node->getStation());
 			g_db.execDML(buf);
 			for (auto thing : node->getDoThings()) {
 				int thing__id = ++thing_id;
@@ -308,9 +307,13 @@ int TaskManager::cancelTask(int taskId)
 		//保存到数据库
 		saveTask(task);
 		//设置状态
-		task->getAgv()->setTask(nullptr);
-		task->getAgv()->cancelTask();
-		task->getAgv()->status = Agv::AGV_STATUS_IDLE;
+		AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+		if (agv != nullptr) {
+			agv->setTask(nullptr);
+			agv->cancelTask();
+			//TODO:
+			agv->status = Agv::AGV_STATUS_IDLE;
+		}		
 	}
 
 	return 0;
@@ -326,9 +329,12 @@ void TaskManager::finishTask(AgvTaskPtr task)
 	saveTask(task);
 
 	//设置状态
-	task->getAgv()->setTask(nullptr);
-	task->getAgv()->status = Agv::AGV_STATUS_IDLE;
-
+	AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+	if (agv != nullptr) {
+		agv->setTask(nullptr);
+		//TODO:
+		agv->status = Agv::AGV_STATUS_IDLE;
+	}
 	//删除任务
 }
 
@@ -350,8 +356,8 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 		}
 		else {
 			AgvTaskNodePtr node = nodes[index];
-			AgvStationPtr station = node->getStation();
-			AgvPtr agv = task->getAgv();
+			int station = node->getStation();
+			AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
 			try {
 				if (station == NULL) {
 					for (auto thing : node->getDoThings()) {
@@ -374,7 +380,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 					}
 				}
 				//完成以后,从正在执行，返回到 分配队列中
-				task->setPath(std::vector<AgvLinePtr >());//清空路径
+				task->setPath(std::vector<int >());//清空路径
 				task->setDoingIndex(task->getDoingIndex() + 1);
 				if (!task->getIsCancel()) {
 					doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
@@ -452,7 +458,7 @@ void TaskManager::interListUndo(qyhnetwork::TcpSessionPtr conn, const Json::Valu
 			Json::Value info;
 			info["id"] = task->getId();
 			info["produceTime"] = task->getProduceTime();
-			info["excuteAgv"] = task->getAgv()->getId();
+			info["excuteAgv"] = task->getAgv();
 			info["status"] = AgvTask::AGV_TASK_STATUS_EXCUTING;
 			task_infos.append(info);
 		}
@@ -480,7 +486,7 @@ void TaskManager::interListDoing(qyhnetwork::TcpSessionPtr conn, const Json::Val
 		info["id"] = task->getId();
 		info["produceTime"] = task->getProduceTime();
 		info["doTime"] = task->getDoTime();
-		info["excuteAgv"] = task->getAgv()->getId();
+		info["excuteAgv"] = task->getAgv();
 		info["status"] = AgvTask::AGV_TASK_STATUS_EXCUTING;
 		task_infos.append(info);
 	}

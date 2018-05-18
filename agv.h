@@ -32,7 +32,7 @@ public:
 
     virtual int type(){return Type;}
 
-    virtual void excutePath(std::vector<AgvLinePtr> lines);
+    virtual void excutePath(std::vector<int> lines);
 
     virtual void cancelTask();
 
@@ -53,9 +53,9 @@ public:
     int status = AGV_STATUS_IDLE;
 
     //计算路径用的
-    AgvStationPtr lastStation = nullptr;//上一个站点
-    AgvStationPtr nowStation = nullptr;//当前所在站点
-    AgvStationPtr nextStation = nullptr;//下一个站点
+    int lastStation = 0;//上一个站点
+	int nowStation = 0;//当前所在站点
+	int nextStation = 0;//下一个站点
 
     void setTask(AgvTaskPtr _task){currentTask = _task;}
     AgvTaskPtr getTask(){return currentTask;}
@@ -87,7 +87,7 @@ private:
     int port;
 
     virtual void arrve(int x,int y);
-    virtual void goStation(AgvStationPtr station, bool stop = false);
+    virtual void goStation(int station, bool stop = false);
     virtual void stop();
     virtual void callMapChange(AgvStationPtr station);
 
@@ -96,7 +96,7 @@ private:
     volatile int arriveStation;
 
     std::mutex stationMtx;
-    std::vector<AgvStationPtr> excutestations;
+    std::vector<int> excutestations;
 };
 
 #endif // AGV_H

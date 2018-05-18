@@ -2,13 +2,13 @@
 #include <thread>
 
 #include "agv.h"
-#include "agvstation.h"
-#include "agvline.h"
+#include "mapmap/agvstation.h"
+#include "mapmap/agvline.h"
 #include "agvtask.h"
 #include "qyhtcpclient.h"
 #include "userlogmanager.h"
 #include "msgprocess.h"
-#include "mapmanager.h"
+#include "mapmap/mapmanager.h"
 
 
 Agv::Agv(int _id, std::string _name, std::string _ip, int _port):
@@ -17,9 +17,9 @@ Agv::Agv(int _id, std::string _name, std::string _ip, int _port):
     name(_name),
     ip(_ip),
     port(_port),
-    lastStation(nullptr),
-    nowStation(nullptr),
-    nextStation(nullptr),
+    lastStation(0),
+    nowStation(0),
+    nextStation(0),
     tcpClient(nullptr),
     arriveStation(0)
 {
@@ -52,7 +52,7 @@ void Agv::reconnect()
 }
 //到达后是否停下，如果不停下，就是不减速。
 //是一个阻塞的函数
-void Agv::goStation(AgvStationPtr station, bool stop)
+void Agv::goStation(int station, bool stop)
 {
     //发送站点坐标
     //station->x;station->y;
@@ -80,36 +80,41 @@ void Agv::stop()
 
 void Agv::arrve(int x,int y){
 
-    for(auto station:excutestations){
-        if(sqrt(pow(x-station->getX(),2)+pow(x-station->getX(),2))<20){
-            onArriveStation(station);
-            break;
-        }
-    }
+    //for(auto station:excutestations){
+    //    if(sqrt(pow(x-station->getX(),2)+pow(x-station->getX(),2))<20){
+    //        onArriveStation(station);
+    //        break;
+    //    }
+    //}
 }
 
 void Agv::onArriveStation(AgvStationPtr station)
 {
-    arriveStation = station->getId();
     if(station!=nullptr){
+		arriveStation = station->getId();
         if(nowStation){
             lastStation = nowStation;
         }
-        nowStation = station;
+        nowStation = station->getId();
         stationMtx.lock();
-        auto itr = std::find(excutestations.begin(),excutestations.end(),station);
-        if(itr!=excutestations.end() && (itr+1)!=excutestations.end()){
-            nextStation = *(++itr);
-        }
+		for (int i = 0; i < excutestations.size(); ++i) {
+			if (excutestations[i] == station->getId()) {
+				if (i + 1 < excutestations.size()) {
+					nextStation = excutestations[i + 1];
+				}
+				break;
+			}
+		}
         stationMtx.unlock();
     }
 }
 
 void Agv::onLeaveStation(int stationid)
 {
-    if(nowStation->getId() == stationid)nowStation = nullptr;
-    AgvStationPtr s= MapManager::getInstance()->getStationById(stationid);
-    lastStation = s;
+	if (nowStation == stationid) {
+		nowStation = 0;
+		lastStation = stationid;
+	}
 }
 
 void Agv::onError(int code, std::string msg)
@@ -136,7 +141,7 @@ void Agv::onWarning(int code, std::string msg)
 //请求切换地图(呼叫电梯)
 void Agv::callMapChange(AgvStationPtr station)
 {
-    if(!station->getMapChangeStation())return ;
+    if(!station->getMapChange())return ;
     //例如:
     //1楼电梯内坐标 (100,100)
     //2楼电梯内坐标 (200,200)
@@ -160,67 +165,67 @@ void Agv::callMapChange(AgvStationPtr station)
 
 }
 
-void Agv::excutePath(std::vector<AgvLinePtr> lines)
+void Agv::excutePath(std::vector<int> lines)
 {
-    stationMtx.lock();
-    excutestations.clear();
-    for(auto line:lines){
-        excutestations.push_back(line->getEndStation());
-    }
-    stationMtx.unlock();
-    //告诉小车接下来要执行的路径
-    AgvStationPtr next = nullptr;//下一个要去的位置
-    for(int i=0;i<excutestations.size();++i)
-    {
-        if(currentTask!=nullptr && currentTask->getIsCancel())break;//任务取消
-        if(status == AGV_STATUS_HANDING)break;//手动控制
-        if(status == AGV_STATUS_ERROR)break;//发生错误
+    //stationMtx.lock();
+    //excutestations.clear();
+    //for(auto line:lines){
+    //    excutestations.push_back(line->getEnd());
+    //}
+    //stationMtx.unlock();
+    ////告诉小车接下来要执行的路径
+    //int next = 0;//下一个要去的位置
+    //for(int i=0;i<excutestations.size();++i)
+    //{
+    //    if(currentTask!=nullptr && currentTask->getIsCancel())break;//任务取消
+    //    if(status == AGV_STATUS_HANDING)break;//手动控制
+    //    if(status == AGV_STATUS_ERROR)break;//发生错误
 
-        AgvStationPtr now = excutestations[i];//接下来要去的位置
-        if(i+1<excutestations.size())
-            next = excutestations[i+1];
-        else
-            next = nullptr;
+    //    int now = excutestations[i];//接下来要去的位置
+    //    if(i+1<excutestations.size())
+    //        next = excutestations[i+1];
+    //    else
+    //        next = 0;
 
-        if(next == nullptr){
-            //没有下一站了
-            goStation(now,true);
-            continue;
-        }
+    //    if(next == 0){
+    //        //没有下一站了
+    //        goStation(now,true);
+    //        continue;
+    //    }
 
-        //还有下一站。
-        //分类讨论
-        if(!now->getMapChangeStation() && !next->getMapChangeStation())
-        {
-            //两个都不是地图切换点
-            goStation(now,false);
-        }
-        else if(!now->getMapChangeStation() && next->getMapChangeStation()){
-            //下一站是 地图切换点，例如三楼电梯点
+    //    //还有下一站。
+    //    //分类讨论
+    //    if(!now->getMapChange() && !next->getMapChange())
+    //    {
+    //        //两个都不是地图切换点
+    //        goStation(now,false);
+    //    }
+    //    else if(!now->getMapChange() && next->getMapChange()){
+    //        //下一站是 地图切换点，例如三楼电梯点
 
-            //到达电梯口停下，
-            goStation(now,true);
-            if(currentTask!=nullptr && currentTask->getIsCancel())break;//任务取消
-            if(status == AGV_STATUS_HANDING)break;//手动控制
-            if(status == AGV_STATUS_ERROR)break;//发生错误
-            //并呼叫电梯到达三楼
-            callMapChange(next);
-        }
+    //        //到达电梯口停下，
+    //        goStation(now,true);
+    //        if(currentTask!=nullptr && currentTask->getIsCancel())break;//任务取消
+    //        if(status == AGV_STATUS_HANDING)break;//手动控制
+    //        if(status == AGV_STATUS_ERROR)break;//发生错误
+    //        //并呼叫电梯到达三楼
+    //        callMapChange(next);
+    //    }
 
-        else if(now->getMapChangeStation() && next->getMapChangeStation()){
-            //下一站是地图切换点，下下站还是，例如下一站是三楼电梯点，而下下站是1楼电梯点
-            goStation(now,true);//进电梯
-            callMapChange(next);//呼叫到1楼
-        }
+    //    else if(now->getMapChange() && next->getMapChange()){
+    //        //下一站是地图切换点，下下站还是，例如下一站是三楼电梯点，而下下站是1楼电梯点
+    //        goStation(now,true);//进电梯
+    //        callMapChange(next);//呼叫到1楼
+    //    }
 
-        else if(now->getMapChangeStation() && !next->getMapChangeStation()){
-            //下一站是电梯内，但是下下站不是
-            goStation(now,true);
-            callMapChange(next);//开门
-        }
-    }
-    if(currentTask!=nullptr && currentTask->getIsCancel())cancelTask();
-    if(status == AGV_STATUS_HANDING || status == AGV_STATUS_ERROR)cancelTask();
+    //    else if(now->getMapChange() && !next->getMapChange()){
+    //        //下一站是电梯内，但是下下站不是
+    //        goStation(now,true);
+    //        callMapChange(next);//开门
+    //    }
+    //}
+    //if(currentTask!=nullptr && currentTask->getIsCancel())cancelTask();
+    //if(status == AGV_STATUS_HANDING || status == AGV_STATUS_ERROR)cancelTask();
 }
 
 void Agv::cancelTask()

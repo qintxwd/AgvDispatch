@@ -36,7 +36,6 @@ HEADERS += \
     agvtasknode.h \
     agvtasknodedothing.h \
     common.h \
-    mapmanager.h \
     qyhtcpclient.h \
     taskmanager.h \
     sqlite3/CppSQLite3.h \
@@ -72,6 +71,18 @@ HEADERS += \
     mapmap/mappath.h \
     mapmap/mappoint.h \
     mapmap/mapspirit.h \
+    mapmap/onemap.h \
+    mapmap/AgvBlock.h \
+    mapmap/agvline.h \
+    mapmap/agvstation.h \
+    mapmap/mapbackground.h \
+    mapmap/mapblock.h \
+    mapmap/mapfloor.h \
+    mapmap/mapgroup.h \
+    mapmap/mapmanager.h \
+    mapmap/mappath.h \
+    mapmap/mappoint.h \
+    mapmap/mapspirit.h \
     mapmap/onemap.h
 
 SOURCES += \
@@ -79,7 +90,6 @@ SOURCES += \
     agvmanager.cpp \
     common.cpp \
     main.cpp \
-    mapmanager.cpp \
     qyhtcpclient.cpp \
     taskmanager.cpp \
     sqlite3/CppSQLite3.cpp \
@@ -105,6 +115,16 @@ SOURCES += \
     mapmap/mapblock.cpp \
     mapmap/mapfloor.cpp \
     mapmap/mapgroup.cpp \
+    mapmap/mappath.cpp \
+    mapmap/mappoint.cpp \
+    mapmap/mapspirit.cpp \
+    mapmap/onemap.cpp \
+    mapmap/AgvBlock.cpp \
+    mapmap/mapbackground.cpp \
+    mapmap/mapblock.cpp \
+    mapmap/mapfloor.cpp \
+    mapmap/mapgroup.cpp \
+    mapmap/mapmanager.cpp \
     mapmap/mappath.cpp \
     mapmap/mappoint.cpp \
     mapmap/mapspirit.cpp \
