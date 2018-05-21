@@ -1,7 +1,8 @@
 ﻿#include  "timer.h"
 #include <algorithm>
 
-#include "../../utils/Log/easylogging.h"
+#include "../../utils/Log/spdlog/spdlog.h"
+#include "../../common.h"
 
 using namespace qyhnetwork;
 
@@ -130,16 +131,16 @@ void Timer::checkTimer()
             _steadyQue.erase(_steadyQue.begin());
             try
             {
-                //LOG(INFO)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
+                //combined_logger->info()<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
                 (*handler)();
             }
             catch (const std::exception & e)
             {
-                LOG(WARNING)<<"OnTimerHandler have runtime_error exception. timerID=" << timerID << ", err=" << e.what();
+                combined_logger->warn("OnTimerHandler have runtime_error exception. timerID={0}, err={1}",timerID,e.what());
             }
             catch (...)
             {
-                LOG(WARNING)<<"OnTimerHandler have unknown exception. timerID=" << timerID;
+                combined_logger->warn("OnTimerHandler have unknown exception. timerID={0}",timerID);
             }
             delete handler;
         }
@@ -155,16 +156,16 @@ void Timer::checkTimer()
             _sysQue.erase(_sysQue.begin());
             try
             {
-                //LOG(INFO)<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
+                //combined_logger->info()<<"call timer(). now=" << (now >> ReserveBit)  << ", expire=" << (timerID >> ReserveBit));
                 (*handler)();
             }
             catch (const std::exception & e)
             {
-                LOG(WARNING)<<"OnTimerHandler have runtime_error exception. timerID=" << timerID << ", err=" << e.what();
+                combined_logger->warn("OnTimerHandler have runtime_error exception. timerID={0}, err={1}", timerID,e.what());
             }
             catch (...)
             {
-                LOG(WARNING)<<"OnTimerHandler have unknown exception. timerID=" << timerID;
+                combined_logger->warn("OnTimerHandler have unknown exception. timerID={0}" , timerID);
             }
             delete handler;
         }

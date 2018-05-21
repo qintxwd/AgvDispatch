@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <memory>
 #include <limits.h>
-#include "utils/Log/easylogging.h"
+#include "utils/Log/spdlog/spdlog.h"
 #include "utils/threadpool.h"
 #include "sqlite3/CppSQLite3.h"
 
@@ -24,6 +24,8 @@ typedef std::chrono::duration<int,std::milli> duration_millisecond;
 typedef std::chrono::duration<int> duration_second;
 typedef std::chrono::duration<int,std::ratio<60*60>> duration_hour;
 typedef std::unique_lock<std::mutex>  UNIQUE_LCK;
+
+extern std::shared_ptr<spdlog::logger> combined_logger;
 
 enum {
     AGV_LINE_COLOR_WHITE = 0,  //未算出路径最小值

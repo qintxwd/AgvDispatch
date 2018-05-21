@@ -2,6 +2,7 @@
 #include "tcpsession.h"
 #include "../msgprocess.h"
 #include "../protocol.h"
+#include "../common.h"
 
 using namespace qyhnetwork;
 
@@ -91,38 +92,38 @@ bool SessionManager::openAccepter(AccepterID aID)
     auto founder = _mapAccepterOptions.find(aID);
     if (founder == _mapAccepterOptions.end())
     {
-        LOG(ERROR)<<"openAccepter error. not found the Accepter ID extend info. aID=" << aID;
+        combined_logger->error("openAccepter error. not found the Accepter ID extend info. aID={0} ", aID);
         return false;
     }
 
     if (founder->second._accepter)
     {
-        LOG(ERROR)<<"openAccepter error. already opened. extend info=" << founder->second;
+        combined_logger->error("openAccepter error. already opened. extend info={0}",founder->second);
         return false;
     }
     if (founder->second._listenIP.empty())
     {
-        LOG(WARNING)<<"openAccepter warning. no listen IP. default use 0.0.0.0";
+        combined_logger->warn("openAccepter warning. no listen IP. default use 0.0.0.0");
     }
 
     TcpAcceptPtr accepter = std::make_shared<TcpAccept>();
     if (!accepter->initialize(_summer))
     {
-        LOG(ERROR)<<"openAccept error. extend info=" << founder->second;
+        combined_logger->error("openAccept error. extend info={0}", founder->second);
         return false;
     }
     if (!accepter->openAccept(founder->second._listenIP, founder->second._listenPort, founder->second._setReuse))
     {
-        LOG(ERROR)<<"openAccept error. extend info=" << founder->second;
+        combined_logger->error("openAccept error. extend info={0}", founder->second);
         return false;
     }
     if (!accepter->doAccept(std::make_shared<qyhnetwork::TcpSocket>(),
                             std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, founder->second._aID)))
     {
-        LOG(ERROR)<<"openAccept error. extend info=" << founder->second;
+        combined_logger->error("openAccept error. extend info={0}",founder->second);
         return false;
     }
-    LOG(INFO)<<"openAccepter success. listenIP=" << founder->second._listenIP << ", listenPort=" << founder->second._listenPort;
+    combined_logger->info("openAccepter success. listenIP={0}, listenPort={1}", founder->second._listenIP,founder->second._listenPort);
     founder->second._accepter = accepter;
     return true;
 }
@@ -147,23 +148,23 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
 {
     if (!_running)
     {
-        LOG(INFO)<<"onAcceptNewClient server already shutdown. accepter. aID=" << aID;
+        combined_logger->info("onAcceptNewClient server already shutdown. accepter. aID={0}",aID);
         return;
     }
     auto founder = _mapAccepterOptions.find(aID);
     if (founder == _mapAccepterOptions.end())
     {
-        LOG(ERROR)<<"onAcceptNewClient Unknown AccepterID aID=" << aID;
+        combined_logger->error("onAcceptNewClient Unknown AccepterID aID={0}",aID);
         return;
     }
     if (founder->second._closed)
     {
-        LOG(INFO)<<"onAcceptNewClient accepter closed. accepter. aID=" << aID;
+        combined_logger->info("onAcceptNewClient accepter closed. accepter. aID={0}",aID);
         return;
     }
     if (ec)
     {
-        LOG(ERROR)<<"onAcceptNewClient doAccept Result Error. ec=" << ec << ", extend=" << founder->second;
+        combined_logger->error("onAcceptNewClient doAccept Result Error. ec={0}, extend={1}",ec ,founder->second);
 
         auto &&handler = std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, aID);
         auto timer = [accepter, handler]()
@@ -197,22 +198,20 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
 
         if (!checkSucess)
         {
-            LOG(ERROR)<<"onAcceptNewClient Accept New Client Check Whitelist Failed remoteAdress=" << remoteIP << ":" << remotePort
-                     << ", extend=" << founder->second;
+            combined_logger->error("onAcceptNewClient Accept New Client Check Whitelist Failed remoteAdress={0}:{1}, extend={2}",remoteIP,remotePort, founder->second);
             accepter->doAccept(std::make_shared<qyhnetwork::TcpSocket>(), std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, aID));
             return;
         }
         else
         {
-            LOG(ERROR)<<"onAcceptNewClient Accept New Client Check Whitelist Success remoteAdress=" << remoteIP << ":" << remotePort
-                     << ", extend=" << founder->second;
+            combined_logger->error("onAcceptNewClient Accept New Client Check Whitelist Success remoteAdress={0}:{1}, extend={2}",remoteIP,remotePort, founder->second);
         }
     }
 
     //! check Max Sessions
     if (founder->second._currentLinked >= founder->second._maxSessions)
     {
-        LOG(ERROR)<<"onAcceptNewClient Accept New Client. Too Many Sessions And The new socket will closed. extend=" << founder->second ;
+        combined_logger->error("onAcceptNewClient Accept New Client. Too Many Sessions And The new socket will closed. extend={0}", founder->second) ;
     }
     else
     {
@@ -221,8 +220,7 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
         founder->second._totalAcceptCount++;
         _lastSessionID = nextSessionID(_lastSessionID);
 
-        LOG(INFO)<<"onAcceptNewClient Accept New Client. Accept new Sessions sID=" << _lastSessionID << ". The new socket  remoteAddress=" << remoteIP << ":" << remotePort
-                 << ", Aready linked sessions = " << founder->second._currentLinked << ", extend=" << founder->second;
+        combined_logger->info("onAcceptNewClient Accept New Client. Accept new Sessions sID={0}. The new socket  remoteAddress={1}:{2}, Aready linked sessions = {3}, extend={4}",_lastSessionID,remoteIP, remotePort,founder->second._currentLinked,founder->second);
 
         s->initialize(_summer);
 
@@ -276,10 +274,10 @@ void SessionManager::kickSession(SessionID sID)
     auto iter = _mapTcpSessionPtr.find(sID);
     if (iter == _mapTcpSessionPtr.end() || !iter->second)
     {
-        LOG(INFO)<<"kickSession NOT FOUND SessionID. SessionID=" << sID;
+        combined_logger->info("kickSession NOT FOUND SessionID. SessionID={0}", sID);
         return;
     }
-    LOG(INFO)<<"kickSession SessionID. SessionID=" << sID;
+    combined_logger->info("kickSession SessionID. SessionID={0}",sID);
     iter->second->close();
 }
 
@@ -300,12 +298,12 @@ void SessionManager::kickConnect(SessionID cID)
         auto iter = _mapTcpSessionPtr.find(cID);
         if (iter == _mapTcpSessionPtr.end() || !iter->second)
         {
-            LOG(WARNING)<<"SessionManager::kickConnect NOT FOUND SessionID. SessionID=" << cID;
+            combined_logger->warn("SessionManager::kickConnect NOT FOUND SessionID. SessionID={0}",cID);
             return;
         }
         iter->second->getOptions()._reconnects = 0;
         iter->second->close();
-        LOG(INFO)<<"SessionManager::kickConnect cID=" << cID;
+        combined_logger->info("SessionManager::kickConnect cID={0}",cID);
     }
     else
     {
@@ -315,7 +313,7 @@ void SessionManager::kickConnect(SessionID cID)
             {
                 ms.second->getOptions()._reconnects = 0;
                 ms.second->close();
-                LOG(INFO)<<"SessionManager::kickConnect [all] cID=" << ms.second->getSessionID();
+                combined_logger->info("SessionManager::kickConnect [all] cID={0}",ms.second->getSessionID());
             }
         }
     }
@@ -372,7 +370,7 @@ bool SessionManager::openConnecter(SessionID cID)
     auto founder = _mapTcpSessionPtr.find(cID);
     if (founder == _mapTcpSessionPtr.end())
     {
-        LOG(ERROR)<<"openConnecter error";
+        combined_logger->error("openConnecter error");
         return false;
     }
     founder->second->connect();
@@ -396,7 +394,7 @@ void SessionManager::sendSessionData(SessionID sID, const Json::Value &response)
     auto iter = _mapTcpSessionPtr.find(sID);
     if (iter == _mapTcpSessionPtr.end())
     {
-        LOG(WARNING)<<"sendSessionData NOT FOUND SessionID.  SessionID=" << sID;
+        combined_logger->warn("sendSessionData NOT FOUND SessionID.  SessionID={0}",sID);
         return;
     }
     iter->second->send(response);

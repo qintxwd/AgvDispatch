@@ -6,6 +6,8 @@ CppSQLite3DB g_db;
 
 const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
 
+std::shared_ptr<spdlog::logger> combined_logger;
+
 std::string getTimeStrNow()
 {
     using std::chrono::system_clock;

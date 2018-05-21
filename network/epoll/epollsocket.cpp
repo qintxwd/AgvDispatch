@@ -1,6 +1,6 @@
 ﻿#include "epollsocket.h"
 
-#include "../../utils/Log/easylogging.h"
+#include "../../utils/Log/spdlog/spdlog.h"
 
 using namespace qyhnetwork;
 
@@ -20,7 +20,7 @@ TcpSocket::~TcpSocket()
     g_networkEnvironment.addClosedSocketCount();
     if (_onRecvHandler || _onConnectHandler)
     {
-        LOG(WARNING)<<"TcpSocket::~TcpSocket[this0x" << this << "] Handler status error. " << logSection();
+        combined_logger->warn()<<"TcpSocket::~TcpSocket[this0x" << this << "] Handler status error. " << logSection();
     }
     if (_eventData._fd != InvalidFD)
     {
@@ -64,7 +64,7 @@ bool TcpSocket::initialize(const EventLoopPtr& summer)
         return true;
     }
 
-    LOG(ERROR)<<"TcpSocket::initialize[this0x" << this << "] fd aready used!" << logSection();
+    combined_logger->error()<<"TcpSocket::initialize[this0x" << this << "] fd aready used!" << logSection();
     return true;
 }
 bool TcpSocket::attachSocket(int fd, const std::string & remoteIP, unsigned short remotePort, bool isIPV6)
@@ -84,7 +84,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 {
     if (!_summer || _eventData._linkstat != LS_WAITLINK || _onConnectHandler)
     {
-        LOG(ERROR)<<"TcpSocket::doConnect[this0x" << this << "] status error!";
+        combined_logger->error()<<"TcpSocket::doConnect[this0x" << this << "] status error!";
         return false;
     }
     _remoteIP = remoteIP;
@@ -97,7 +97,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         _eventData._fd = socket(AF_INET6, SOCK_STREAM, 0);
         if (_eventData._fd == -1)
         {
-            LOG(ERROR)<<"TcpSocket::doConnect[this0x" << this << "] fd create failed!";
+            combined_logger->error()<<"TcpSocket::doConnect[this0x" << this << "] fd create failed!";
             return false;
         }
         setNonBlock(_eventData._fd);
@@ -115,7 +115,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         _eventData._fd = socket(AF_INET, SOCK_STREAM, 0);
         if (_eventData._fd == -1)
         {
-            LOG(ERROR)<<"TcpSocket::doConnect[this0x" << this << "] fd create failed!";
+            combined_logger->error()<<"TcpSocket::doConnect[this0x" << this << "] fd create failed!";
             return false;
         }
         setNonBlock(_eventData._fd);
@@ -130,7 +130,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 
     if (ret!=0 && errno != EINPROGRESS)
     {
-        LOG(WARNING)<<"TcpSocket::doConnect[this0x" << this << "] ::connect error. errno=" << strerror(errno);
+        combined_logger->warn()<<"TcpSocket::doConnect[this0x" << this << "] ::connect error. errno=" << strerror(errno);
         ::close(_eventData._fd);
         _eventData._fd = InvalidFD;
         return false;
@@ -146,22 +146,22 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 
 bool TcpSocket::doSend(char * buf, unsigned int len)
 {
-    LOG(TRACE)<<"TcpSocket::doSend len=" << len;
+    combined_logger->trace()<<"TcpSocket::doSend len=" << len;
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LOG(WARNING)<<"TcpSocket::doSend[this0x" << this << "] _linkstat error!";
+        combined_logger->warn()<<"TcpSocket::doSend[this0x" << this << "] _linkstat error!";
         return false;
     }
 
     if (!_summer)
     {
-        LOG(ERROR)<<"TcpSocket::doSend[this0x" << this << "] _summer not bind!" << logSection();
+        combined_logger->error()<<"TcpSocket::doSend[this0x" << this << "] _summer not bind!" << logSection();
         return false;
     }
 
     if (buf == NULL || len == 0)
     {
-        LOG(ERROR)<<"TcpSocket::doSend[this0x" << this << "] (_sendBuf == NULL || _sendLen == 0) == TRUE" << logSection();
+        combined_logger->error()<<"TcpSocket::doSend[this0x" << this << "] (_sendBuf == NULL || _sendLen == 0) == TRUE" << logSection();
         return false;
     }
 
@@ -179,7 +179,7 @@ bool TcpSocket::doSend(char * buf, unsigned int len)
     }
     else
     {
-        LOG(TRACE)<<"TcpSocket::doSend direct sent=" << ret;
+        combined_logger->trace()<<"TcpSocket::doSend direct sent=" << ret;
     }
     return true;
 }
@@ -189,34 +189,34 @@ bool TcpSocket::doRecv(char * buf, unsigned int len, _OnRecvHandler && handler, 
 {
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        LOG(WARNING)<<"TcpSocket::doRecv[this0x" << this << "] status error !";
+        combined_logger->warn()<<"TcpSocket::doRecv[this0x" << this << "] status error !";
         return false;
     }
 
     if (!_summer)
     {
-        LOG(ERROR)<<"TcpSocket::doRecv[this0x" << this << "] _summer not bind!" << logSection();
+        combined_logger->error()<<"TcpSocket::doRecv[this0x" << this << "] _summer not bind!" << logSection();
         return false;
     }
 
     if (len == 0 )
     {
-        LOG(ERROR)<<"TcpSocket::doRecv[this0x" << this << "] argument err !!!  len==0";
+        combined_logger->error()<<"TcpSocket::doRecv[this0x" << this << "] argument err !!!  len==0";
         return false;
     }
     if (_recvBuf != NULL || _recvLen != 0)
     {
-        LOG(ERROR)<<"TcpSocket::doRecv[this0x" << this << "]  (_recvBuf != NULL || _recvLen != 0) == TRUE" << logSection();
+        combined_logger->error()<<"TcpSocket::doRecv[this0x" << this << "]  (_recvBuf != NULL || _recvLen != 0) == TRUE" << logSection();
         return false;
     }
     if (_onRecvHandler)
     {
-        LOG(ERROR)<<"TcpSocket::doRecv[this0x" << this << "] (_onRecvHandler) == TRUE" << logSection();
+        combined_logger->error()<<"TcpSocket::doRecv[this0x" << this << "] (_onRecvHandler) == TRUE" << logSection();
         return false;
     }
     if (_daemonRecv)
     {
-        LOG(ERROR)<<"TcpSocket::doRecv[this0x" << this << "] already open daemon recv" << logSection();
+        combined_logger->error()<<"TcpSocket::doRecv[this0x" << this << "] already open daemon recv" << logSection();
         return false;
     }
     if (daemonRecv)
@@ -240,12 +240,12 @@ void TcpSocket::onEPOLLMessage(uint32_t event)
     NetErrorCode ec = NEC_ERROR;
     if (!_onRecvHandler && !_onConnectHandler)
     {
-        LOG(ERROR)<<"TcpSocket::onEPOLLMessage[this0x" << this << "] unknown error. errno=" << strerror(errno) << logSection();
+        combined_logger->error()<<"TcpSocket::onEPOLLMessage[this0x" << this << "] unknown error. errno=" << strerror(errno) << logSection();
         return ;
     }
     if (_eventData._linkstat != LS_WAITLINK && _eventData._linkstat != LS_ESTABLISHED)
     {
-        LOG(ERROR)<<"TcpSocket::onEPOLLMessage[this0x" << this << "] _linkstat error. _linkstat=" << _eventData._linkstat << logSection();
+        combined_logger->error()<<"TcpSocket::onEPOLLMessage[this0x" << this << "] _linkstat error. _linkstat=" << _eventData._linkstat << logSection();
         return;
     }
 

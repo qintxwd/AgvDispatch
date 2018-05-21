@@ -5,39 +5,51 @@
 #include "network/sessionmanager.h"
 #include "msgprocess.h"
 #include "userlogmanager.h"
-#include "utils/Log/easylogging.h"
-INITIALIZE_EASYLOGGINGPP
+#include "utils/Log/spdlog/spdlog.h"
+#include "common.h"
 
 void initLog()
 {
-	//TODO: 用spd log 替换 easylog
-    //日志配置文件
-    el::Configurations fileConf("log-conf.conf");
-    el::Loggers::reconfigureAllLoggers(fileConf);
+    //日志文件
+    try
+    {
 
-    //日志支持多线程
-    el::Loggers::addFlag(el::LoggingFlag::MultiLoggerSupport);
+        //set format
+        spdlog::set_pattern("[%^+++%$] [%H:%M:%S %z] [thread %t] %v");
 
-    //日志终端颜色输出
-    el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput );
+
+        std::vector<spdlog::sink_ptr> sinks;
+
+        //console sink
+        auto stdout_sink = spdlog::sinks::stdout_sink_mt::instance();
+#ifdef WIN32
+        auto sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+#else
+        auto sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
+#endif
+        sinks.push_back(sink);
+
+
+        //log file sink
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("log_filename", "agv_dispatch", 1024*1024*20, 5, false);
+        sinks.push_back(rotating);
+
+        //combine
+        combined_logger = std::make_shared<spdlog::logger>("main", begin(sinks), end(sinks));
+
+
+        spdlog::register_logger(combined_logger);
+    }
+    catch (const spdlog::spdlog_ex& ex)
+    {
+        std::cout << "Log initialization failed: " << ex.what() << std::endl;
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    LOG(INFO)<<"start server ...";
+    std::cout<<"start server ..."<<std::endl;
 
-#ifndef _WIN32
-    //! linux下需要屏蔽的一些信号
-    signal( SIGHUP, SIG_IGN );
-    signal( SIGALRM, SIG_IGN );
-    signal( SIGPIPE, SIG_IGN );
-    signal( SIGXCPU, SIG_IGN );
-    signal( SIGXFSZ, SIG_IGN );
-    signal( SIGPROF, SIG_IGN );
-    signal( SIGVTALRM, SIG_IGN );
-    signal( SIGQUIT, SIG_IGN );
-    signal( SIGCHLD, SIG_IGN);
-#endif
     //0.日志输出
     initLog();
 
@@ -45,25 +57,25 @@ int main(int argc, char *argv[])
     try{
         g_db.open(DB_File);
     }catch(CppSQLite3Exception &e){
-        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+        combined_logger->error("{0}:{1};",e.errorCode(),e.errorMessage());
         return -1;
     }
 
     //2.载入地图
     if(!MapManager::getInstance()->load()){
-        LOG(ERROR)<<"map manager load fail";
+        combined_logger->error("map manager load fail");
         return -2;
     }
 
     //3.初始化车辆及其链接
     if(!AgvManager::getInstance()->init()){
-        LOG(ERROR)<<"AgvManager init fail";
+        combined_logger->error("AgvManager init fail");
         return -3;
     }
 
     //4.初始化任务管理
     if(!TaskManager::getInstance()->init()){
-        LOG(ERROR)<<"TaskManager init fail";
+        combined_logger->error("TaskManager init fail");
         return -4;
     }
 
@@ -72,12 +84,12 @@ int main(int argc, char *argv[])
 
     //6.初始化消息处理
     if(!MsgProcess::getInstance()->init()){
-        LOG(ERROR)<<"MsgProcess init fail";
+        combined_logger->error("MsgProcess init fail");
         return -5;
     }
 
-	//7.初始化日志发布
-	UserLogManager::getInstance()->init();
+    //7.初始化日志发布
+    UserLogManager::getInstance()->init();
 
     //8.初始化tcp/ip 接口
     qyhnetwork::SessionManager::getInstance()->start();
@@ -85,8 +97,9 @@ int main(int argc, char *argv[])
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
     qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
 
-    LOG(INFO)<<"server init OK!";
+    combined_logger->info("server init OK!");
     qyhnetwork::SessionManager::getInstance()->run();
 
+    spdlog::drop_all();
     return 0;
 }

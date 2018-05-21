@@ -47,7 +47,7 @@ namespace qyhnetwork {
 		}
 		else
 		{
-			LOG(ERROR) << "can't connect on a old session.  please use addConnect try again.";
+            combined_logger->error("can't connect on a old session.  please use addConnect try again.");
 		}
 	}
 
@@ -61,7 +61,7 @@ namespace qyhnetwork {
 		_sockptr = std::make_shared<TcpSocket>();
 		if (!_sockptr->initialize(_eventLoop))
 		{
-			LOG(ERROR) << "connect init error";
+            combined_logger->error( "connect init error");
 			return;
 		}
 
@@ -77,7 +77,7 @@ namespace qyhnetwork {
 
 		if (!_sockptr->doConnect(_remoteIP, _remotePort, std::bind(&TcpSession::onConnected, shared_from_this(), std::placeholders::_1)))
 		{
-			LOG(ERROR) << "connect error";
+            combined_logger->error("connect error");
 			return;
 		}
 	}
@@ -104,11 +104,11 @@ namespace qyhnetwork {
 			}
 			catch (const std::exception & e)
 			{
-				LOG(ERROR) << "TcpSession::attatch _onSessionLinked error. e=" << e.what();
+                combined_logger->error("TcpSession::attatch _onSessionLinked error. e={0}", e.what());
 			}
 			catch (...)
 			{
-				LOG(WARNING) << "TcpSession::attatch _onSessionLinked catch one unknown exception.";
+                combined_logger->warn("TcpSession::attatch _onSessionLinked catch one unknown exception.");
 			}
 		}
 
@@ -124,10 +124,10 @@ namespace qyhnetwork {
 	{
 		if (ec)
 		{
-			LOG(WARNING) << "onConnected error. ec=" << ec << ",  cID=" << _sessionID;
+            combined_logger->warn("onConnected error. ec={0},  cID={1}" ,ec ,_sessionID);
 			return;
 		}
-		LOG(INFO) << "onConnected success. sessionID=" << _sessionID;
+        combined_logger->info( "onConnected success. sessionID={0}",_sessionID);
 
 		if (!doRecv())
 		{
@@ -147,11 +147,11 @@ namespace qyhnetwork {
 			}
 			catch (const std::exception & e)
 			{
-				LOG(ERROR) << "TcpSession::onConnected error. e=" << e.what();
+                combined_logger->error("TcpSession::onConnected error. e={0}", e.what());
 			}
 			catch (...)
 			{
-				LOG(WARNING) << "TcpSession::onConnected catch one unknown exception.";
+                combined_logger->warn("TcpSession::onConnected catch one unknown exception.");
 			}
 		}
 		SessionManager::getInstance()->_statInfo[STAT_SESSION_LINKED]++;
@@ -159,7 +159,7 @@ namespace qyhnetwork {
 
 	bool TcpSession::doRecv()
 	{
-		//LOG(TRACE) << "TcpSession::doRecv sessionID=" << getSessionID();
+        //combined_logger->trace() << "TcpSession::doRecv sessionID=" << getSessionID();
 		if (!_sockptr)
 		{
 			return false;
@@ -180,7 +180,7 @@ namespace qyhnetwork {
 				_sockptr->doClose();
 				_sockptr.reset();
 			}
-			LOG(INFO) << "TcpSession to close socket. sID= " << _sessionID;
+            combined_logger->info("TcpSession to close socket. sID= {0}",_sessionID);
 			if (_status == 2)
 			{
 				SessionManager::getInstance()->_statInfo[STAT_SESSION_CLOSED]++;
@@ -193,17 +193,17 @@ namespace qyhnetwork {
 			if (isConnectID(_sessionID) && _reconnects < _options._reconnects)
 			{
 				_status = 1;
-				LOG(INFO) << "TcpSession already closed. try reconnect ... sID= " << _sessionID;
+                combined_logger->info("TcpSession already closed. try reconnect ... sID= {0}" , _sessionID);
 			}
 			else
 			{
 				_status = 3;
 				SessionManager::getInstance()->post(std::bind(&SessionManager::removeSession, SessionManager::getInstance(), shared_from_this()));
-				LOG(INFO) << "TcpSession remove self from manager. sID= " << _sessionID;
+                combined_logger->info("TcpSession remove self from manager. sID= {0}" ,_sessionID);
 			}
 			return;
 		}
-		LOG(WARNING) << "TcpSession::close closing. sID=" << _sessionID;
+        combined_logger->warn("TcpSession::close closing. sID={0}", _sessionID);
 	}
 
 	unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
@@ -213,17 +213,17 @@ namespace qyhnetwork {
 			_lastRecvError = ec;
 			if (_lastRecvError == NEC_REMOTE_CLOSED)
 			{
-				LOG(INFO) << "socket closed.  remote close. sID=" << _sessionID;
+                combined_logger->info("socket closed.  remote close. sID=", _sessionID);
 			}
 			else
 			{
-				LOG(INFO) << "socket closed.  socket error(or win rst). sID=" << _sessionID;
+                combined_logger->info("socket closed.  socket error(or win rst). sID=" , _sessionID);
 			}
 			close();
 			return 0;
 		}
 
-		//LOG(TRACE) << "TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
+        //combined_logger->trace() << "TcpSession::onRecv sessionID=" << getSessionID() << ", received=" << received;
 
 		SessionManager::getInstance()->_statInfo[STAT_RECV_COUNT]++;
 		SessionManager::getInstance()->_statInfo[STAT_RECV_BYTES] += received;
@@ -239,7 +239,7 @@ namespace qyhnetwork {
 					memcpy(big_msg_buffer + big_msg_buffer_position, read_buffer, received - read_len + (json_len + 5));
 					
 					std::string json_str = std::string(big_msg_buffer, json_len);
-					LOG(TRACE) << "RECV! session id=" << this->_sessionID << " len=" << json_len << " json=\n" << json_str;
+                    combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,json_str);
 
 					Json::Reader reader;
 					Json::Value root;
@@ -279,7 +279,7 @@ namespace qyhnetwork {
 
 							std::string json_str = std::string(read_buffer + 5, json_len);
 
-							LOG(TRACE) << "RECV! session id=" << this->_sessionID << " len=" << json_len << " json=\n" << json_str;
+                            combined_logger->trace("RECV! session id={0} len={1} json=\n{2}",this->_sessionID,json_len, json_str);
 ;
 							Json::Reader reader;
 							Json::Value root;
@@ -360,14 +360,14 @@ namespace qyhnetwork {
 		std::string msg = json.toStyledString();
 		int length = msg.length();
 		
-		LOG(TRACE) << "SEND! session id=" << this->_sessionID << " len=" << length << " json=\n" << msg;
+        combined_logger->trace("SEND! session id={0}  len= {1}  json=\n{2}" ,this->_sessionID,length, msg);
 
 		//send head and length
 		snprintf(headLeng + 1, 4, (char *)&length, sizeof(length));
 		bool sendRet = _sockptr->doSend(headLeng, 5);
 		if (!sendRet)
 		{
-			LOG(WARNING) << "send error ";
+            combined_logger->warn("send error ");
 			return;
 		}
 
@@ -377,7 +377,7 @@ namespace qyhnetwork {
 		sendRet = _sockptr->doSend(copy_temp, length);
 		if (!sendRet)
 		{
-			LOG(WARNING) << "send error ";
+            combined_logger->warn("send error ") ;
 		}
 		delete[] copy_temp;
 	}
@@ -401,11 +401,11 @@ namespace qyhnetwork {
 					}
 					catch (const std::exception & e)
 					{
-						LOG(ERROR) << "_options._onReconnectEnd catch excetion=" << e.what();
+                        combined_logger->error("_options._onReconnectEnd catch excetion={0}" , e.what()) ;
 					}
 					catch (...)
 					{
-						LOG(ERROR) << "_options._onReconnectEnd catch excetion";
+                        combined_logger->error("_options._onReconnectEnd catch excetion");
 					}
 				}
 				close();
@@ -427,11 +427,11 @@ namespace qyhnetwork {
 				}
 				catch (const std::exception & e)
 				{
-					LOG(WARNING) << "TcpSession::onPulse catch one exception: " << e.what();
+                    combined_logger->warn("TcpSession::onPulse catch one exception: {0}",e.what());
 				}
 				catch (...)
 				{
-					LOG(WARNING) << "TcpSession::onPulse catch one unknown exception: ";
+                    combined_logger->warn("TcpSession::onPulse catch one unknown exception: ");
 				}
 			}
 			_pulseTimerID = SessionManager::getInstance()->createTimer(isConnectID(_sessionID) ? _options._connectPulseInterval : _options._sessionPulseInterval, std::bind(&TcpSession::onPulse, shared_from_this()));

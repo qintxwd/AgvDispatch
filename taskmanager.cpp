@@ -27,11 +27,11 @@ void TaskManager::checkTable()
 		}
 	}
 	catch (CppSQLite3Exception &e) {
-		LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+		combined_logger->error() << e.errorCode() << ":" << e.errorMessage();
 		return;
 	}
 	catch (std::exception e) {
-		LOG(ERROR) << e.what();
+		combined_logger->error() << e.what();
 		return;
 	}
 }
@@ -55,10 +55,10 @@ bool TaskManager::init()
 		thing_id = g_db.execScalar("select max(id) from agv_task_node_thing;");
 	}
 	catch (CppSQLite3Exception &e) {
-		LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+		combined_logger->error() << e.errorCode() << ":" << e.errorMessage();
 	}
 	catch (std::exception e) {
-		LOG(ERROR) << e.what();
+		combined_logger->error() << e.what();
 	}
 
 	//启动一个分配任务的线程
@@ -256,11 +256,11 @@ bool TaskManager::saveTask(AgvTaskPtr task)
 		g_db.execDML("commit transaction;");
 	}
 	catch (CppSQLite3Exception &e) {
-		LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+		combined_logger->error() << e.errorCode() << ":" << e.errorMessage();
 		return false;
 	}
 	catch (std::exception e) {
-		LOG(ERROR) << e.what();
+		combined_logger->error() << e.what();
 		return false;
 	}
 	return true;
@@ -531,7 +531,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json:
 		std::stringstream ss;
 		ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 		response["error_info"] = ss.str();
-		LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+		combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
 	}
 	catch (std::exception e) {
 		response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -539,7 +539,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json:
 		std::stringstream ss;
 		ss << "info:" << e.what();
 		response["error_info"] = ss.str();
-		LOG(ERROR) << "sqlerr code:" << e.what();
+		combined_logger->error() << "sqlerr code:" << e.what();
 	}
 
 	conn->send(response);
@@ -588,7 +588,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Va
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+			combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -596,7 +596,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Va
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.what();
+			combined_logger->error() << "sqlerr code:" << e.what();
 		}
 	}
 	conn->send(response);

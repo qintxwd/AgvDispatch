@@ -17,10 +17,10 @@ void AgvManager::checkTable()
             g_db.execDML("create table agv_agv(id INTEGER primary key AUTOINCREMENT, name char(64),ip char(64),port INTEGER);");
         }
     }catch(CppSQLite3Exception e){
-        LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
+        combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
         return ;
     }catch(std::exception e){
-        LOG(ERROR)<<"sqlerr code:"<<e.what();
+        combined_logger->error("sqlerr code:{0}",e.what());
         return ;
     }
 }
@@ -46,11 +46,11 @@ bool AgvManager::init()
             agvs.push_back(agv);
         }
     }catch(CppSQLite3Exception e){
-        LOG(ERROR)<<"sqlerr code:"<<e.errorCode()<<" msg:"<<e.errorMessage();
-        //return false;
+        combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
+        return false;
     }catch(std::exception e){
-        LOG(ERROR)<<"sqlerr code:"<<e.what();
-        //return false;
+        combined_logger->error("sqlerr code:{0}",e.what());
+        return false;
     }
     return true;
 }
@@ -174,7 +174,7 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &req
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -182,7 +182,7 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &req
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.what();
+            combined_logger->error("sqlerr code:{0} ",e.what());
 		}
     }
     conn->send(response);
@@ -216,7 +216,7 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -224,7 +224,7 @@ void AgvManager::interDelete(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.what();
+            combined_logger->error("sqlerr code:{0} ",e.what());
 		}
     }
     conn->send(response);
@@ -267,7 +267,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -275,7 +275,7 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.what();
+            combined_logger->error("sqlerr code:{0} ",e.what());
 		}
     }
     conn->send(response);

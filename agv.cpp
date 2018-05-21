@@ -122,7 +122,7 @@ void Agv::onError(int code, std::string msg)
     char sss[1024];
     snprintf(sss,1024,"Agv id:%d occur error code:%d msg:%s",id,code,msg.c_str());
     std::string ss(sss);
-    LOG(ERROR)<<ss;
+    combined_logger->error(ss);
     UserLogManager::getInstance()->push(ss);
     MsgProcess::getInstance()->errorOccur(code,msg,true);
 }
@@ -132,7 +132,7 @@ void Agv::onWarning(int code, std::string msg)
     char sss[1024];
     snprintf(sss,1024,"Agv id:%d occur warning code:%d msg:%s",id,code,msg.c_str());
     std::string ss(sss);
-    LOG(WARNING)<<ss;
+    combined_logger->warn(ss);
     UserLogManager::getInstance()->push(ss);
     MsgProcess::getInstance()->errorOccur(code,msg,false);
 }

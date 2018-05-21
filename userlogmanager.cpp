@@ -92,7 +92,7 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn,const Json::V
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+			combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -100,7 +100,7 @@ void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn,const Json::V
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			LOG(ERROR) << "sqlerr code:" << e.what();
+			combined_logger->error() << "sqlerr code:" << e.what();
 		}
     }
 

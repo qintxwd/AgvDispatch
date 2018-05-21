@@ -34,11 +34,11 @@ void MapManager::checkTable()
         }
     }
     catch (CppSQLite3Exception &e) {
-        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+        combined_logger->error() << e.errorCode() << ":" << e.errorMessage();
         return;
     }
     catch (std::exception e) {
-        LOG(ERROR) << e.what();
+        combined_logger->error() << e.what();
         return;
     }
 }
@@ -145,11 +145,11 @@ bool MapManager::save()
         g_db.execDML("commit transaction;");
     }
     catch (CppSQLite3Exception &e) {
-        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+        combined_logger->error() << e.errorCode() << ":" << e.errorMessage();
         return false;
     }
     catch (std::exception e) {
-        LOG(ERROR) << e.what();
+        combined_logger->error() << e.what();
         return false;
     }
     return true;
@@ -339,11 +339,11 @@ bool MapManager::loadFromDb()
         getAdj();
     }
     catch (CppSQLite3Exception &e) {
-        LOG(ERROR) << e.errorCode() << ":" << e.errorMessage();
+        combined_logger->error() << e.errorCode() << ":" << e.errorMessage();
         return false;
     }
     catch (std::exception e) {
-        LOG(ERROR) << e.what();
+        combined_logger->error() << e.what();
         return false;
     }
     return true;
@@ -760,7 +760,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
             std::stringstream ss;
             ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
             response["error_info"] = ss.str();
-            LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
         }
         catch (std::exception e) {
             response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -768,7 +768,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
             std::stringstream ss;
             ss << "info:" << e.what();
             response["error_info"] = ss.str();
-            LOG(ERROR) << "sqlerr code:" << e.what();
+            combined_logger->error() << "sqlerr code:" << e.what();
         }
     }
 
@@ -959,7 +959,7 @@ void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, cons
                     std::stringstream ss;
                     ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+                    combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
                 }
                 catch (std::exception e) {
                     response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -967,7 +967,7 @@ void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, cons
                     std::stringstream ss;
                     ss << "info:" << e.what();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.what();
+                    combined_logger->error() << "sqlerr code:" << e.what();
                 }
             }else {
                 response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -1012,7 +1012,7 @@ void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, const J
                     std::stringstream ss;
                     ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+                    combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
                 }
                 catch (std::exception e) {
                     response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -1020,7 +1020,7 @@ void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, const J
                     std::stringstream ss;
                     ss << "info:" << e.what();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.what();
+                    combined_logger->error() << "sqlerr code:" << e.what();
                 }
 
             }else{
@@ -1067,7 +1067,7 @@ void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, cons
                     std::stringstream ss;
                     ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+                    combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
                 }
                 catch (std::exception e) {
                     response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -1075,7 +1075,7 @@ void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, cons
                     std::stringstream ss;
                     ss << "info:" << e.what();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.what();
+                    combined_logger->error() << "sqlerr code:" << e.what();
                 }
             }else{
                 response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -1120,7 +1120,7 @@ void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, const J
                     std::stringstream ss;
                     ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+                    combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
                 }
                 catch (std::exception e) {
                     response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -1128,7 +1128,7 @@ void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, const J
                     std::stringstream ss;
                     ss << "info:" << e.what();
                     response["error_info"] = ss.str();
-                    LOG(ERROR) << "sqlerr code:" << e.what();
+                    combined_logger->error() << "sqlerr code:" << e.what();
                 }
 
             }else{

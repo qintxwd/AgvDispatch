@@ -6,7 +6,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unordered_map>
-#include "../utils/Log/easylogging.h"
+#include "../utils/Log/spdlog/spdlog.h"
 
 #ifdef WIN32
 #pragma warning(disable:4503)
@@ -83,7 +83,7 @@ using TcpSessionPtr = std::shared_ptr<TcpSession>;
 
 using OnSessionEvent = std::function<void(const TcpSessionPtr &  /*session*/)>;
 
-struct SessionOptions: public el::Loggable
+struct SessionOptions
 {
     bool            _setNoDelay = true;
     unsigned int    _sessionPulseInterval = 30000;
@@ -95,17 +95,17 @@ struct SessionOptions: public el::Loggable
     OnSessionEvent _onSessionLinked;
     OnSessionEvent _onSessionPulse;
 
-    virtual void log(el::base::type::ostream_t& os) const{
-        os << "{ _setNoDelay=" << _setNoDelay
-           << ", _sessionPulseInterval=" << _sessionPulseInterval
-           << ", _connectPulseInterval=" << _connectPulseInterval
-           << ", _reconnects=" << _reconnects
-           << "}";
-    }
+//    virtual void log(el::base::type::ostream_t& os) const{
+//        os << "{ _setNoDelay=" << _setNoDelay
+//           << ", _sessionPulseInterval=" << _sessionPulseInterval
+//           << ", _connectPulseInterval=" << _connectPulseInterval
+//           << ", _reconnects=" << _reconnects
+//           << "}";
+//    }
 
 };
 
-struct AccepterOptions : public el::Loggable
+struct AccepterOptions
 {
     AccepterID _aID = InvalidAccepterID;
     TcpAcceptPtr _accepter;
@@ -118,25 +118,25 @@ struct AccepterOptions : public el::Loggable
     unsigned long long _currentLinked = 0;
     bool _closed = false;
     SessionOptions _sessionOptions;
-    virtual void log(el::base::type::ostream_t& os) const
-    {
-        os << "{"
-           << "_aID=" << _aID
-           << ", _listenIP=" << _listenIP
-           << ", _listenPort=" << _listenPort
-           << ", _maxSessions=" << _maxSessions
-           << ",_totalAcceptCount=" << _totalAcceptCount
-           << ", _currentLinked=" << _currentLinked
-           << ",_whitelistIP={";
+//    virtual void log(el::base::type::ostream_t& os) const
+//    {
+//        os << "{"
+//           << "_aID=" << _aID
+//           << ", _listenIP=" << _listenIP
+//           << ", _listenPort=" << _listenPort
+//           << ", _maxSessions=" << _maxSessions
+//           << ",_totalAcceptCount=" << _totalAcceptCount
+//           << ", _currentLinked=" << _currentLinked
+//           << ",_whitelistIP={";
 
-        for (auto str : _whitelistIP)
-        {
-            os << str << ",";
-        }
-        os << "}";
-        os << ", SessionOptions=" << _sessionOptions;
-        os << "}";
-    }
+//        for (auto str : _whitelistIP)
+//        {
+//            os << str << ",";
+//        }
+//        os << "}";
+//        os << ", SessionOptions=" << _sessionOptions;
+//        os << "}";
+//    }
 };
 
 }
