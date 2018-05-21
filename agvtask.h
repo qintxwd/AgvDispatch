@@ -4,7 +4,7 @@
 #include <vector>
 #include <atomic>
 #include "agvtasknode.h"
-#include "mapmap/agvline.h"
+#include "mapmap/mapmanager.h"
 #include "agv.h"
 
 class AgvTask;

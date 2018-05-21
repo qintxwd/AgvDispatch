@@ -2,8 +2,7 @@
 #include <thread>
 
 #include "agv.h"
-#include "mapmap/agvstation.h"
-#include "mapmap/agvline.h"
+#include "mapmap/mapmanager.h"
 #include "agvtask.h"
 #include "qyhtcpclient.h"
 #include "userlogmanager.h"
@@ -88,25 +87,25 @@ void Agv::arrve(int x,int y){
     //}
 }
 
-void Agv::onArriveStation(AgvStationPtr station)
+void Agv::onArriveStation(int station)
 {
-    if(station!=nullptr){
-		arriveStation = station->getId();
-        if(nowStation){
-            lastStation = nowStation;
-        }
-        nowStation = station->getId();
-        stationMtx.lock();
-		for (int i = 0; i < excutestations.size(); ++i) {
-			if (excutestations[i] == station->getId()) {
-				if (i + 1 < excutestations.size()) {
-					nextStation = excutestations[i + 1];
-				}
-				break;
-			}
-		}
-        stationMtx.unlock();
-    }
+//    if(station!=nullptr){
+//		arriveStation = station->getId();
+//        if(nowStation){
+//            lastStation = nowStation;
+//        }
+//        nowStation = station->getId();
+//        stationMtx.lock();
+//		for (int i = 0; i < excutestations.size(); ++i) {
+//			if (excutestations[i] == station->getId()) {
+//				if (i + 1 < excutestations.size()) {
+//					nextStation = excutestations[i + 1];
+//				}
+//				break;
+//			}
+//		}
+//        stationMtx.unlock();
+//    }
 }
 
 void Agv::onLeaveStation(int stationid)
@@ -139,9 +138,9 @@ void Agv::onWarning(int code, std::string msg)
 }
 
 //请求切换地图(呼叫电梯)
-void Agv::callMapChange(AgvStationPtr station)
+void Agv::callMapChange(int station)
 {
-    if(!station->getMapChange())return ;
+    //if(!station->getMapChange())return ;
     //例如:
     //1楼电梯内坐标 (100,100)
     //2楼电梯内坐标 (200,200)

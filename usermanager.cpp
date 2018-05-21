@@ -220,7 +220,6 @@ void UserManager::interList(TcpSessionPtr conn, const Json::Value &request)
 			CppSQLite3Table table = g_db.getTable(ss.str().c_str());
 			Json::Value users;
 			if (table.numRows() > 0 && table.numFields() == 5) {
-				//TODO:
 				for (int i = 0; i < table.numRows(); ++i) {
 					Json::Value user;
 					table.setRow(i);

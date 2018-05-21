@@ -94,7 +94,7 @@ bool stringToBool(std::string str)
     return true;
 }
 
-std::vector<std::string> splite(std::string src,std::string sp)
+std::vector<std::string> split(std::string src,std::string sp)
 {
     std::vector<std::string> result;
     if(sp.length()==0){

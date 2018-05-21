@@ -5,14 +5,8 @@
 #include <memory>
 #include <mutex>
 
-class AgvLine;
-using AgvLinePtr = std::shared_ptr<AgvLine>;
-
 class AgvTask;
 using AgvTaskPtr = std::shared_ptr<AgvTask>;
-
-class AgvStation;
-using AgvStationPtr = std::shared_ptr<AgvStation>;
 
 class QyhTcpClient;
 
@@ -74,7 +68,7 @@ public:
     void onConnect();
     void onDisconnect();
 
-    void onArriveStation(AgvStationPtr station);
+    void onArriveStation(int station);
     void onLeaveStation(int stationid);
     void onError(int code,std::string msg);
     void onWarning(int code, std::string msg);
@@ -89,7 +83,7 @@ private:
     virtual void arrve(int x,int y);
     virtual void goStation(int station, bool stop = false);
     virtual void stop();
-    virtual void callMapChange(AgvStationPtr station);
+    virtual void callMapChange(int station);
 
     QyhTcpClient *tcpClient;
 

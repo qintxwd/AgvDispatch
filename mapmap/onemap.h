@@ -37,10 +37,12 @@ public:
     std::list<MapPath *> getPaths();
     std::list<MapBlock *> getBlocks();
     std::list<MapGroup *> getGroups();
+    std::list<MapSpirit *> getAllElement(){return all_element;}
 
     MapSpirit *getSpiritById(int id);
 
     void setMaxId(int maxid){max_id = maxid; }
+    int getMaxId(){return max_id; }
 private:
     std::list<MapSpirit *> all_element;
     int max_id;

@@ -29,9 +29,7 @@ LIBS+=D:\thirdparty\jsoncpp\lib\Debug\jsoncpp_static.lib
 
 HEADERS += \
     agv.h \
-    agvline.h \
     agvmanager.h \
-    agvstation.h \
     agvtask.h \
     agvtasknode.h \
     agvtasknodedothing.h \
@@ -72,9 +70,6 @@ HEADERS += \
     mapmap/mappoint.h \
     mapmap/mapspirit.h \
     mapmap/onemap.h \
-    mapmap/AgvBlock.h \
-    mapmap/agvline.h \
-    mapmap/agvstation.h \
     mapmap/mapbackground.h \
     mapmap/mapblock.h \
     mapmap/mapfloor.h \
@@ -84,8 +79,7 @@ HEADERS += \
     mapmap/mappoint.h \
     mapmap/mapspirit.h \
     mapmap/onemap.h \
-    mapmap/agvfloor.h \
-    mapmap/agvgroup.h
+    base64.h
 
 SOURCES += \
     agv.cpp \
@@ -121,7 +115,6 @@ SOURCES += \
     mapmap/mappoint.cpp \
     mapmap/mapspirit.cpp \
     mapmap/onemap.cpp \
-    mapmap/AgvBlock.cpp \
     mapmap/mapbackground.cpp \
     mapmap/mapblock.cpp \
     mapmap/mapfloor.cpp \
@@ -131,7 +124,6 @@ SOURCES += \
     mapmap/mappoint.cpp \
     mapmap/mapspirit.cpp \
     mapmap/onemap.cpp \
-    mapmap/agvfloor.cpp \
-    mapmap/agvgroup.cpp
+    base64.cpp
 
 

@@ -40,7 +40,7 @@ std::string intToString(int i);
 int stringToInt(std::string str);
 bool stringToBool(std::string str);
 
-std::vector<std::string> splite(std::string src,std::string sp = " ");
+std::vector<std::string> split(std::string src,std::string sp = " ");
 
 extern ThreadPool g_threadPool;
 extern CppSQLite3DB g_db;
