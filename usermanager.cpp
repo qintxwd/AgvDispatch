@@ -22,11 +22,11 @@ void UserManager::checkTable() {
 		}
 	}
 	catch (CppSQLite3Exception e) {
-		combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+        combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		return;
 	}
 	catch (std::exception e) {
-		combined_logger->error() << "sqlerr code:" << e.what();
+        combined_logger->error("sqlerr code:{0}",e.what());
 		return;
 	}
 }
@@ -98,7 +98,7 @@ void UserManager::interLogin(TcpSessionPtr conn, const Json::Value &request)
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -106,7 +106,7 @@ void UserManager::interLogin(TcpSessionPtr conn, const Json::Value &request)
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.what();
+            combined_logger->error("sqlerr code:{0}",e.what());
 		}
 	}
 
@@ -134,7 +134,7 @@ void UserManager::interLogout(TcpSessionPtr conn, const Json::Value &request)
 		std::stringstream ss;
 		ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 		response["error_info"] = ss.str();
-		combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+        combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 	}
 	catch (std::exception e) {
 		response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -142,7 +142,7 @@ void UserManager::interLogout(TcpSessionPtr conn, const Json::Value &request)
 		std::stringstream ss;
 		ss << "info:" << e.what();
 		response["error_info"] = ss.str();
-		combined_logger->error() << "sqlerr code:" << e.what();
+        combined_logger->error("sqlerr code:{0}",e.what());
 	}
 
 	//登出
@@ -182,7 +182,7 @@ void UserManager::interChangePassword(TcpSessionPtr conn, const Json::Value &req
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -190,7 +190,7 @@ void UserManager::interChangePassword(TcpSessionPtr conn, const Json::Value &req
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.what();
+            combined_logger->error("sqlerr code:{0}",e.what());
 		}
 	}
 	//发送返回值
@@ -239,7 +239,7 @@ void UserManager::interList(TcpSessionPtr conn, const Json::Value &request)
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -247,7 +247,7 @@ void UserManager::interList(TcpSessionPtr conn, const Json::Value &request)
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.what();
+            combined_logger->error("sqlerr code:{0}",e.what());
 		}
 	}
 
@@ -309,7 +309,7 @@ void UserManager::interRemove(TcpSessionPtr conn, const Json::Value &request)
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -317,7 +317,7 @@ void UserManager::interRemove(TcpSessionPtr conn, const Json::Value &request)
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-			combined_logger->error() << "sqlerr code:" << e.what();
+            combined_logger->error("sqlerr code:{0}",e.what());
 		}
 	}
 
@@ -377,7 +377,7 @@ void UserManager::interAdd(TcpSessionPtr conn, const Json::Value &request)
 				std::stringstream ss;
 				ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 				response["error_info"] = ss.str();
-				combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+                combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 			}
 			catch (std::exception e) {
 				response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -385,7 +385,7 @@ void UserManager::interAdd(TcpSessionPtr conn, const Json::Value &request)
 				std::stringstream ss;
 				ss << "info:" << e.what();
 				response["error_info"] = ss.str();
-				combined_logger->error() << "sqlerr code:" << e.what();
+                combined_logger->error("sqlerr code:{0}",e.what());
 			}
 		}
 	}
@@ -435,7 +435,7 @@ void UserManager::interModify(TcpSessionPtr conn, const Json::Value &request)
 				std::stringstream ss;
 				ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 				response["error_info"] = ss.str();
-				combined_logger->error() << "sqlerr code:" << e.errorCode() << " msg:" << e.errorMessage();
+                combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(), e.errorMessage());
 			}
 			catch (std::exception e) {
 				response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -443,7 +443,7 @@ void UserManager::interModify(TcpSessionPtr conn, const Json::Value &request)
 				std::stringstream ss;
 				ss << "info:" << e.what();
 				response["error_info"] = ss.str();
-				combined_logger->error() << "sqlerr code:" << e.what();
+                combined_logger->error("sqlerr code:{0}",e.what());
 			}
 		}
 	}

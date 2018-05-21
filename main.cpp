@@ -15,30 +15,30 @@ void initLog()
     {
 
         //set format
-        spdlog::set_pattern("[%^+++%$] [%H:%M:%S %z] [thread %t] %v");
+        //spdlog::set_pattern("[%^+++%$] [%H:%M:%S %z] [thread %t] %v");
 
 
-        std::vector<spdlog::sink_ptr> sinks;
+//        std::vector<spdlog::sink_ptr> sinks;
 
-        //console sink
-        auto stdout_sink = spdlog::sinks::stdout_sink_mt::instance();
-#ifdef WIN32
-        auto sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
-#else
-        auto sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
-#endif
-        sinks.push_back(sink);
+//        //console sink
+//        auto stdout_sink = spdlog::sinks::stdout_sink_mt::instance();
+//#ifdef WIN32
+//        combined_logger = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+//#else
+//        auto sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
+//#endif
+//        sinks.push_back(sink);
 
-
-        //log file sink
-        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("log_filename", "agv_dispatch", 1024*1024*20, 5, false);
-        sinks.push_back(rotating);
+        combined_logger =
+//        //log file sink
+//        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("agv_dispatch", 1024*1024*20, 5);
+//        sinks.push_back(rotating);
 
         //combine
-        combined_logger = std::make_shared<spdlog::logger>("main", begin(sinks), end(sinks));
+        //combined_logger = std::make_shared<spdlog::logger>("main", begin(sinks), end(sinks));
 
 
-        spdlog::register_logger(combined_logger);
+        //spdlog::register_logger(combined_logger);
     }
     catch (const spdlog::spdlog_ex& ex)
     {

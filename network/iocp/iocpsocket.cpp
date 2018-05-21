@@ -3,6 +3,7 @@
 #include "iocp.h"
 #include "iocpaccept.h"
 #include "../../utils/Log/spdlog/spdlog.h"
+#include "../../common.h"
 
 #ifdef WIN32
 
@@ -34,7 +35,7 @@ TcpSocket::~TcpSocket()
     g_networkEnvironment.addClosedSocketCount();
     if (_onConnectHandler || _onRecvHandler)
     {
-        combined_logger->warn()<<"Destruct TcpSocket Error. socket handle not invalid and some request was not completed. " << logSection();
+        combined_logger->warn("Destruct TcpSocket Error. socket handle not invalid and some request was not completed.{0} ",logSection());
     }
     if (_socket != INVALID_SOCKET)
     {
@@ -76,14 +77,14 @@ bool TcpSocket::initialize(const EventLoopPtr& summer)
         _linkStatus = LS_ESTABLISHED;
         if (CreateIoCompletionPort((HANDLE)_socket, _summer->_io, (ULONG_PTR)this, 1) == NULL)
         {
-            combined_logger->error()<<"TcpSocket bind socket to IOCP error.  ERRCODE=" << GetLastError();
+            combined_logger->error("TcpSocket bind socket to IOCP error.  ERRCODE={0}" ,GetLastError());
             doClose();
             return false;
         }
     }
     else
     {
-        combined_logger->error()<<"TcpSocket already initialize! " << logSection();
+        combined_logger->error("TcpSocket already initialize! {0}" ,logSection());
         return false;
     }
 
@@ -111,13 +112,13 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 {
     if (!_summer || _linkStatus != LS_WAITLINK)
     {
-        combined_logger->error()<<"TcpSocket uninitialize." ;
+        combined_logger->error("TcpSocket uninitialize.") ;
         return false;
     }
 
     if (_onConnectHandler)
     {
-        combined_logger->error()<<"TcpSocket already connect." << logSection();
+        combined_logger->error("TcpSocket already connect.{0}" ,logSection());
         return false;
     }
     _isIPV6 = remoteIP.find(':') != std::string::npos;
@@ -126,7 +127,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         _socket = WSASocket(AF_INET6, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
         if (_socket == INVALID_SOCKET)
         {
-            combined_logger->error()<<"TcpSocket create error! ERRCODE=" << WSAGetLastError();
+            combined_logger->error("TcpSocket create error! ERRCODE={0}" ,WSAGetLastError());
             return false;
         }
         SOCKADDR_IN6 localAddr;
@@ -134,7 +135,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         localAddr.sin6_family = AF_INET6;
         if (bind(_socket, (sockaddr *)&localAddr, sizeof(localAddr)) != 0)
         {
-            combined_logger->error()<<"TcpSocket bind local addr error! ERRCODE=" << WSAGetLastError();
+            combined_logger->error("TcpSocket bind local addr error! ERRCODE={0}",WSAGetLastError());
             closesocket(_socket);
             _socket = INVALID_SOCKET;
             return false;
@@ -145,7 +146,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         _socket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
         if (_socket == INVALID_SOCKET)
         {
-            combined_logger->error()<<"TcpSocket create error! ERRCODE=" << WSAGetLastError();
+            combined_logger->error("TcpSocket create error! ERRCODE={0}" ,WSAGetLastError());
             return false;
         }
         SOCKADDR_IN localAddr;
@@ -153,7 +154,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         localAddr.sin_family = AF_INET;
         if (bind(_socket, (sockaddr *)&localAddr, sizeof(localAddr)) != 0)
         {
-            combined_logger->error()<<"TcpSocket bind local addr error! ERRCODE=" << WSAGetLastError();
+            combined_logger->error("TcpSocket bind local addr error ! ERRCODE={0}" ,WSAGetLastError());
             closesocket(_socket);
             _socket = INVALID_SOCKET;
             return false;
@@ -161,7 +162,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
     }
     if (CreateIoCompletionPort((HANDLE)_socket, _summer->_io, (ULONG_PTR)this, 1) == NULL)
     {
-        combined_logger->error()<<"TcpSocket bind socket to IOCP error.  ERRCODE=" << GetLastError();
+        combined_logger->error("TcpSocket bind socket to IOCP error! ERRCODE={0}" ,WSAGetLastError());
         doClose();
         return false;
     }
@@ -189,7 +190,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
     DWORD dwSize = 0;
     if (WSAIoctl(_socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &gid, sizeof(gid), &lpConnectEx, sizeof(lpConnectEx), &dwSize, NULL, NULL) != 0)
     {
-        combined_logger->error()<<"TcpSocket::doConnect[" << this << "] Get ConnectEx pointer err!  ERRCODE= " << WSAGetLastError();
+        combined_logger->error("TcpSocket::doConnect[{0}] Get ConnectEx pointer err!  ERRCODE= {1}",this, WSAGetLastError());
         return false;
     }
 
@@ -202,7 +203,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         memset(&remoteAddr, 0, sizeof(remoteAddr));
         if (inet_pton(AF_INET6, remoteIP.c_str(), &remoteAddr.sin6_addr) <= 0)
         {
-            combined_logger->error()<<"ipv6 format error.  remoteIP=" << remoteIP;
+            combined_logger->error("ipv6 format error.  remoteIP={0}" , remoteIP);
             return false;
         }
 
@@ -214,7 +215,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         {
             if (WSAGetLastError() != ERROR_IO_PENDING)
             {
-                combined_logger->error()<<"TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE=" << WSAGetLastError();
+                combined_logger->error("TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE={0}",WSAGetLastError());
                 return false;
             }
 
@@ -234,7 +235,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         {
             if (WSAGetLastError() != ERROR_IO_PENDING)
             {
-                combined_logger->error()<<"TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE=" << WSAGetLastError();
+                combined_logger->error("TcpSocket doConnect failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE={0}" , WSAGetLastError());
                 return false;
             }
 
@@ -256,17 +257,17 @@ bool TcpSocket::doSend(char * buf, unsigned int len)
 {
     if (_linkStatus != LS_ESTABLISHED)
     {
-        combined_logger->warn()<<"TcpSocket status != LS_ESTABLISHED.";
+        combined_logger->warn("TcpSocket status != LS_ESTABLISHED.");
         return false;
     }
     if (!_summer)
     {
-        combined_logger->warn()<<"TcpSocket uninitialize." << logSection();
+        combined_logger->warn("TcpSocket uninitialize.{1}", logSection());
         return false;
     }
     if (len == 0)
     {
-        combined_logger->error()<<"TcpSocket param error. length is 0.";
+        combined_logger->error("TcpSocket param error. length is 0.");
         return false;
     }
 
@@ -277,7 +278,7 @@ bool TcpSocket::doSend(char * buf, unsigned int len)
     {
         if (WSAGetLastError() != WSA_IO_PENDING)
         {
-            combined_logger->warn()<<"TcpSocket doSend failed and ERRCODE!=ERROR_IO_PENDING ERRCODE=" << WSAGetLastError();
+            combined_logger->warn("TcpSocket doSend failed and ERRCODE!=ERROR_IO_PENDING ERRCODE={0}" ,WSAGetLastError());
             _sendWsaBuf.buf = nullptr;
             _sendWsaBuf.len = 0;
             return false;
@@ -292,22 +293,22 @@ bool TcpSocket::doRecv(char * buf, unsigned int len, _OnRecvHandler && handler)
 {
     if (_linkStatus != LS_ESTABLISHED)
     {
-        combined_logger->warn()<<"TcpSocket status != LS_ESTABLISHED. ";
+        combined_logger->warn("TcpSocket status != LS_ESTABLISHED. ");
         return false;
     }
     if (!_summer)
     {
-        combined_logger->error()<<"TcpSocket uninitialize." << logSection();
+        combined_logger->error("TcpSocket uninitialize.{0}" , logSection());
         return false;
     }
     if (_onRecvHandler)
     {
-        combined_logger->error()<<"TcpSocket already recv. " << logSection();
+        combined_logger->error("TcpSocket already recv. {0}" , logSection());
         return false;
     }
     if (len == 0)
     {
-        combined_logger->error()<<"TcpSocket param error. length is 0.";
+        combined_logger->error("TcpSocket param error. length is 0.");
         return false;
     }
 
@@ -321,7 +322,7 @@ bool TcpSocket::doRecv(char * buf, unsigned int len, _OnRecvHandler && handler)
     {
         if (WSAGetLastError() != WSA_IO_PENDING)
         {
-            combined_logger->warn()<<"TcpSocket doRecv failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE=" << WSAGetLastError();
+            combined_logger->warn("TcpSocket doRecv failed and ERRCODE!=ERROR_IO_PENDING, ERRCODE={0}" , WSAGetLastError());
             _recvWSABuf.buf = nullptr;
             _recvWSABuf.len = 0;
             return false;

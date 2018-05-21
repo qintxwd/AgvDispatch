@@ -4,6 +4,7 @@
 #include "iocp.h"
 
 #include "../../utils/Log/spdlog/spdlog.h"
+#include "../../common.h"
 
 #ifdef WIN32
 using namespace qyhnetwork;
@@ -46,7 +47,7 @@ bool TcpAccept::initialize(EventLoopPtr& summer)
 {
     if (_summer)
     {
-        combined_logger->error()<<"TcpAccept already initialize! " << logSection();
+        combined_logger->error("TcpAccept already initialize! {1}", logSection());
         return false;
     }
     _summer = summer;
@@ -57,13 +58,13 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
 {
     if (!_summer)
     {
-        combined_logger->error()<<"TcpAccept not inilialize!  ip=" << ip << ", port=" << port << logSection();
+        combined_logger->error("TcpAccept not inilialize!  ip={0},port={1} {2}" ,ip , port ,logSection());
         return false;
     }
 
     if (_server != INVALID_SOCKET)
     {
-        combined_logger->error()<<"TcpAccept already opened!  ip=" << ip << ", port=" << port << logSection();
+        combined_logger->error("TcpAccept already opened!  ip={0},port={1} {2}" ,ip , port ,logSection());
         return false;
     }
     _ip = ip;
@@ -80,7 +81,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
     }
     if (_server == INVALID_SOCKET)
     {
-        combined_logger->error()<<"create socket error! ";
+        combined_logger->error("create socket error! ");
         return false;
     }
 
@@ -104,7 +105,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
             auto ret = inet_pton(AF_INET6, ip.c_str(), &addr.sin6_addr);
             if (ret <= 0)
             {
-                combined_logger->error()<<"bind ipv6 error, ipv6 format error" << ip;
+                combined_logger->error("bind ipv6 error, ipv6 format error ip:{0}", ip);
                 closesocket(_server);
                 _server = INVALID_SOCKET;
                 return false;
@@ -114,7 +115,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
         auto ret = bind(_server, (sockaddr *)&addr, sizeof(addr));
         if (ret != 0)
         {
-            combined_logger->error()<<"bind ipv6 error, ERRCODE=" << WSAGetLastError();
+            combined_logger->error("bind ipv6 error, ERRCODE={0}",WSAGetLastError());
             closesocket(_server);
             _server = INVALID_SOCKET;
             return false;
@@ -129,7 +130,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
         addr.sin_port = htons(port);
         if (bind(_server, (sockaddr *)&addr, sizeof(addr)) != 0)
         {
-            combined_logger->error()<<"bind error, ERRCODE=" << WSAGetLastError();
+            combined_logger->error("bind error, ERRCODE={0}",WSAGetLastError());
             closesocket(_server);
             _server = INVALID_SOCKET;
             return false;
@@ -156,7 +157,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
 
     if (listen(_server, SOMAXCONN) != 0)
     {
-        combined_logger->error()<<"listen error, ERRCODE=" << WSAGetLastError();
+        combined_logger->error("listen error, ERRCODE={0}",WSAGetLastError());
         closesocket(_server);
         _server = INVALID_SOCKET;
         return false;
@@ -164,7 +165,7 @@ bool TcpAccept::openAccept(const std::string ip, unsigned short port , bool reus
 
     if (CreateIoCompletionPort((HANDLE)_server, _summer->_io, (ULONG_PTR)this, 1) == NULL)
     {
-        combined_logger->error()<<"bind to iocp error, ERRCODE=" << WSAGetLastError();
+        combined_logger->error("bind to iocp error, ERRCODE={0}" , WSAGetLastError());
         closesocket(_server);
         _server = INVALID_SOCKET;
         return false;
@@ -176,7 +177,7 @@ bool TcpAccept::close()
 {
     if (_server != INVALID_SOCKET)
     {
-        combined_logger->info()<<"TcpAccept::close. socket=" << _server;
+        combined_logger->info("TcpAccept::close. socket={0}" , _server);
         closesocket(_server);
         _server = INVALID_SOCKET;
     }
@@ -187,12 +188,12 @@ bool TcpAccept::doAccept(const TcpSocketPtr & s, _OnAcceptHandler&& handler)
 {
     if (_onAcceptHandler)
     {
-        combined_logger->error()<<"duplicate operation error." << logSection();
+        combined_logger->error("duplicate operation error.{0}" , logSection());
         return false;
     }
     if (!_summer || _server == INVALID_SOCKET)
     {
-        combined_logger->error()<<"TcpAccept not initialize." << logSection();
+        combined_logger->error("TcpAccept not initialize.{0}" , logSection());
         return false;
     }
 
@@ -213,7 +214,7 @@ bool TcpAccept::doAccept(const TcpSocketPtr & s, _OnAcceptHandler&& handler)
     }
     if (_socket == INVALID_SOCKET)
     {
-        combined_logger->error()<<"TcpAccept::doAccept create client socket error! error code=" << WSAGetLastError();
+        combined_logger->error("TcpAccept::doAccept create client socket error! error code={0}" , WSAGetLastError());
         return false;
     }
     setNoDelay(_socket);
@@ -221,7 +222,7 @@ bool TcpAccept::doAccept(const TcpSocketPtr & s, _OnAcceptHandler&& handler)
     {
         if (WSAGetLastError() != ERROR_IO_PENDING)
         {
-            combined_logger->error()<<"TcpAccept::doAccept do AcceptEx error, error code =" << WSAGetLastError();
+            combined_logger->error("TcpAccept::doAccept do AcceptEx error, error code ={0}" , WSAGetLastError());
             closesocket(_socket);
             _socket = INVALID_SOCKET;
             return false;
@@ -240,7 +241,7 @@ bool TcpAccept::onIOCPMessage(BOOL bSuccess)
 
         if (setsockopt(_socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&_server, sizeof(_server)) != 0)
         {
-            combined_logger->warn()<<"setsockopt SO_UPDATE_ACCEPT_CONTEXT fail!  last error=" << WSAGetLastError();
+            combined_logger->warn("setsockopt SO_UPDATE_ACCEPT_CONTEXT fail!  last error={0}",WSAGetLastError());
         }
         if (_isIPV6)
         {
@@ -270,7 +271,7 @@ bool TcpAccept::onIOCPMessage(BOOL bSuccess)
     {
         closesocket(_socket);
         _socket = INVALID_SOCKET;
-        combined_logger->warn()<<"AcceptEx failed ... , lastError=" << GetLastError();
+        combined_logger->warn("AcceptEx failed ... , lastError={0}",GetLastError());
         onAccept(NEC_ERROR, _client);
     }
     return true;

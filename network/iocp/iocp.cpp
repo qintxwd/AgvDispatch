@@ -4,6 +4,7 @@
 #include "iocpsocket.h"
 
 #include "../../utils/Log/spdlog/spdlog.h"
+#include "../../common.h"
 
 using namespace qyhnetwork;
 
@@ -13,13 +14,13 @@ bool EventLoop::initialize()
 {
     if (_io != NULL)
     {
-        combined_logger->error()<<"iocp already craeted !  " << logSection();
+        combined_logger->error("iocp already craeted !  {0}",logSection());
         return false;
     }
     _io = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 1);
     if (!_io)
     {
-        combined_logger->error()<<"CreateIoCompletionPort false!  " ;
+        combined_logger->error("CreateIoCompletionPort false!  ") ;
         return false;
     }
     return true;
@@ -44,7 +45,7 @@ void EventLoop::runOnce(bool isImmediately)
 {
     if (_io == NULL)
     {
-        combined_logger->error()<<"iocp handle not initialize. " <<logSection();
+        combined_logger->error("iocp handle not initialize. {0}" ,logSection());
         return;
     }
 
@@ -76,11 +77,11 @@ void EventLoop::runOnce(bool isImmediately)
         }
         catch (const std::exception & e)
         {
-            combined_logger->warn()<<"when call [post] callback throw one runtime_error. err=" << e.what();
+            combined_logger->warn("when call [post] callback throw one runtime_error. err={0}" , e.what());
         }
         catch (...)
         {
-            combined_logger->warn()<<"when call [post] callback throw one unknown exception.";
+            combined_logger->warn("when call [post] callback throw one unknown exception.");
         }
         delete func;
         return;
@@ -109,7 +110,7 @@ void EventLoop::runOnce(bool isImmediately)
     }
         break;
     default:
-        combined_logger->error()<<"GetQueuedCompletionStatus undefined type=" << req._type << logSection();
+        combined_logger->error("GetQueuedCompletionStatus undefined type={0} {1}", req._type , logSection());
     }
 
 }
