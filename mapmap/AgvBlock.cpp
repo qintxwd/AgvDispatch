@@ -1,4 +1,4 @@
-#include "AgvBlock.h"
+﻿#include "AgvBlock.h"
 #include "../agv.h"
 #include "agvstation.h"
 #include "agvline.h"
@@ -7,13 +7,6 @@
 AgvBlock::AgvBlock(int _id, std::string _name):
 	MapBlock(_id,_name)
 {
-}
-
-AgvBlock::AgvBlock(const AgvBlock &b):
-	MapBlock(b),
-	currentAgv(b.currentAgv)
-{
-
 }
 
 AgvBlock::~AgvBlock()

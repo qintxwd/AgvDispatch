@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <mutex>
 #include "onemap.h"
@@ -15,12 +15,11 @@ using AgvLinePtr = std::shared_ptr<AgvLine>;
 class AgvBlock;
 using AgvBlockPtr = std::shared_ptr<AgvBlock>;
 
-//Ò»¸öÇø¿éÄÚ×î¶àÖ»ÄÜÍ¬Ê±ÔÊĞíÒ»Á¾³µ
+//ä¸€ä¸ªåŒºå—å†…æœ€å¤šåªèƒ½åŒæ—¶å…è®¸ä¸€è¾†è½¦
 class AgvBlock: public std::enable_shared_from_this<AgvBlock>, public MapBlock
 {
 public:
 	AgvBlock(int _id, std::string _name);
-	AgvBlock(const AgvBlock &b);
 	virtual ~AgvBlock();
 
 	bool setAgv(AgvPtr agv);

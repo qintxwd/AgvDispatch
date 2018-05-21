@@ -14,15 +14,13 @@ MapPoint::MapPoint(int _id, std::string _name, Map_Point_Type _type, int _x, int
 {
 }
 
-MapPoint::MapPoint(const MapPoint &p):
-    MapSpirit(p),
-    x(p.x),
-    y(p.y),
-    realX(p.realX),
-    realY(p.realY),
-    labelXoffset(p.labelXoffset),
-    labelYoffset(p.labelYoffset),
-    mapChange(p.mapChange),
-    point_type(p.point_type)
+MapPoint::~MapPoint()
 {
+}
+
+
+MapSpirit *MapPoint::clone()
+{
+    MapPoint *p = new MapPoint(this->getId(),this->getName(),this->getPointType(),this->getX(),this->getY(),this->getRealX(),this->getRealY(),this->getLabelXoffset(),this->getLabelYoffset(),this->getMapChange(),this->getLocked());
+    return p;
 }

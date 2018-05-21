@@ -16,19 +16,13 @@ using AgvLinePtr = std::shared_ptr<AgvLine>;
 class AgvLine : public std::enable_shared_from_this<AgvLine>,public MapPath
 {
 public:
-    AgvLine(int _id, std::string _name, int _start, int _end, Map_Path_Type _type, int _length, int _p1x = 0, int _p1y = 0, int _p2x = 0, int _p2y = 0, bool _locked = false, int _direction = 0):
-		MapPath(_id,_name,_start,_end,_type,_length,_p1x,_p1y,_p2x,_p2y,_locked,_direction),
+    AgvLine(int _id, std::string _name, int _start, int _end, Map_Path_Type _type, int _length, int _p1x = 0, int _p1y = 0, int _p2x = 0, int _p2y = 0, bool _locked = false):
+        MapPath(_id,_name,_start,_end,_type,_length,_p1x,_p1y,_p2x,_p2y,_locked),
         father(0),
         distance(0),
         color(0)
     {
 
-    }
-
-    AgvLine(const AgvLine &b):
-		MapPath(b)
-    {
-        occuAgvs = b.occuAgvs;
     }
 
     bool operator == (const AgvLine &b) {

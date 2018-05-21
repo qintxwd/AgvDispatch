@@ -6,88 +6,35 @@ OneMap::OneMap():
 
 }
 
-OneMap::OneMap(const OneMap &b)
-{
-    max_id = b.max_id;
-    floors = b.floors;
-    rootpaths = b.rootpaths;
-}
-
 OneMap::~OneMap()
 {
-    for(auto f:floors)delete f;
-    for(auto f:rootpaths)delete f;
-    for(auto f:blocks)delete f;
-    for(auto f:groups)delete f;
+    for(auto f:all_element)delete f;
 }
 
 void OneMap::clear()
 {
-    for(auto f:floors)delete f;
-    for(auto f:rootpaths)delete f;
-    for(auto f:blocks)delete f;
-    for(auto f:groups)delete f;
-    floors.clear();
-    rootpaths.clear();
-    blocks.clear();
-    groups.clear();
+    for(auto f:all_element)delete f;
+    all_element.clear();
     max_id = 0;
 }
 
-void OneMap::addPath(MapPath *path)
+void OneMap::addSpirit(MapSpirit *spirit)
 {
-    rootpaths.push_back(path);
+    all_element.push_back(spirit);
 }
 
-void OneMap::addFloor(MapFloor *floor)
+void OneMap::removeSpirit(MapSpirit *spirit)
 {
-    floors.push_back(floor);
+    all_element.remove(spirit);
 }
 
-void OneMap::addBlock(MapBlock *block)
+void OneMap::removeSpiritById(int id)
 {
-    blocks.push_back(block);
-}
-
-void  OneMap::addGroup(MapGroup *group)
-{
-    groups.push_back(group);
-}
-
-void OneMap::removeBlock(MapBlock *block)
-{
-    blocks.remove(block);
-}
-
-void OneMap::removeGroup(MapGroup *group)
-{
-    groups.remove(group);
-}
-
-void OneMap::removePath(MapPath *path)
-{
-    rootpaths.remove(path);
-}
-void OneMap::removeFloor(MapFloor *floor)
-{
-    floors.remove(floor);
-}
-
-void OneMap::removeRootPathById(int id)
-{
-    for (auto p:rootpaths) {
-        if(p->getId() == id){
-            rootpaths.remove(p);
-            break;
-        }
-    }
-}
-void OneMap::removeFloorById(int id)
-{
-    for (auto f : floors) {
-        if(f->getId() == id){
-            floors.remove(f);
-            break;
+    for(auto itr = all_element.begin();itr!=all_element.end();){
+        if((*itr)->getId() == id){
+            itr = all_element.erase(itr);
+        }else{
+            itr++;
         }
     }
 }
@@ -102,77 +49,89 @@ OneMap *OneMap::clone()
 {
     OneMap *onemap = new OneMap;
     onemap->setMaxId(max_id);
-    for (auto p : rootpaths) {
-        onemap->addPath(new MapPath(*p));
-    }
-    for (auto f : floors) {
-        onemap->addFloor(f->clone());
-    }
-    for (auto b : blocks) {
-        onemap->addBlock(new MapBlock(*b));
-    }
-    for (auto b : groups) {
-        onemap->addGroup(new MapGroup(*b));
+    for (auto e : all_element) {
+        onemap->addSpirit(e->clone());
     }
     return onemap;
 }
 
-MapFloor *OneMap::getFloorById(int id)
-{
-    for (auto p : floors) {
-        if(p->getId() == id)return p;
-    }
-
-    return nullptr;
-}
-
-MapPath *OneMap::getRootPathById(int id)
-{
-    for (auto p : rootpaths) {
-        if(p->getId() == id)return p;
-    }
-
-    return nullptr;
-}
-
-MapBlock *OneMap::getBlockById(int id)
-{
-    for (auto b : blocks) {
-        if(b->getId() == id)return b;
-    }
-    return nullptr;
-}
-
-MapGroup *OneMap::getGroupById(int id)
-{
-    for (auto b : groups) {
-        if(b->getId() == id)return b;
-    }
-    return nullptr;
-}
-
 MapSpirit *OneMap::getSpiritById(int id)
 {
-    MapFloor *f = getFloorById(id);
-    if(f!=nullptr)return f;
-    MapPath *p = getRootPathById(id);
-    if(p)return p;
-    MapBlock *b = getBlockById(id);
-    if(b)return b;
-    MapGroup *g = getGroupById(id);
-    if(g)return g;
+    for (auto p : all_element) {
+        if(p->getId() == id)return p;
+    }
+    return nullptr;
+}
 
-    for (auto floor : floors) {
-        auto pos = floor->getPaths();
-        auto pis = floor->getPoints();
-        for (auto po : pos) {
-            if(po->getId() == id)return po;
+std::list<MapFloor *> OneMap::getFloors()
+{
+    std::list<MapFloor *> floors;
+    for(auto s:all_element)
+    {
+        if(s->getSpiritType() == MapSpirit::Map_Sprite_Type_Floor)floors.push_back(static_cast<MapFloor *>(s));
+    }
+    return floors;
+}
+
+std::list<MapPath *> OneMap::getPaths()
+{
+    std::list<MapPath *> paths;
+    for(auto s:all_element)
+    {
+        if(s->getSpiritType() == MapSpirit::Map_Sprite_Type_Path)paths.push_back(static_cast<MapPath *>(s));
+    }
+    return paths;
+}
+
+std::list<MapPath *> OneMap::getRootPaths()
+{
+    std::list<MapPath *> all_paths = getPaths();
+    std::list<MapFloor *> floors = getFloors();//楼层
+    for(auto itr=all_paths.begin();itr!=all_paths.end();){
+        //是否楼层上的路径
+        bool isFloorPath = false;
+        for(auto f:floors){
+            if(isFloorPath)break;
+            std::list<int> fps = f->getPaths();
+            for(auto fp:fps){
+                if((*itr)->getId() == fp){
+                    isFloorPath = true;
+                    break;
+                }
+            }
         }
-        for (auto pi: pis) {
-            if(pi->getId() == id)return pi;
+        if(isFloorPath){
+            itr = all_paths.erase(itr);
+        }else{
+            itr++;
         }
     }
+    return all_paths;
+}
 
-    return nullptr;
+std::list<MapBlock *> OneMap::getBlocks()
+{
+    std::list<MapBlock *> blocks;
+    for(auto s:all_element)
+    {
+        if(s->getSpiritType() == MapSpirit::Map_Sprite_Type_Block)
+        {
+            blocks.push_back(static_cast<MapBlock *>(s));
+        }
+    }
+    return blocks;
+}
+
+std::list<MapGroup *> OneMap::getGroups()
+{
+    std::list<MapGroup *> groups;
+    for(auto s:all_element)
+    {
+        if(s->getSpiritType() == MapSpirit::Map_Sprite_Type_Group)
+        {
+            groups.push_back(static_cast<MapGroup *>(s));
+        }
+    }
+    return groups;
 }
 

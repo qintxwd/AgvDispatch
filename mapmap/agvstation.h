@@ -21,11 +21,6 @@ public:
 	{
 	}
 
-	AgvStation(const AgvStation &b) :
-		MapPoint(b)
-	{
-		occuAgv = b.occuAgv;
-	}
 	int getOccuAgv() { return occuAgv; }
 	void setOccuAgv(int _occuAgv) { occuAgv = _occuAgv; }
 protected:

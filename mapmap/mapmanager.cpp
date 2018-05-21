@@ -161,10 +161,9 @@ bool MapManager::loadFromDb()
 			int p2x = atoi(table_station.fieldValue(7));
 			int p2y = atoi(table_station.fieldValue(8));
 			int length = atoi(table_station.fieldValue(9));
-			bool locked = atoi(table_station.fieldValue(10)) == 1;
-			int direction = atoi(table_station.fieldValue(11));
+            bool locked = atoi(table_station.fieldValue(10)) == 1;
 			
-			AgvLinePtr line = AgvLinePtr(new AgvLine(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked, direction));
+            AgvLinePtr line = AgvLinePtr(new AgvLine(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked));
 			m_lines.push_back(line);
 		}
 
@@ -428,8 +427,11 @@ void MapManager::clear()
 {
 	m_reverseLines.clear();
 	m_adj.clear();
+	m_reverseLines.clear();
+	m_blocks.clear();
 	m_stations.clear();
 	m_lines.clear();
+	
 }
 
 void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)

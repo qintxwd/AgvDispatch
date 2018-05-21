@@ -6,16 +6,20 @@ MapGroup::MapGroup(int _id, std::string _name) :
 
 }
 
-
-MapGroup::MapGroup(const MapGroup& b):
-    MapSpirit(b),
-    spirits(b.spirits),
-    agvs(b.agvs)
+MapGroup::~MapGroup()
 {
+
 }
 
-void MapGroup::init(std::list<int> _spirits, std::list<int> _agvs)
+MapSpirit *MapGroup::clone()
 {
-    spirits = _spirits;
-    agvs = _agvs;
+    MapGroup *p = new MapGroup(getId(),getName());
+    for(auto a:agvs){
+        p->addAgv(a);
+    }
+    for(auto s:spirits){
+        p->addSpirit(s);
+    }
+    return p;
 }
+

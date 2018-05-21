@@ -22,7 +22,7 @@ MapBackground::~MapBackground()
     }
 }
 
-MapBackground* MapBackground::clone()
+MapSpirit* MapBackground::clone()
 {
     char *copy = new char[img_data_len];
     memcpy(copy,img_data,img_data_len);

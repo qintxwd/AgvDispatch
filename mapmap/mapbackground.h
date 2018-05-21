@@ -7,7 +7,10 @@ class MapBackground : public MapSpirit
 {
 public:
     MapBackground(int _id, std::string _name, char *_img_data, int _img_data_len, int _width, int _height, std::string fileName);
+
     virtual ~MapBackground();
+    virtual MapSpirit *clone() ;
+    MapBackground(const MapBackground& b) = delete;
 
     void setX(int _x){x=_x;}
     void setY(int _y){y=_y;}
@@ -26,8 +29,6 @@ public:
     void setFileName(std::string _filename){imgFileName = _filename;}
     void setImgData(char *_img_data){img_data=_img_data;}
     void setImgDataLen(int _img_data_len){img_data_len=_img_data_len;}
-
-    MapBackground* clone();//深拷贝
 private:
     char *img_data;//图片数据
     int img_data_len;//图片数据长度

@@ -6,8 +6,15 @@ MapBlock::MapBlock(int _id, std::string _name) :
 
 }
 
-MapBlock::MapBlock(const MapBlock& b):
-    MapSpirit(b),
-    spirits(b.spirits)
+MapBlock::~MapBlock(){
+
+}
+
+MapSpirit *MapBlock::clone()
 {
+    MapBlock *b = new MapBlock(getId(),getName());
+    for(auto s:spirits){
+        b->addSpirit(s);
+    }
+    return b;
 }

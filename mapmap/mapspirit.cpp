@@ -8,9 +8,13 @@ MapSpirit::MapSpirit(int _id, std::string _name, Map_Spirit_Type _spirit_type):
 
 }
 
-MapSpirit::MapSpirit(const MapSpirit &s)
+MapSpirit::~MapSpirit()
 {
-    spirit_type = s.spirit_type;
-    id = s.id;
-    name = s.name;
+
+}
+
+MapSpirit *MapSpirit::clone()
+{
+    MapSpirit *s = new MapSpirit(this->getId(),this->getName(),this->getSpiritType());
+    return s;
 }

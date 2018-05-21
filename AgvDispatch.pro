@@ -83,7 +83,9 @@ HEADERS += \
     mapmap/mappath.h \
     mapmap/mappoint.h \
     mapmap/mapspirit.h \
-    mapmap/onemap.h
+    mapmap/onemap.h \
+    mapmap/agvfloor.h \
+    mapmap/agvgroup.h
 
 SOURCES += \
     agv.cpp \
@@ -128,6 +130,8 @@ SOURCES += \
     mapmap/mappath.cpp \
     mapmap/mappoint.cpp \
     mapmap/mapspirit.cpp \
-    mapmap/onemap.cpp
+    mapmap/onemap.cpp \
+    mapmap/agvfloor.cpp \
+    mapmap/agvgroup.cpp
 
 

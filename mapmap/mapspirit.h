@@ -18,11 +18,11 @@ public:
 
     MapSpirit(int _id,std::string _name,Map_Spirit_Type _spirit_type);
 
-    MapSpirit(const MapSpirit &s);
+    MapSpirit(const MapSpirit &s) = delete;
 
-    virtual ~MapSpirit()
-    {
-    }
+    virtual ~MapSpirit();
+
+    virtual MapSpirit *clone();
 
     bool operator ==(const MapSpirit &s){
         return id == s.id;

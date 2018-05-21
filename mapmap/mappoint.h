@@ -17,8 +17,9 @@ public:
     };
 
     MapPoint(int _id, std::string _name,Map_Point_Type _type, int _x, int _y,int _realX = 0,int _realY = 0,int _labelXoffset = 0,int _labelYoffset = -40,bool _mapChange = false,bool _locked = false);
-
-    MapPoint(const MapPoint &p);
+    virtual ~MapPoint();
+    virtual MapSpirit *clone();
+    MapPoint(const MapPoint &p) = delete;
 
     void setPointType(Map_Point_Type _point_type){point_type=_point_type;}
     Map_Point_Type getPointType() const {return point_type;}
@@ -39,6 +40,7 @@ public:
     void setY(int _y){y = _y ;}
     void setMapChange(bool _mapChange){mapChange = _mapChange;}
     void setLocked(bool _locked){locked = _locked;}
+
 private:
     Map_Point_Type point_type;
     int x;
