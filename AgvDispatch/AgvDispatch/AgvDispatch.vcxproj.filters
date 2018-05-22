@@ -129,10 +129,10 @@
     <ClInclude Include="..\..\mapmap\mapmanager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\mapmap\AgvBlock.h">
+    <ClInclude Include="..\..\mapmap\agvstation.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\mapmap\agvstation.h">
+    <ClInclude Include="..\..\base64.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -197,9 +197,6 @@
     <ClCompile Include="..\..\sqlite3\CppSQLite3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\utils\Log\easylogging.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Jacking\jacktaskmaker.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -233,7 +230,7 @@
     <ClCompile Include="..\..\mapmap\mapmanager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\mapmap\AgvBlock.cpp">
+    <ClCompile Include="..\..\base64.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

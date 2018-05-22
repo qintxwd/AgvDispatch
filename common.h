@@ -11,6 +11,7 @@
 #include <memory>
 #include <limits.h>
 #include "utils/Log/spdlog/spdlog.h"
+#include "utils/Log/spdlog/fmt/ostr.h"
 #include "utils/threadpool.h"
 #include "sqlite3/CppSQLite3.h"
 

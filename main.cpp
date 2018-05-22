@@ -13,32 +13,39 @@ void initLog()
     //日志文件
     try
     {
+        std::vector<spdlog::sink_ptr> sinks;
 
-        //set format
-        //spdlog::set_pattern("[%^+++%$] [%H:%M:%S %z] [thread %t] %v");
+        //控制台
+#ifdef WIN32
+        auto color_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+#else
+        auto color_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
+#endif
+        sinks.push_back(color_sink);
 
+        //日志文件
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("agv_dispatch",  1024*1024*20, 5);
+        sinks.push_back(rotating);
 
-//        std::vector<spdlog::sink_ptr> sinks;
+        combined_logger = std::make_shared<spdlog::logger>("main", begin(sinks), end(sinks));
+        combined_logger->flush_on(spdlog::level::trace);
+        combined_logger->set_level(spdlog::level::trace);
 
-//        //console sink
-//        auto stdout_sink = spdlog::sinks::stdout_sink_mt::instance();
-//#ifdef WIN32
-//        combined_logger = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
-//#else
-//        auto sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
-//#endif
-//        sinks.push_back(sink);
+        //flush interval
+//        int q_size = 2000;
+//        spdlog::set_async_mode(q_size, spdlog::async_overflow_policy::block_retry,
+//                               nullptr,
+//                               std::chrono::seconds(1));
 
-        combined_logger =
-//        //log file sink
-//        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("agv_dispatch", 1024*1024*20, 5);
-//        sinks.push_back(rotating);
-
-        //combine
-        //combined_logger = std::make_shared<spdlog::logger>("main", begin(sinks), end(sinks));
-
-
-        //spdlog::register_logger(combined_logger);
+        //test
+        combined_logger->info("=============log test==================");
+        combined_logger->trace("test log 1");
+        combined_logger->debug("test log 2");
+        combined_logger->info("test log 3");
+        combined_logger->warn("test log 4");
+        combined_logger->error("test log 5");
+        combined_logger->critical("test log 6");
+        combined_logger->info("=============log test==================");
     }
     catch (const spdlog::spdlog_ex& ex)
     {

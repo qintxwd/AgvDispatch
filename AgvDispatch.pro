@@ -97,13 +97,6 @@ HEADERS += \
     utils/Log/spdlog/details/pattern_formatter_impl.h \
     utils/Log/spdlog/details/registry.h \
     utils/Log/spdlog/details/spdlog_impl.h \
-    utils/Log/spdlog/fmt/fmt.h \
-    utils/Log/spdlog/fmt/ostr.h \
-    utils/Log/spdlog/fmt/bundled/format.h \
-    utils/Log/spdlog/fmt/bundled/ostream.h \
-    utils/Log/spdlog/fmt/bundled/posix.h \
-    utils/Log/spdlog/fmt/bundled/printf.h \
-    utils/Log/spdlog/fmt/bundled/time.h \
     utils/Log/spdlog/sinks/android_sink.h \
     utils/Log/spdlog/sinks/ansicolor_sink.h \
     utils/Log/spdlog/sinks/base_sink.h \
@@ -116,7 +109,14 @@ HEADERS += \
     utils/Log/spdlog/sinks/stdout_sinks.h \
     utils/Log/spdlog/sinks/syslog_sink.h \
     utils/Log/spdlog/sinks/wincolor_sink.h \
-    utils/Log/spdlog/sinks/windebug_sink.h
+    utils/Log/spdlog/sinks/windebug_sink.h \
+    utils/Log/spdlog/fmt/fmt.h \
+    utils/Log/spdlog/fmt/ostr.h \
+    utils/Log/spdlog/fmt/bundled/format.h \
+    utils/Log/spdlog/fmt/bundled/ostream.h \
+    utils/Log/spdlog/fmt/bundled/posix.h \
+    utils/Log/spdlog/fmt/bundled/printf.h \
+    utils/Log/spdlog/fmt/bundled/time.h
 
 SOURCES += \
     agv.cpp \
@@ -160,10 +160,6 @@ SOURCES += \
     mapmap/mappoint.cpp \
     mapmap/mapspirit.cpp \
     mapmap/onemap.cpp \
-    base64.cpp \
-    utils/Log/spdlog/fmt/bundled/format.cc \
-    utils/Log/spdlog/fmt/bundled/ostream.cc \
-    utils/Log/spdlog/fmt/bundled/posix.cc \
-    utils/Log/spdlog/fmt/bundled/printf.cc
+    base64.cpp
 
 

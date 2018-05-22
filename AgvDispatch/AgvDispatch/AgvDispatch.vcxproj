@@ -23,8 +23,8 @@
     <ClInclude Include="..\..\agvmanager.h" />
     <ClInclude Include="..\..\agvtasknode.h" />
     <ClInclude Include="..\..\agvtasknodedothing.h" />
+    <ClInclude Include="..\..\base64.h" />
     <ClInclude Include="..\..\common.h" />
-    <ClInclude Include="..\..\mapmap\AgvBlock.h" />
     <ClInclude Include="..\..\mapmap\agvline.h" />
     <ClInclude Include="..\..\mapmap\agvstation.h" />
     <ClInclude Include="..\..\mapmap\mapbackground.h" />
@@ -63,10 +63,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp" />
     <ClCompile Include="..\..\agvmanager.cpp" />
+    <ClCompile Include="..\..\base64.cpp" />
     <ClCompile Include="..\..\common.cpp" />
     <ClCompile Include="..\..\Jacking\jacktaskmaker.cpp" />
     <ClCompile Include="..\..\main.cpp" />
-    <ClCompile Include="..\..\mapmap\AgvBlock.cpp" />
     <ClCompile Include="..\..\mapmap\mapbackground.cpp" />
     <ClCompile Include="..\..\mapmap\mapblock.cpp" />
     <ClCompile Include="..\..\mapmap\mapfloor.cpp" />
@@ -93,7 +93,6 @@
     <ClCompile Include="..\..\taskmanager.cpp" />
     <ClCompile Include="..\..\userlogmanager.cpp" />
     <ClCompile Include="..\..\usermanager.cpp" />
-    <ClCompile Include="..\..\utils\Log\easylogging.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\log-conf.conf" />

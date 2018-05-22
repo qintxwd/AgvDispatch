@@ -5,6 +5,7 @@
 #include "../taskmanager.h"
 #include "../userlogmanager.h"
 #include "../base64.h"
+#include <algorithm>
 
 MapManager::MapManager() :mapModifying(false)
 {
@@ -378,183 +379,212 @@ std::vector<int> MapManager::getBestPath(int agv, int lastStation, int startStat
 
 std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect)
 {
-
-    //TODO:
     std::vector<int> result;
+    distance = DISTANCE_INFINITY;
 
-    //distance = DISTANCE_INFINITY;
+    auto paths = g_onemap.getPaths();
 
-    //if (lastStation <= 0) lastStation = startStation;
-    //if (lastStation <= 0)return result;
-    //if (startStation <= 0)return result;
-    //if (endStation <= 0)return result;
+    //判断station是否正确
+    if (lastStation <= 0) lastStation = startStation;
+    if (lastStation <= 0)return result;
+    if (startStation <= 0)return result;
+    if (endStation <= 0)return result;
 
-    //AgvStationPtr startStationPtr = getStationById(startStation);
-    //if (startStationPtr == nullptr)return result;
-    //AgvStationPtr endStationPtr = getStationById(endStation);
-    //if (endStationPtr == nullptr)return result;
+    auto lastStationPtr =  g_onemap.getSpiritById(lastStation);
+    auto startStationPtr =  g_onemap.getSpiritById(startStation);
+    auto endStationPtr =  g_onemap.getSpiritById(endStation);
+
+    if(lastStationPtr == nullptr || startStationPtr == nullptr || endStationPtr == nullptr)return result;
 
 
-    //if (startStationPtr->getOccuAgv() > 0 && startStationPtr->getOccuAgv() != agv)return result;
-    //if (endStationPtr->getOccuAgv() > 0 && endStationPtr->getOccuAgv() != agv)return result;
+    if(lastStationPtr->getSpiritType()!=MapSpirit::Map_Sprite_Type_Point
+            ||startStationPtr->getSpiritType()!=MapSpirit::Map_Sprite_Type_Point
+            ||endStationPtr->getSpiritType()!=MapSpirit::Map_Sprite_Type_Point)
+        return result;
 
-    //if (startStation == endStation) {
-    //	if (changeDirect && lastStation != startStation) {
-    //		for (auto line : m_lines) {
-    //			if (line->getStart() == lastStation && line->getEnd() == startStation) {
-    //				result.push_back(line->getId());
-    //				distance = line->getLength();
-    //			}
-    //		}
-    //	}
-    //	else {
-    //		distance = 0;
-    //	}
-    //	return result;
-    //}
+    //判断站点占用清空
+    if(station_occuagv[startStation]!=0 && station_occuagv[startStation]!=agv)return result;
+    if(station_occuagv[endStation]!=0 && station_occuagv[endStation]!=agv)return result;
 
-    //std::multimap<int, AgvLinePtr> Q;//key -->  distance ;value --> station;
+    //group的判断
+    bool agvCanGo = false;
+    std::list<MapGroup *> groups = g_onemap.getGroups();
+    for(auto group:groups){
+        auto spirits = group->getSpirits();
+        auto agvs = group->getAgvs();
+        if(std::find(spirits.begin(),spirits.end(),endStation)!=spirits.end()
+                && std::find(agvs.begin(),agvs.end(),agv)!=agvs.end()){
+            agvCanGo = true;
+            break;
+        }
+    }
 
-    //for (auto line : m_lines) {
-    //	line->father = NULL;
-    //	line->distance = DISTANCE_INFINITY;
-    //	line->color = AGV_LINE_COLOR_WHITE;
-    //}
+    if(startStation == endStation){
+        distance = 0;
+        if (changeDirect && lastStation != startStation) {
+            for(auto path:paths){
+                if(path->getStart() == lastStation && path->getEnd() == startStation){
+                    result.push_back(path->getId());
+                    distance=path->getLength();
+                }
+            }
+        }
+        return result;
+    }
+
+    std::multimap<int,int> Q;// distance -- lineid
+
+    struct LineDijkInfo{
+        int father = 0;
+        int distance = DISTANCE_INFINITY;
+        int color = AGV_LINE_COLOR_WHITE;
+    };
+    std::map<int,LineDijkInfo> lineDistanceColors;
+
+    //初始化，所有线路 距离为无限远、color为尚未标记
+    for(auto path:paths){
+        lineDistanceColors[path->getId()].father = 0;
+        lineDistanceColors[path->getId()].distance = DISTANCE_INFINITY;
+        lineDistanceColors[path->getId()].color = AGV_LINE_COLOR_WHITE;
+    }
+
 
     ////增加一种通行的判定：
-    ////同事AGV2 要从 C点 到达 D点，同事路过B点。
-    ////如果AGV1 要从 A点 到达 B点。如果AGV1先到达B点，会导致AGV2 无法继续运行。
+    ////如果AGV2 要从 C点 到达 D点，同事路过B点。
+    ////同时AGV1 要从 A点 到达 B点。如果AGV1先到达B点，会导致AGV2 无法继续运行。
     ////判定终点的线路 是否占用
-    ////endPoint是终点，lastPoint是到达endPoint的上一站。
-    //{
-    //	for (auto templine : m_lines) {
-    //		if (templine->getStart() == endStation) {
-    //			if (templine->getOccuAgvs().size() > 1 || (templine->getOccuAgvs().size() == 1 && (*(templine->getOccuAgvs().begin())) != agv)) {
-    //				//TODO:该方式到达这个地方 不可行.该线路 置黑、
-    //				AgvLinePtr  llid = m_reverseLines[templine];
-    //				llid->color = AGV_LINE_COLOR_BLACK;
-    //				llid->distance = DISTANCE_INFINITY;
-    //			}
-    //		}
-    //	}
-    //}
+    ////endPoint是终点
+    {
+        for (auto templine : paths) {
+            if (templine->getStart() == endStation) {
+                if(line_occuagvs[templine->getId()].size()>1 || (line_occuagvs[templine->getId()].size()==1 && *(line_occuagvs[templine->getId()].begin()) != agv)){
+                    //TODO:该方式到达这个地方 不可行.该线路 置黑、
+                    lineDistanceColors[templine->getId()].color = AGV_LINE_COLOR_BLACK;
+                    lineDistanceColors[templine->getId()].distance = DISTANCE_INFINITY;
+                }
+            }
+        }
+    }
 
+    if (lastStation == startStation) {
+        for (auto line: paths) {
+            if (line->getStart() == lastStation) {
+                int reverse = m_reverseLines[line->getId()];
+                if(reverse>0){
+                    //反向线路未被占用//path的终点未被占用//则这条线路可以过去
+                    if(line_occuagvs[reverse].size() == 0 &&station_occuagv[line->getEnd()] ==0 || station_occuagv[line->getEnd()] == agv){
+                        if(lineDistanceColors[line->getId()].color == AGV_LINE_COLOR_BLACK)continue;
+                        lineDistanceColors[line->getId()].distance = line->getLength();
+                        lineDistanceColors[line->getId()].color = AGV_LINE_COLOR_GRAY;
+                        Q.insert(std::make_pair(lineDistanceColors[line->getId()].distance, line->getId()));
+                    }
 
-    //if (lastStation == startStation) {
-    //	for (auto l : m_lines) {
-    //		if (l->getStart() == lastStation) {
-    //			AgvLinePtr reverse = m_reverseLines[l];
-    //			if (reverse->getOccuAgvs().size() == 0 && (l->getEnd()->getOccuAgv() == nullptr || l->getEnd()->getOccuAgv() == agv)) {
-    //				if (l->color == AGV_LINE_COLOR_BLACK)continue;
-    //				l->distance = l->getLength();
-    //				l->color = AGV_LINE_COLOR_GRAY;
-    //				Q.insert(std::make_pair(l->distance, l));
-    //			}
-    //		}
-    //	}
-    //}
-    //else {
-    //	for (auto line : m_lines) {
-    //		if (line->getStart() == lastStation && line->getEnd() == lastStation) {
-    //			AgvLinePtr reverse = m_reverseLines[line];
-    //			if (reverse->getOccuAgvs().size() == 0 && (line->getEnd()->getOccuAgv() == nullptr || line->getEnd()->getOccuAgv() == agv)) {
-    //				if (line->color == AGV_LINE_COLOR_BLACK)continue;
-    //				line->distance = 0;
-    //				line->color = AGV_LINE_COLOR_GRAY;
-    //				Q.insert(std::make_pair(line->distance, line));
-    //				break;
-    //			}
-    //		}
-    //	}
-    //}
+                }
+            }
+        }
+    }
+    else {
+        for (auto line : paths) {
+            if (line->getStart() == lastStation && line->getEnd() == lastStation) {
+                int reverse = m_reverseLines[line->getId()];
+                if(reverse>0){
+                    if(line_occuagvs[reverse].size() == 0 &&station_occuagv[line->getEnd()] ==0 || station_occuagv[line->getEnd()] == agv){
+                        if(lineDistanceColors[line->getId()].color == AGV_LINE_COLOR_BLACK)continue;
+                        lineDistanceColors[line->getId()].distance = line->getLength();
+                        lineDistanceColors[line->getId()].color = AGV_LINE_COLOR_GRAY;
+                        Q.insert(std::make_pair(lineDistanceColors[line->getId()].distance, line->getId()));
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
-    //while (Q.size() > 0) {
-    //	auto front = Q.begin();
-    //	AgvLinePtr startLine = front->second;
+    while(Q.size()>0){
+        auto front = Q.begin();
+        int startLine = front->second;
 
-    //	if (m_adj.find(startLine) == m_adj.end()) {
-    //		startLine->color = AGV_LINE_COLOR_BLACK;
-    //		for (auto ll = Q.begin(); ll != Q.end();) {
-    //			if (ll->second == startLine) {
-    //				ll = Q.erase(ll);
-    //			}
-    //			else {
-    //				++ll;
-    //			}
-    //		}
-    //		continue;
-    //	}
-    //	for (auto line : m_adj[startLine]) {
-    //		if (line->color == AGV_LINE_COLOR_BLACK)continue;
-    //		if (line->color == AGV_LINE_COLOR_WHITE) {
-    //			AgvLinePtr reverse = m_reverseLines[line];
-    //			if (reverse->getOccuAgvs().size() == 0 && (line->getEnd()->getOccuAgv() == nullptr || line->getEnd()->getOccuAgv() == agv)) {
-    //				line->distance = startLine->distance + line->getLength();
-    //				line->color = AGV_LINE_COLOR_GRAY;
-    //				line->father = startLine;
-    //				Q.insert(std::make_pair(line->distance, line));
-    //			}
-    //		}
-    //		else if (line->color == AGV_LINE_COLOR_GRAY) {
-    //			if (line->distance > startLine->distance + line->getLength()) {
-    //				AgvLinePtr reverse = m_reverseLines[line];
-    //				if (reverse->getOccuAgvs().size() == 0 && (line->getEnd()->getOccuAgv() == nullptr || line->getEnd()->getOccuAgv() == agv)) {
-    //					int old_distance = line->distance;
-    //					line->distance = startLine->distance + line->getLength();
-    //					line->father = startLine;
-    //					//删除旧的
-    //					for (auto iiitr = Q.begin(); iiitr != Q.end();) {
-    //						if (iiitr->second == line && iiitr->first == old_distance) {
-    //							iiitr = Q.erase(iiitr);
-    //						}
-    //					}
-    //					//加入新的
-    //					Q.insert(std::make_pair(line->distance, line));
-    //				}
-    //			}
-    //		}
-    //	}
+        std::vector<int> adjs = m_adj[startLine];
+        for(auto adj:adjs)
+        {
+            if(lineDistanceColors[adj].color == AGV_LINE_COLOR_BLACK)continue;
 
-    //	startLine->color = AGV_LINE_COLOR_BLACK;
-    //	for (auto ll = Q.begin(); ll != Q.end();) {
-    //		if (ll->second == startLine && ll->first == startLine->distance) {
-    //			ll = Q.erase(ll);
-    //		}
-    //		else {
-    //			++ll;
-    //		}
-    //	}
-    //}
+            MapSpirit *pp = g_onemap.getSpiritById(adj);
+            if(pp->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
+            MapPath *path = static_cast<MapPath *>(pp);
 
-    //int index = 0;
-    //int minDis = DISTANCE_INFINITY;
+            if (lineDistanceColors[adj].color == AGV_LINE_COLOR_WHITE) {
+                int  reverse = m_reverseLines[adj];
+                if(line_occuagvs[reverse].size() == 0 &&station_occuagv[path->getEnd()] ==0 || station_occuagv[path->getEnd()] == agv){
+                    lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
+                    lineDistanceColors[adj].color = AGV_LINE_COLOR_GRAY;
+                    lineDistanceColors[adj].father = startLine;
+                    Q.insert(std::make_pair(lineDistanceColors[adj].distance,adj));
+                }
+            }else if(lineDistanceColors[adj].color == AGV_LINE_COLOR_GRAY){
+                if(lineDistanceColors[adj].distance > lineDistanceColors[startLine].distance + path->getLength()){
+                    //更新father和距离
+                    lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
+                    lineDistanceColors[adj].father = startLine;
 
-    //for (auto ll : m_lines) {
-    //	if (ll->getEnd() == endStation) {
-    //		if (ll->distance < minDis) {
-    //			minDis = ll->distance;
-    //			index = ll;
-    //		}
-    //	}
-    //}
+                    //更新Q中的 adj
 
-    //distance = minDis;
+                    //删除旧的
+                    for (auto iiitr = Q.begin(); iiitr != Q.end();) {
+                        if (iiitr->second == adj) {
+                            iiitr = Q.erase(iiitr);
+                        }else
+                            iiitr++;
+                    }
+                    //加入新的
+                    Q.insert(std::make_pair(lineDistanceColors[adj].distance, adj));
 
-    //while (true) {
-    //	if (index == 0)break;
-    //	result.push_back(index);
-    //	index = index->father;
-    //}
-    //std::reverse(result.begin(), result.end());
+                }
+            }
+        }
+        lineDistanceColors[startLine].color = AGV_LINE_COLOR_BLACK;
+        //erase startLine
+        for (auto itr = Q.begin(); itr != Q.end();) {
+            if (itr->second == startLine) {
+                itr = Q.erase(itr);
+            }else
+                itr++;
+        }
+    }
 
-    //if (result.size() > 0 && lastStation != startStation) {
-    //	if (!changeDirect) {
-    //		int  agv_line = *(result.begin());
-    //		if (agv_line->getStart() == lastStation && agv_line->getEnd() == startStation) {
-    //			result.erase(result.begin());
-    //		}
-    //	}
-    //}
+    int index = 0;
+    int minDis = DISTANCE_INFINITY;
+
+    for (auto ll : paths) {
+        if (ll->getEnd() == endStation) {
+            if (lineDistanceColors[ll->getId()].distance < minDis) {
+                minDis = lineDistanceColors[ll->getId()].distance;
+                index = ll->getId();
+            }
+        }
+    }
+
+    distance = minDis;
+
+    while (true) {
+        if (index == 0)break;
+        result.push_back(index);
+        index =  lineDistanceColors[index].father;
+    }
+    std::reverse(result.begin(), result.end());
+
+    if (result.size() > 0 && lastStation != startStation) {
+        if (!changeDirect) {
+            int  agv_line = *(result.begin());
+            MapSpirit *sp = g_onemap.getSpiritById(agv_line);
+            if(sp->getSpiritType() == MapSpirit::Map_Sprite_Type_Path){
+                MapPath *path  = static_cast<MapPath *>(sp);
+                if(path->getStart() == lastStation && path->getEnd() == startStation){
+                    result.erase(result.begin());
+                }
+            }
+        }
+    }
 
     return result;
 }

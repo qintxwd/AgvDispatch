@@ -98,7 +98,7 @@ bool SessionManager::openAccepter(AccepterID aID)
 
     if (founder->second._accepter)
     {
-        combined_logger->error("openAccepter error. already opened. extend info={0}",founder->second);
+        combined_logger->error("openAccepter error. already opened. ");
         return false;
     }
     if (founder->second._listenIP.empty())
@@ -109,21 +109,21 @@ bool SessionManager::openAccepter(AccepterID aID)
     TcpAcceptPtr accepter = std::make_shared<TcpAccept>();
     if (!accepter->initialize(_summer))
     {
-        combined_logger->error("openAccept error. extend info={0}", founder->second);
+        combined_logger->error("openAccept error.");
         return false;
     }
     if (!accepter->openAccept(founder->second._listenIP, founder->second._listenPort, founder->second._setReuse))
     {
-        combined_logger->error("openAccept error. extend info={0}", founder->second);
+        combined_logger->error("openAccept error.");
         return false;
     }
     if (!accepter->doAccept(std::make_shared<qyhnetwork::TcpSocket>(),
                             std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, founder->second._aID)))
     {
-        combined_logger->error("openAccept error. extend info={0}",founder->second);
+        combined_logger->error("openAccept error.");
         return false;
     }
-    combined_logger->info("openAccepter success. listenIP={0}, listenPort={1}", founder->second._listenIP,founder->second._listenPort);
+    combined_logger->info("openAccepter success. listenIP={0}, listenPort={1}", founder->second._listenIP.c_str(),founder->second._listenPort);
     founder->second._accepter = accepter;
     return true;
 }
@@ -164,7 +164,7 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
     }
     if (ec)
     {
-        combined_logger->error("onAcceptNewClient doAccept Result Error. ec={0}, extend={1}",ec ,founder->second);
+        combined_logger->error("onAcceptNewClient doAccept Result Error. ec={0}",ec );
 
         auto &&handler = std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, aID);
         auto timer = [accepter, handler]()
@@ -198,20 +198,20 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
 
         if (!checkSucess)
         {
-            combined_logger->error("onAcceptNewClient Accept New Client Check Whitelist Failed remoteAdress={0}:{1}, extend={2}",remoteIP,remotePort, founder->second);
+            combined_logger->error("onAcceptNewClient Accept New Client Check Whitelist Failed remoteAdress={0}:{1}",remoteIP.c_str(),remotePort);
             accepter->doAccept(std::make_shared<qyhnetwork::TcpSocket>(), std::bind(&SessionManager::onAcceptNewClient, this, std::placeholders::_1, std::placeholders::_2, accepter, aID));
             return;
         }
         else
         {
-            combined_logger->error("onAcceptNewClient Accept New Client Check Whitelist Success remoteAdress={0}:{1}, extend={2}",remoteIP,remotePort, founder->second);
+            combined_logger->error("onAcceptNewClient Accept New Client Check Whitelist Success remoteAdress={0}:{1}",remoteIP.c_str(),remotePort);
         }
     }
 
     //! check Max Sessions
     if (founder->second._currentLinked >= founder->second._maxSessions)
     {
-        combined_logger->error("onAcceptNewClient Accept New Client. Too Many Sessions And The new socket will closed. extend={0}", founder->second) ;
+        combined_logger->error("onAcceptNewClient Accept New Client. Too Many Sessions And The new socket will closed") ;
     }
     else
     {
@@ -220,7 +220,7 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
         founder->second._totalAcceptCount++;
         _lastSessionID = nextSessionID(_lastSessionID);
 
-        combined_logger->info("onAcceptNewClient Accept New Client. Accept new Sessions sID={0}. The new socket  remoteAddress={1}:{2}, Aready linked sessions = {3}, extend={4}",_lastSessionID,remoteIP, remotePort,founder->second._currentLinked,founder->second);
+        combined_logger->info("onAcceptNewClient Accept New Client. Accept new Sessions sID={0}. The new socket  remoteAddress={1}:{2}, Aready linked sessions = {3}",_lastSessionID,remoteIP.c_str(), remotePort,founder->second._currentLinked);
 
         s->initialize(_summer);
 

@@ -64,7 +64,7 @@ private:
 
     OneMap g_onemap;//地图节点
 
-    std::map<int,std::vector<int> > m_adj;
+    std::map<int,std::vector<int> > m_adj;// lineA -- lines{ from line A can reach which lines}
     std::map<int,int> m_reverseLines;
 
     std::map<int,std::vector<int> > line_occuagvs;//一条线路 及其上面的agv

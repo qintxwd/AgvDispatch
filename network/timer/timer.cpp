@@ -136,11 +136,11 @@ void Timer::checkTimer()
             }
             catch (const std::exception & e)
             {
-                combined_logger->warn("OnTimerHandler have runtime_error exception. timerID={0}, err={1}",timerID,e.what());
+                //combined_logger->warn("OnTimerHandler have runtime_error exception. timerID={0}, err={1}",timerID,e.what());
             }
             catch (...)
             {
-                combined_logger->warn("OnTimerHandler have unknown exception. timerID={0}",timerID);
+                //combined_logger->warn("OnTimerHandler have unknown exception. timerID={0}",timerID);
             }
             delete handler;
         }
@@ -161,11 +161,11 @@ void Timer::checkTimer()
             }
             catch (const std::exception & e)
             {
-                combined_logger->warn("OnTimerHandler have runtime_error exception. timerID={0}, err={1}", timerID,e.what());
+                //combined_logger->warn("OnTimerHandler have runtime_error exception. timerID={0}, err={1}", timerID,e.what());
             }
             catch (...)
             {
-                combined_logger->warn("OnTimerHandler have unknown exception. timerID={0}" , timerID);
+                //combined_logger->warn("OnTimerHandler have unknown exception. timerID={0}" , timerID);
             }
             delete handler;
         }

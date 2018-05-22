@@ -35,7 +35,7 @@ TcpSocket::~TcpSocket()
     g_networkEnvironment.addClosedSocketCount();
     if (_onConnectHandler || _onRecvHandler)
     {
-        combined_logger->warn("Destruct TcpSocket Error. socket handle not invalid and some request was not completed.{0} ",logSection());
+        combined_logger->warn("Destruct TcpSocket Error. socket handle not invalid and some request was not completed.{0} ",logSection().c_str());
     }
     if (_socket != INVALID_SOCKET)
     {
@@ -84,7 +84,7 @@ bool TcpSocket::initialize(const EventLoopPtr& summer)
     }
     else
     {
-        combined_logger->error("TcpSocket already initialize! {0}" ,logSection());
+        combined_logger->error("TcpSocket already initialize! {0}" ,logSection().c_str());
         return false;
     }
 
@@ -118,7 +118,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 
     if (_onConnectHandler)
     {
-        combined_logger->error("TcpSocket already connect.{0}" ,logSection());
+        combined_logger->error("TcpSocket already connect.{0}" ,logSection().c_str());
         return false;
     }
     _isIPV6 = remoteIP.find(':') != std::string::npos;
@@ -190,7 +190,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
     DWORD dwSize = 0;
     if (WSAIoctl(_socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &gid, sizeof(gid), &lpConnectEx, sizeof(lpConnectEx), &dwSize, NULL, NULL) != 0)
     {
-        combined_logger->error("TcpSocket::doConnect[{0}] Get ConnectEx pointer err!  ERRCODE= {1}",this, WSAGetLastError());
+        combined_logger->error("TcpSocket::doConnect Get ConnectEx pointer err!  ERRCODE= {0}", WSAGetLastError());
         return false;
     }
 
@@ -203,7 +203,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
         memset(&remoteAddr, 0, sizeof(remoteAddr));
         if (inet_pton(AF_INET6, remoteIP.c_str(), &remoteAddr.sin6_addr) <= 0)
         {
-            combined_logger->error("ipv6 format error.  remoteIP={0}" , remoteIP);
+            combined_logger->error("ipv6 format error.  remoteIP={0}" , remoteIP.c_str());
             return false;
         }
 
@@ -262,7 +262,7 @@ bool TcpSocket::doSend(char * buf, unsigned int len)
     }
     if (!_summer)
     {
-        combined_logger->warn("TcpSocket uninitialize.{1}", logSection());
+        combined_logger->warn("TcpSocket uninitialize.{0}", logSection().c_str());
         return false;
     }
     if (len == 0)
@@ -298,12 +298,12 @@ bool TcpSocket::doRecv(char * buf, unsigned int len, _OnRecvHandler && handler)
     }
     if (!_summer)
     {
-        combined_logger->error("TcpSocket uninitialize.{0}" , logSection());
+        combined_logger->error("TcpSocket uninitialize.{0}" , logSection().c_str());
         return false;
     }
     if (_onRecvHandler)
     {
-        combined_logger->error("TcpSocket already recv. {0}" , logSection());
+        combined_logger->error("TcpSocket already recv. {0}" , logSection().c_str());
         return false;
     }
     if (len == 0)
