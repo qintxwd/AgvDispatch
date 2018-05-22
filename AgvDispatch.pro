@@ -69,15 +69,6 @@ HEADERS += \
     mapmap/mappoint.h \
     mapmap/mapspirit.h \
     mapmap/onemap.h \
-    mapmap/mapbackground.h \
-    mapmap/mapblock.h \
-    mapmap/mapfloor.h \
-    mapmap/mapgroup.h \
-    mapmap/mapmanager.h \
-    mapmap/mappath.h \
-    mapmap/mappoint.h \
-    mapmap/mapspirit.h \
-    mapmap/onemap.h \
     base64.h \
     utils/Log/spdlog/async_logger.h \
     utils/Log/spdlog/common.h \
@@ -143,14 +134,6 @@ SOURCES += \
     Jacking/jackingagvthingturn.cpp \
     taskmaker.cpp \
     Jacking/jacktaskmaker.cpp \
-    mapmap/mapbackground.cpp \
-    mapmap/mapblock.cpp \
-    mapmap/mapfloor.cpp \
-    mapmap/mapgroup.cpp \
-    mapmap/mappath.cpp \
-    mapmap/mappoint.cpp \
-    mapmap/mapspirit.cpp \
-    mapmap/onemap.cpp \
     mapmap/mapbackground.cpp \
     mapmap/mapblock.cpp \
     mapmap/mapfloor.cpp \

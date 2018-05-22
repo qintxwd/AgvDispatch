@@ -3,7 +3,11 @@
 
 #include "networkconfig.h"
 #include "../protocol.h"
+#ifdef Win32
 #include <json/json.h>
+#else
+#include <jsoncpp/json/json.h>
+#endif
 #include <fstream>
 
 namespace qyhnetwork{

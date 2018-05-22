@@ -2,7 +2,7 @@
 #include "epollsocket.h"
 
 #include "../../utils/Log/spdlog/spdlog.h"
-
+#include "../../common.h"
 using namespace qyhnetwork;
 
 #ifndef WIN32
@@ -43,7 +43,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 {
     if (!_summer || _eventData._linkstat != LS_WAITLINK)
     {
-        combined_logger->error()<<"TcpAccept::openAccept[this0x" << this << "]  not initialize!";
+        combined_logger->error("TcpAccept::openAccept  not initialize!");
         return false;
     }
     _listenIP = listenIP;
@@ -61,7 +61,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 
     if (_eventData._fd == InvalidFD)
     {
-        combined_logger->error()<<"TcpAccept::openAccept[this0x" << this << "] listen socket create err errno =" << strerror(errno);
+        combined_logger->error("TcpAccept::openAccept listen socket create err errno ={0}", strerror(errno));
         return false;
     }
 
@@ -85,7 +85,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
         }
         addr.sin6_port = htons(listenPort);
         if (bind(_eventData._fd, (sockaddr *)&addr, sizeof(addr)) != 0) {
-            combined_logger->error()<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno = " << strerror(errno);
+            combined_logger->error("TcpAccept::openAccept listen socket bind err, errno = {0}",strerror(errno));
             ::close(_eventData._fd);
             _eventData._fd = InvalidFD;
             return false;
@@ -103,7 +103,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
         }
         addr.sin_port = htons(listenPort);
         if (bind(_eventData._fd, (sockaddr *)&addr, sizeof(addr)) != 0) {
-            combined_logger->error()<<"TcpAccept::openAccept[this0x" << this << "] listen socket bind err, errno=" << strerror(errno);
+            combined_logger->error("TcpAccept::openAccept listen socket bind err, errno={0}",strerror(errno));
             ::close(_eventData._fd);
             _eventData._fd = InvalidFD;
             return false;
@@ -112,7 +112,7 @@ bool TcpAccept::openAccept(const std::string & listenIP, unsigned short listenPo
 
     if (listen(_eventData._fd, 200) != 0)
     {
-        combined_logger->error()<<"TcpAccept::openAccept[this0x" << this << "] listen socket listen err, errno=" << strerror(errno);
+        combined_logger->error("TcpAccept::openAccept listen socket listen err, errno={0}",strerror(errno));
         ::close(_eventData._fd);
         _eventData._fd = InvalidFD;
         return false;
@@ -128,12 +128,12 @@ bool TcpAccept::doAccept(const TcpSocketPtr &s, _OnAcceptHandler &&handle)
 {
     if (_onAcceptHandler)
     {
-        combined_logger->error()<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection();
+        combined_logger->error("TcpAccept::doAccept err, dumplicate doAccept" );
         return false;
     }
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        combined_logger->error()<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state";
+        combined_logger->error("TcpAccept::doAccept err, _linkstat not work state");
         return false;
     }
 
@@ -148,12 +148,12 @@ void TcpAccept::onEPOLLMessage(uint32_t event)
     //
     if (!_onAcceptHandler)
     {
-        combined_logger->error()<<"TcpAccept::doAccept[this0x" << this << "] err, dumplicate doAccept" << logSection();
+        combined_logger->error("TcpAccept::doAccept err, dumplicate doAccept");
         return ;
     }
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
-        combined_logger->error()<<"TcpAccept::doAccept[this0x" << this << "] err, _linkstat not work state";
+        combined_logger->error("TcpAccept::doAccept err, _linkstat not work state");
         return ;
     }
 
@@ -164,7 +164,7 @@ void TcpAccept::onEPOLLMessage(uint32_t event)
 
     if (event &  EPOLLERR || event & EPOLLHUP)
     {
-        combined_logger->error()<<"TcpAccept::doAccept[this0x" << this << "]  EPOLLERR, errno=" << strerror(errno);
+        combined_logger->error("TcpAccept::doAccept EPOLLERR, errno=" , strerror(errno));
         auto guard = shared_from_this();
         close();
         onAccept(NEC_ERROR, ps);
@@ -198,7 +198,7 @@ void TcpAccept::onEPOLLMessage(uint32_t event)
         {
             if (errno != EAGAIN && errno != EWOULDBLOCK)
             {
-                combined_logger->error()<<"TcpAccept::doAccept[this0x" << this << "] ERR: accept return -1, errno=" << strerror(errno);
+                combined_logger->error("TcpAccept::doAccept ERR: accept return -1, errno={0}",strerror(errno));
             }
             auto guard = shared_from_this();
             close();
@@ -218,7 +218,7 @@ bool TcpAccept::close()
     auto guard = shared_from_this();
     if (_eventData._linkstat != LS_CLOSED)
     {
-        combined_logger->info()<<"TcpAccept::close. socket=" << _eventData._fd;
+        combined_logger->info("TcpAccept::close. socket={0}" , _eventData._fd);
         _eventData._linkstat = LS_CLOSED;
         _summer->registerEvent(EPOLL_CTL_DEL, _eventData);
         _onAcceptHandler = nullptr;

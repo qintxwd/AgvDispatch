@@ -124,8 +124,5 @@ void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, 
     memcpy(__dest,__src,__m<__n?__m:__n);
 }
 
-
-const  int  G_AGV_TYPE = AGV_TYPE_JACKING;
-
 #endif
 

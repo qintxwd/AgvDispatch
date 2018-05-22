@@ -3,6 +3,7 @@
 #include "epollaccept.h"
 
 #include "../../utils/Log/spdlog/spdlog.h"
+#include "../../common.h"
 
 using namespace qyhnetwork;
 
@@ -12,20 +13,20 @@ bool EventLoop::initialize()
 {
     if (_epoll != InvalidFD)
     {
-        combined_logger->error()<<"EventLoop::initialize[this0x"<<this <<"] epoll is created ! " ;
+        combined_logger->error("EventLoop::initialize epoll is created ! ") ;
         return false;
     }
     const int IGNORE_ENVENTS = 100;
     _epoll = epoll_create(IGNORE_ENVENTS);
     if (_epoll == InvalidFD)
     {
-        combined_logger->error()<<"EventLoop::initialize[this0x" << this << "] create epoll err errno=" << strerror(errno);
+        combined_logger->error("EventLoop::initialize create epoll err errno=",strerror(errno));
         return false;
     }
 
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, _sockpair) != 0)
     {
-        combined_logger->error()<<"EventLoop::initialize[this0x" << this << "] create socketpair.  errno=" << strerror(errno);
+        combined_logger->error("EventLoop::initialize create socketpair.  errno=" , strerror(errno));
         return false;
     }
     setNonBlock(_sockpair[0]);
@@ -47,7 +48,7 @@ bool EventLoop::registerEvent(int op, EventData & ed)
 {
     if (epoll_ctl(_epoll, op, ed._fd, &ed._event) != 0)
     {
-        combined_logger->warn()<<"EventLoop::registerEvent error. op=" << op << ", event=" << ed._event.events;
+        combined_logger->warn("EventLoop::registerEvent error. op={0}, event={1}", op,ed._event.events);
         return false;
     }
     return true;
@@ -75,8 +76,8 @@ std::string EventLoop::logSection()
     MessageStack::size_type msgSize = _postQueue.size();
     _postQueueLock.unlock();
     os << " EventLoop: _epoll=" << _epoll << ", _sockpair[2]={" << _sockpair[0] << "," << _sockpair[1] << "}"
-        << " _postQueue.size()=" << msgSize << ", current total timer=" << _timer.getTimersCount()
-        << " _eventData=" << _eventData;
+       << " _postQueue.size()=" << msgSize << ", current total timer=" << _timer.getTimersCount()
+       << " _eventData=" << _eventData;
     return os.str();
 }
 
@@ -87,7 +88,7 @@ void EventLoop::runOnce(bool isImmediately)
     {
         if (errno != EINTR)
         {
-            combined_logger->warn()<<"EventLoop::runOnce[this0x" << this << "]  epoll_wait err!  errno=" << strerror(errno) << logSection();
+            combined_logger->warn("EventLoop::runOnce  epoll_wait err!  errno={0}" ,strerror(errno));
             return; //! error
         }
         return;
@@ -125,11 +126,11 @@ void EventLoop::runOnce(bool isImmediately)
                 }
                 catch (const std::exception & e)
                 {
-                    combined_logger->warn()<<"OnPostHandler have runtime_error exception. err=" << e.what();
+                    combined_logger->warn("OnPostHandler have runtime_error exception. err={0}",e.what());
                 }
                 catch (...)
                 {
-                    combined_logger->warn()<<"OnPostHandler have unknown exception.";
+                    combined_logger->warn("OnPostHandler have unknown exception.");
                 }
                 delete p;
             }
@@ -150,7 +151,7 @@ void EventLoop::runOnce(bool isImmediately)
         }
         else
         {
-            combined_logger->error()<<"EventLoop::runOnce[this0x" << this << "] check register event type failed !!  type=" << pEvent->_type << logSection();
+            combined_logger->error("EventLoop::runOnce check register event type failed !!  type={0}",pEvent->_type );
         }
 
     }

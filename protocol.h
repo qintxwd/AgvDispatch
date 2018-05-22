@@ -19,7 +19,12 @@
 
 #include <cstdint>
 #include <string>
+
+#ifdef Win32
 #include <json/json.h>
+#else
+#include <jsoncpp/json/json.h>
+#endif
 
 //define msg from client to server and msg from server to client
 // make each msg length <= 1024

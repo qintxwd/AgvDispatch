@@ -1,7 +1,8 @@
 ﻿#ifndef MAPSPIRIT_H
 #define MAPSPIRIT_H
-
+#pragma once
 #include <string>
+
 
 class MapSpirit
 {
