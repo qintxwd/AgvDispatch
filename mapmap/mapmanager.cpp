@@ -219,7 +219,7 @@ bool MapManager::loadFromDb()
 
             CppSQLite3Binary blob;
             blob.setEncoded((unsigned char*)table_bkg.fieldValue(2));
-            char *data = new char[blob.getBinaryLength()];
+            unsigned char *data = new unsigned char[blob.getBinaryLength()];
             memcpy(data,blob.getBinary(),blob.getBinaryLength());
             int data_len = atoi(table_bkg.fieldValue(3));
             int x = atoi(table_bkg.fieldValue(4));
@@ -227,7 +227,7 @@ bool MapManager::loadFromDb()
             int width = atoi(table_bkg.fieldValue(6));
             int height = atoi(table_bkg.fieldValue(7));
             std::string filename = std::string(table_bkg.fieldValue(8));
-            MapBackground *bkg = new MapBackground(id,name,data,data_len,width,height,filename);
+            MapBackground *bkg = new MapBackground(id,name,(char *)data,data_len,width,height,filename);
             bkg->setX(x);
             bkg->setY(y);
             g_onemap.addSpirit(bkg);
@@ -652,8 +652,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
             g_db.execDML("delete from agv_line;");
             g_db.execDML("delete from agv_bkg");
             g_db.execDML("delete from agv_block");
-            g_db.execDML("delete from agv_group_group");
-            g_db.execDML("delete from agv_group_agv");
+            g_db.execDML("delete from agv_group");
 
             //TODO:
             //1.解析站点
@@ -701,15 +700,34 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 int id = bkg["id"].asInt();
                 std::string name = bkg["name"].asString();
                 std::string database64 = bkg["data"].asString();
-                int lenlen = base64_dec_len(database64.c_str(),database64.length());
+				//combined_logger->debug("database64 length={0},\n left10={1},\n right10={2}", database64.length(), database64.substr(0, 10).c_str(), database64.substr(database64.length() - 10).c_str());
+
+                int lenlen = Base64decode_len(database64.c_str());
                 char *data = new char[lenlen];
-                base64_decode(data,database64.c_str(),database64.length());
+				memset(data, 0, lenlen);
+				lenlen = Base64decode(data,database64.c_str());
+
+				////TODO:输出16进制
+				//for (int i = 0; i < 10; ++i) {
+				//	printf(" %02X", data[i] & 0xFF);
+				//}
+				//printf("\n");
+
+				//for (int i = 0; i < 10; ++i) {
+				//	printf(" %02X", data[lenlen-10+i] & 0xFF);
+				//}
+				//printf("\n");
+
+
                 int imgdatalen = bkg["data_len"].asInt();
                 int width = bkg["width"].asInt();
                 int height = bkg["height"].asInt();
+				int x = bkg["x"].asInt();
+				int y = bkg["y"].asInt();
                 std::string filename = bkg["filename"].asString();
-                MapBackground *p = new MapBackground(id,name,data,imgdatalen,width,height,filename);
-
+                MapBackground *p = new MapBackground(id,name,data, lenlen,width,height,filename);
+				p->setX(x);
+				p->setY(y);
                 g_onemap.addSpirit(p);
             }
 
@@ -822,136 +840,134 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
     else {
         UserLogManager::getInstance()->push(conn->getUserName() + " get map");
 
-        std::list<MapSpirit *> allspirit = g_onemap.getAllElement();
+		std::list<MapSpirit *> allspirit = g_onemap.getAllElement();
 
-        Json::Value v_points;
-        Json::Value v_paths;
-        Json::Value v_floors;
-        Json::Value v_bkgs;
-        Json::Value v_blocks;
-        Json::Value v_groups;
-        for(auto spirit:allspirit)
-        {
-            if(spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point){
-                MapPoint *p = static_cast<MapPoint *>(spirit);
-                Json::Value pv;
-                pv["id"] = p->getId();
-                pv["name"] = p->getName();
-                pv["type"] = p->getPointType();
-                pv["x"] = p->getX();
-                pv["y"] = p->getY();
-                pv["realX"] = p->getRealX();
-                pv["realY"] = p->getRealY();
-                pv["labelXoffset"] = p->getLabelXoffset();
-                pv["labelYoffset"] = p->getLabelYoffset();
-                pv["mapChange"] = p->getMapChange();
-                pv["locked"] = p->getLocked();
-                v_points.append(pv);
-            }
-            else if(spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Path){
-                MapPath *p = static_cast<MapPath *>(spirit);
-                Json::Value pv;
-                pv["id"] = p->getId();
-                pv["name"] = p->getName();
-                pv["type"] = p->getPathType();
-                pv["start"] = p->getStart();
-                pv["end"] = p->getEnd();
-                pv["p1x"] = p->getP1x();
-                pv["p1y"] = p->getP1y();
-                pv["p2x"] = p->getP2x();
-                pv["p2y"] = p->getP2y();
-                pv["length"] = p->getLength();
-                pv["locked"] = p->getLocked();
-                v_paths.append(pv);
-            }
-            else if(spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Background){
-                MapBackground *p = static_cast<MapBackground *>(spirit);
-                Json::Value pv;
-                pv["id"] = p->getId();
-                pv["name"] = p->getName();
+		Json::Value v_points;
+		Json::Value v_paths;
+		Json::Value v_floors;
+		Json::Value v_bkgs;
+		Json::Value v_blocks;
+		Json::Value v_groups;
+		for (auto spirit : allspirit)
+		{
+			if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point) {
+				MapPoint *p = static_cast<MapPoint *>(spirit);
+				Json::Value pv;
+				pv["id"] = p->getId();
+				pv["name"] = p->getName();
+				pv["type"] = p->getPointType();
+				pv["x"] = p->getX();
+				pv["y"] = p->getY();
+				pv["realX"] = p->getRealX();
+				pv["realY"] = p->getRealY();
+				pv["labelXoffset"] = p->getLabelXoffset();
+				pv["labelYoffset"] = p->getLabelYoffset();
+				pv["mapChange"] = p->getMapChange();
+				pv["locked"] = p->getLocked();
+				v_points.append(pv);
+			}
+			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Path) {
+				MapPath *p = static_cast<MapPath *>(spirit);
+				Json::Value pv;
+				pv["id"] = p->getId();
+				pv["name"] = p->getName();
+				pv["type"] = p->getPathType();
+				pv["start"] = p->getStart();
+				pv["end"] = p->getEnd();
+				pv["p1x"] = p->getP1x();
+				pv["p1y"] = p->getP1y();
+				pv["p2x"] = p->getP2x();
+				pv["p2y"] = p->getP2y();
+				pv["length"] = p->getLength();
+				pv["locked"] = p->getLocked();
+				v_paths.append(pv);
+			}
+			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Background) {
+				MapBackground *p = static_cast<MapBackground *>(spirit);
+				Json::Value pv;
+				pv["id"] = p->getId();
+				pv["name"] = p->getName();
+				int lenlen = Base64encode_len(p->getImgDataLen());
+				char *ss = new char[lenlen];
+				Base64encode(ss, p->getImgData(), p->getImgDataLen());
+				pv["data"] = std::string(ss, lenlen);
+				delete ss;
+				pv["data_len"] = p->getImgDataLen();
+				pv["width"] = p->getWidth();
+				pv["height"] = p->getHeight();
+				pv["x"] = p->getX();
+				pv["y"] = p->getY();
+				pv["filename"] = p->getFileName();
+				v_bkgs.append(pv);
+			}
+			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Floor) {
+				MapFloor *p = static_cast<MapFloor *>(spirit);
+				Json::Value pv;
+				pv["id"] = p->getId();
+				pv["name"] = p->getName();
+				pv["bkg"] = p->getBkg();
 
-                int lenlen = base64_enc_len(p->getImgDataLen());
-                char *ss = new char[lenlen+1];
-                base64_encode(ss,p->getImgData(),p->getImgDataLen());
-                ss[lenlen] = '\0';
-                pv["data"] = std::string(ss);
-                delete ss;
-                pv["data_len"] = p->getImgDataLen();
-                pv["width"] = p->getWidth();
-                pv["height"] = p->getHeight();
-                pv["x"] = p->getX();
-                pv["y"] = p->getY();
-                pv["filename"] = p->getFileName();
-                v_bkgs.append(pv);
-            }
-            else if(spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Floor){
-                MapFloor *p = static_cast<MapFloor *>(spirit);
-                Json::Value pv;
-                pv["id"] = p->getId();
-                pv["name"] = p->getName();
-                pv["bkg"] = p->getBkg();
+				Json::Value ppv;
+				auto points = p->getPoints();
+				int kk = 0;
+				for (auto p : points) {
+					ppv[kk++] = p;
+				}
+				pv["points"] = ppv;
 
-                Json::Value ppv;
-                auto points = p->getPoints();
-                int kk = 0;
-                for(auto p:points){
-                    ppv[kk++] = p;
-                }
-                pv["points"] = ppv;
+				Json::Value ppv2;
+				auto paths = p->getPaths();
+				int kk2 = 0;
+				for (auto p : paths) {
+					ppv2[kk2++] = p;
+				}
+				pv["paths"] = ppv2;
+				v_floors.append(pv);
+			}
+			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Block) {
+				MapBlock *p = static_cast<MapBlock *>(spirit);
+				Json::Value pv;
+				pv["id"] = p->getId();
+				pv["name"] = p->getName();
 
-                Json::Value ppv2;
-                auto paths = p->getPaths();
-                int kk2 = 0;
-                for(auto p:paths){
-                    ppv2[kk2++] = p;
-                }
-                pv["paths"] = ppv2;
-                v_floors.append(pv);
-            }
-            else if(spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Block){
-                MapBlock *p = static_cast<MapBlock *>(spirit);
-                Json::Value pv;
-                pv["id"] = p->getId();
-                pv["name"] = p->getName();
-
-                Json::Value ppv;
-                auto ps = p->getSpirits();
-                int kk = 0;
-                for(auto p:ps){
-                    ppv[kk++] = p;
-                }
-                pv["spirits"] = ppv;
-                v_blocks.append(pv);
-            }
-            else if(spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Group){
-                MapGroup *p = static_cast<MapGroup *>(spirit);
-                Json::Value pv;
-                pv["id"] = p->getId();
-                pv["name"] = p->getName();
-                Json::Value ppv;
-                auto ps = p->getSpirits();
-                int kk = 0;
-                for(auto p:ps){
-                    ppv[kk++] = p;
-                }
-                pv["spirits"] = ppv;
-                Json::Value ppv2;
-                auto pps = p->getAgvs();
-                kk = 0;
-                for(auto p:pps){
-                    ppv2[kk++] = p;
-                }
-                pv["agvs"] = ppv2;
-                v_groups.append(pv);
-            }
-        }
-        response["points"] = v_points;
-        response["paths"] = v_paths;
-        response["floors"] = v_floors;
-        response["bkgs"] = v_bkgs;
-        response["blocks"] = v_blocks;
-        response["groups"] = v_groups;
-        response["maxId"] = g_onemap.getMaxId();
+				Json::Value ppv;
+				auto ps = p->getSpirits();
+				int kk = 0;
+				for (auto p : ps) {
+					ppv[kk++] = p;
+				}
+				pv["spirits"] = ppv;
+				v_blocks.append(pv);
+			}
+			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Group) {
+				MapGroup *p = static_cast<MapGroup *>(spirit);
+				Json::Value pv;
+				pv["id"] = p->getId();
+				pv["name"] = p->getName();
+				Json::Value ppv;
+				auto ps = p->getSpirits();
+				int kk = 0;
+				for (auto p : ps) {
+					ppv[kk++] = p;
+				}
+				pv["spirits"] = ppv;
+				Json::Value ppv2;
+				auto pps = p->getAgvs();
+				kk = 0;
+				for (auto p : pps) {
+					ppv2[kk++] = p;
+				}
+				pv["agvs"] = ppv2;
+				v_groups.append(pv);
+			}
+		}
+		response["points"] = v_points;
+		response["paths"] = v_paths;
+		response["floors"] = v_floors;
+		response["bkgs"] = v_bkgs;
+		response["blocks"] = v_blocks;
+		response["groups"] = v_groups;
+		response["maxId"] = g_onemap.getMaxId();
     }
     conn->send(response);
 }

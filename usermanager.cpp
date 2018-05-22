@@ -44,7 +44,7 @@ void UserManager::interLogin(TcpSessionPtr conn, const Json::Value &request)
 	response["type"] = MSG_TYPE_RESPONSE;
 	response["todo"] = request["todo"];
 	response["queuenumber"] = request["queuenumber"];
-	response["result"] = RETURN_MSG_RESULT_SUCCESS;
+	response["result"] = RETURN_MSG_RESULT_FAIL;
 
 	if (request["username"].isNull() ||
 		request["password"].isNull()) {

@@ -3,7 +3,7 @@
 
 #include "networkconfig.h"
 #include "../protocol.h"
-#ifdef Win32
+#ifdef WIN32
 #include <json/json.h>
 #else
 #include <jsoncpp/json/json.h>

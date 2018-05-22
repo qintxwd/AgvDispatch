@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <string>
 
-#ifdef Win32
+#ifdef WIN32
 #include <json/json.h>
 #else
 #include <jsoncpp/json/json.h>

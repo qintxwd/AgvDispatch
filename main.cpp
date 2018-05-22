@@ -24,7 +24,7 @@ void initLog()
         sinks.push_back(color_sink);
 
         //日志文件
-        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("agv_dispatch",  1024*1024*20, 5);
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("agv_dispatch.log",  1024*1024*20, 5);
         sinks.push_back(rotating);
 
         combined_logger = std::make_shared<spdlog::logger>("main", begin(sinks), end(sinks));
@@ -37,15 +37,15 @@ void initLog()
 //                               nullptr,
 //                               std::chrono::seconds(1));
 
-        //test
-        combined_logger->info("=============log test==================");
-        combined_logger->trace("test log 1");
-        combined_logger->debug("test log 2");
-        combined_logger->info("test log 3");
-        combined_logger->warn("test log 4");
-        combined_logger->error("test log 5");
-        combined_logger->critical("test log 6");
-        combined_logger->info("=============log test==================");
+        ////test
+        //combined_logger->info("=============log test==================");
+        //combined_logger->trace("test log 1");
+        //combined_logger->debug("test log 2");
+        //combined_logger->info("test log 3");
+        //combined_logger->warn("test log 4");
+        //combined_logger->error("test log 5");
+        //combined_logger->critical("test log 6");
+        //combined_logger->info("=============log test==================");
     }
     catch (const spdlog::spdlog_ex& ex)
     {
