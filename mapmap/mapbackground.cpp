@@ -1,6 +1,5 @@
 ﻿#include "mapbackground.h"
 #include <string.h>
-
 MapBackground::MapBackground(int _id, std::string _name,  char *_img_data, int _img_data_len, int _width, int _height, std::string fileName):
     MapSpirit(_id,_name,Map_Sprite_Type_Background),
     x(0),
@@ -25,10 +24,9 @@ MapBackground::~MapBackground()
 
 MapSpirit* MapBackground::clone()
 {
-//    char *copy = new char[img_data_len];
-//    memcpy(copy,img_data,img_data_len);
-//    MapBackground *b = new MapBackground(getId(),getName(),copy,getImgDataLen(),getWidth(),getHeight(),getFileName());
-//    return b;
-    return nullptr;
+    char *copy = new char[img_data_len];
+    memcpy(copy,img_data,img_data_len);
+    MapBackground *b = new MapBackground(getId(),getName(),copy,getImgDataLen(),getWidth(),getHeight(),getFileName());
+    return b;
 }
 

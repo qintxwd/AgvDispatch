@@ -25,7 +25,7 @@ void MapManager::checkTable()
 			g_db.execDML("create table agv_bkg(id INTEGER,name char(64),data blob,data_len INTEGER,x INTEGER,y INTEGER,width INTEGER,height INTEGER,filename char(512));");
 		}
 		if (!g_db.tableExists("agv_floor")) {
-			g_db.execDML("create table agv_floor(id INTEGER,name char(64),point INTEGER,path INTEGER,bkg INTEGER);");
+			g_db.execDML("create table agv_floor(id INTEGER,name char(64),point INTEGER,path INTEGER,bkg INTEGER,originX INTEGER,originY INTEGER,rate DOUBLE);");
 		}
 		if (!g_db.tableExists("agv_block")) {
 			g_db.execDML("create table agv_block(id INTEGER,name char(64),spirit INTEGER);");
@@ -121,7 +121,7 @@ bool MapManager::save()
 				for (auto pa : pas) {
 					pathstr << pa << ";";
 				}
-				bufSQL.format("insert into agv_floor(id ,name,point,path,bkg ) values (%d,'%s', '%s','%s',%d);", floor->getId(), floor->getName().c_str(), pointstr.str().c_str(), pathstr.str().c_str(), floor->getBkg());
+				bufSQL.format("insert into agv_floor(id ,name,point,path,bkg,originX,originY,rate) values (%d,'%s', '%s','%s',%d,%d,%d,%lf);", floor->getId(), floor->getName().c_str(), pointstr.str().c_str(), pathstr.str().c_str(), floor->getBkg(),floor->getOriginX(),floor->getOriginY(),floor->getRate());
 				g_db.execDML(bufSQL);
 			}
 			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Block) {
@@ -239,8 +239,8 @@ bool MapManager::loadFromDb()
 		}
 
 
-		CppSQLite3Table table_floor = g_db.getTable("select id,name,point,path,bkg from agv_floor;");
-		if (table_floor.numRows() > 0 && table_floor.numFields() != 5)return false;
+		CppSQLite3Table table_floor = g_db.getTable("select id,name,point,path,bkg,originX,originY,rate from agv_floor;");
+		if (table_floor.numRows() > 0 && table_floor.numFields() != 8)return false;
 		for (int row = 0; row < table_floor.numRows(); row++)
 		{
 			table_floor.setRow(row);
@@ -253,6 +253,9 @@ bool MapManager::loadFromDb()
 			std::string pointstr = std::string(table_floor.fieldValue(2));
 			std::string pathstr = std::string(table_floor.fieldValue(3));
 			int bkg = atoi(table_floor.fieldValue(4));
+			int originX = atoi(table_floor.fieldValue(5));
+			int originY = atoi(table_floor.fieldValue(6));
+			double rate = atof(table_floor.fieldValue(7));
 
 			std::vector<std::string> pvs = split(pointstr, ";");
 			for (auto p : pvs) {
@@ -273,6 +276,9 @@ bool MapManager::loadFromDb()
 			}
 
 			mfloor->setBkg(bkg);
+			mfloor->setOriginX(originX);
+			mfloor->setOriginY(originY);
+			mfloor->setRate(rate);
 			g_onemap.addSpirit(mfloor);
 		}
 
@@ -748,8 +754,14 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 				Json::Value points = floor["points"];
 				Json::Value paths = floor["paths"];
 				int bkg = floor["bkg"].asInt();
+				int originX = floor["originX"].asInt();
+				int originY = floor["originY"].asInt();
+				double rate = floor["rate"].asDouble();
 				MapFloor *p = new MapFloor(id, name);
 				p->setBkg(bkg);
+				p->setOriginX(originX);
+				p->setOriginY(originY);
+				p->setRate(rate);
 				for (int k = 0; k < points.size(); ++k) {
 					Json::Value point = points[k];
 					p->addPoint(point.asInt());
@@ -914,7 +926,9 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 				pv["id"] = p->getId();
 				pv["name"] = p->getName();
 				pv["bkg"] = p->getBkg();
-
+				pv["originX"] = p->getOriginX();
+				pv["originY"] = p->getOriginY();
+				pv["rate"] = p->getRate();
 				Json::Value ppv;
 				auto points = p->getPoints();
 				int kk = 0;
