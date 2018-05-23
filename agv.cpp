@@ -53,22 +53,18 @@ void Agv::reconnect()
 //是一个阻塞的函数
 void Agv::goStation(int station, bool stop)
 {
-	//发送站点坐标
-	//station->x;station->y;
-	//阻塞，直到到达这个位置
-	//例如:
-	//stringstream ss;
-	//ss<<"x:"<<x<<",y:"<<y<<".";
-	//tcpsocket.write(ss.str().c_str());
-	//    while(true)
-	//    {
-	//        if(currentTask->getIsCancel())break;//任务取消
-	//        if(status == AGV_STATUS_HANDING)break;//手动控制
-	//        if(status == AGV_STATUS_ERROR)break;//发生错误
 
-	//        if(arriveStation == station->id)break;
-	//        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-	//    }
+	MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
+	if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)return;
+	
+	//TODO:获取block信息//如果该站点属于一个block。判断该block是否已经有车辆，....
+	MapPoint *point = static_cast<MapPoint *>(spirit);
+
+	point->getId();
+	point->getRealX();
+	point->getRealY();
+
+
 
 }
 
@@ -170,7 +166,7 @@ void Agv::excutePath(std::vector<int> lines)
 	excutestations.clear();
 	for (auto line : lines) {
 		MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(line);
-		if (spirit == nullptr || spirit->getSpiritType != MapSpirit::Map_Sprite_Type_Path)continue;
+		if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
 
 		MapPath *path = static_cast<MapPath *>(spirit);
 		int endId = path->getEnd();
@@ -178,7 +174,7 @@ void Agv::excutePath(std::vector<int> lines)
 
 		////获取站点信息方法：
 		//MapSpirit *spirit2 = MapManager::getInstance()->getMapSpiritById(endId);
-		//if (spirit2 == nullptr || spirit2->getSpiritType != MapSpirit::Map_Sprite_Type_Point)continue;
+		//if (spirit2 == nullptr || spirit2->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
 
 		//MapPoint *point = static_cast<MapPoint *>(spirit2);
 		//point->getId();
@@ -207,14 +203,24 @@ void Agv::excutePath(std::vector<int> lines)
 	        continue;
 	    }
 
+		MapSpirit *spirit1 = MapManager::getInstance()->getMapSpiritById(now);
+		MapSpirit *spirit2 = MapManager::getInstance()->getMapSpiritById(next);
+		if (spirit2 == nullptr || spirit2->getSpiritType() != MapSpirit::Map_Sprite_Type_Point) {
+			goStation(now, true);
+			continue;
+		}
+
+		MapPoint *nowPoint = static_cast<MapPoint *>(spirit1);
+		MapPoint *nextPoint = static_cast<MapPoint *>(spirit2);
+
 	    //还有下一站。
 	    //分类讨论
-	    if(!now->getMapChange() && !next->getMapChange())
+	    if(!nextPoint->getMapChange() && !nextPoint->getMapChange())
 	    {
 	        //两个都不是地图切换点
 	        goStation(now,false);
 	    }
-	    else if(!now->getMapChange() && next->getMapChange()){
+	    else if(!nowPoint->getMapChange() && nextPoint->getMapChange()){
 	        //下一站是 地图切换点，例如三楼电梯点
 
 	        //到达电梯口停下，
@@ -226,13 +232,13 @@ void Agv::excutePath(std::vector<int> lines)
 	        callMapChange(next);
 	    }
 
-	    else if(now->getMapChange() && next->getMapChange()){
+	    else if(nowPoint->getMapChange() && nextPoint->getMapChange()){
 	        //下一站是地图切换点，下下站还是，例如下一站是三楼电梯点，而下下站是1楼电梯点
 	        goStation(now,true);//进电梯
 	        callMapChange(next);//呼叫到1楼
 	    }
 
-	    else if(now->getMapChange() && !next->getMapChange()){
+	    else if(nowPoint->getMapChange() && !nextPoint->getMapChange()){
 	        //下一站是电梯内，但是下下站不是
 	        goStation(now,true);
 	        callMapChange(next);//开门
