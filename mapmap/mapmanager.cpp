@@ -117,7 +117,7 @@ bool MapManager::save()
 					pointstr << p << ";";
 				}
 				std::stringstream pathstr;
-				std::list<int> pas = floor->getPoints();
+				std::list<int> pas = floor->getPaths();
 				for (auto pa : pas) {
 					pathstr << pa << ";";
 				}
@@ -664,9 +664,9 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 
 			//TODO:
 			//1.解析站点
-			for (int i = 0; i < request["stations"].size(); ++i)
+			for (int i = 0; i < request["points"].size(); ++i)
 			{
-				Json::Value station = request["stations"][i];
+				Json::Value station = request["points"][i];
 				int id = station["id"].asInt();
 				std::string name = station["name"].asString();
 				int station_type = station["point_type"].asInt();
@@ -683,9 +683,9 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 			}
 
 			//2.解析线路
-			for (int i = 0; i < request["lines"].size(); ++i)
+			for (int i = 0; i < request["paths"].size(); ++i)
 			{
-				Json::Value line = request["lines"][i];
+				Json::Value line = request["paths"][i];
 				int id = line["id"].asInt();
 				std::string name = line["name"].asString();
 				int type = line["type"].asInt();
@@ -755,7 +755,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 					p->addPoint(point.asInt());
 				}
 				for (int k = 0; k < paths.size(); ++k) {
-					Json::Value path = points[k];
+					Json::Value path = paths[k];
 					p->addPath(path.asInt());
 				}
 				g_onemap.addSpirit(p);
@@ -921,7 +921,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 				for (auto p : points) {
 					ppv[kk++] = p;
 				}
-				if(!ppv.isNull())
+				if (!ppv.isNull()>0)
 					pv["points"] = ppv;
 
 				Json::Value ppv2;
@@ -930,7 +930,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 				for (auto p : paths) {
 					ppv2[kk2++] = p;
 				}
-				if (!ppv2.isNull())
+				if (!ppv2.isNull()>0)
 					pv["paths"] = ppv2;
 
 				v_floors.append(pv);

@@ -107,14 +107,16 @@ std::vector<std::string> split(std::string src,std::string sp)
 
     size_t pos;
     while(true){
-        pos = src.find_first_not_of(sp);
+        pos = src.find_first_of(sp);
         if(pos == std::string::npos){
             break;
         }
-        result.push_back(src.substr(0,pos));
+		if(pos!=0)
+			result.push_back(src.substr(0,pos));
         src = src.substr(pos+sp.length());
     }
-    result.push_back(src);
+	if(src.length()>0)
+		result.push_back(src);
     return result;
 }
 
