@@ -364,6 +364,7 @@ namespace qyhnetwork {
 
 		//send head and length
 		snprintf(headLeng + 1, 4, (char *)&length, sizeof(length));
+        if(_sockptr==nullptr)return ;
 		bool sendRet = _sockptr->doSend(headLeng, 5);
 		if (!sendRet)
 		{
@@ -373,7 +374,7 @@ namespace qyhnetwork {
 
 		char *copy_temp = new char[length + 1];
 		snprintf(copy_temp,length+1, "%s", msg.c_str());
-
+        if(_sockptr==nullptr)return ;
 		sendRet = _sockptr->doSend(copy_temp, length);
 		if (!sendRet)
 		{
