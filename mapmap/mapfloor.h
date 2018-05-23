@@ -25,10 +25,6 @@ public:
     void removePath(int p){paths.remove(p);}
     void removeBkg(){bkg = 0;}
 
-    MapPoint *getPointById(int id) const;
-
-    MapPath *getPathById (int id)  const;
-
     std::list<int> getPoints() const {return points;}
     std::list<int> getPaths() const {return paths;}
     int getBkg() const {return bkg;}

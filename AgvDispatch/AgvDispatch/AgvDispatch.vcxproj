@@ -25,8 +25,6 @@
     <ClInclude Include="..\..\agvtasknodedothing.h" />
     <ClInclude Include="..\..\base64.h" />
     <ClInclude Include="..\..\common.h" />
-    <ClInclude Include="..\..\mapmap\agvline.h" />
-    <ClInclude Include="..\..\mapmap\agvstation.h" />
     <ClInclude Include="..\..\mapmap\mapbackground.h" />
     <ClInclude Include="..\..\mapmap\mapblock.h" />
     <ClInclude Include="..\..\mapmap\mapfloor.h" />

@@ -31,6 +31,8 @@ public:
     //保存地图
     bool save();
 
+	MapSpirit *getMapSpiritById(int id);
+
     //一个Agv占领一个站点
     void occuStation(int station, AgvPtr occuAgv);
 

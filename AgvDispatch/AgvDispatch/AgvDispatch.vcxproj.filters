@@ -123,13 +123,7 @@
     <ClInclude Include="..\..\mapmap\onemap.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\mapmap\agvline.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\mapmap\mapmanager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\mapmap\agvstation.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\base64.h">

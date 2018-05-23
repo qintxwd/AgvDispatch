@@ -99,6 +99,7 @@ bool stringToBool(std::string str)
 std::vector<std::string> split(std::string src,std::string sp)
 {
     std::vector<std::string> result;
+	if (src.length() == 0)return result;
     if(sp.length()==0){
         result.push_back(src);
         return result;
