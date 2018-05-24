@@ -1,4 +1,4 @@
-#ifndef JACKINGAGVTHINGTURN_H
+﻿#ifndef JACKINGAGVTHINGTURN_H
 #define JACKINGAGVTHINGTURN_H
 
 #include "../agvtasknodedothing.h"
@@ -15,12 +15,6 @@ public:
 
     int type(){return Type;}
 
-    enum{
-        jack_error_type_send_fail = 0,
-        jack_error_type_recv_fail,
-        jack_error_type_recv_time_out,
-        jack_error_type_excute_fail,
-    };
 
     void beforeDoing(AgvPtr agv);
     void doing(AgvPtr agv);

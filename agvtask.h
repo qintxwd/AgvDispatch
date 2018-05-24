@@ -40,7 +40,8 @@ public:
         status(AGV_TASK_STATUS_UNEXCUTE),
         priority(PRIORITY_NORMAL),
         error_code(0),
-        isCancel(false)
+        isCancel(false),
+        doingIndex(0)
     {
     }
 
@@ -109,6 +110,12 @@ private:
     int doingIndex;
 
     std::atomic_bool isCancel;
+
+private:
+    std::map<std::string,std::string> extra_params;
+public:
+    void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
+    std::string getExtraParam(std::string key){return extra_params[key];}
 };
 
 #endif // AGVTASK_H

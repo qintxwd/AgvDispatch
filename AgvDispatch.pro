@@ -109,7 +109,12 @@ HEADERS += \
     utils/Log/spdlog/fmt/bundled/printf.h \
     utils/Log/spdlog/fmt/bundled/time.h \
     agvImpl/ros/agv/rosAgv.h \
-    agvImpl/ros/agv/linepath.h
+    agvImpl/ros/agv/linepath.h \
+    mapmap/mapmanager.h \
+    qunchuang/qunchuangtaskmaker.h \
+    qunchuang/qunchuangnodethingget.h \
+    qunchuang/qunchuangnodetingput.h \
+    qunchuang/qunchuangtcsconnection.h
 
 SOURCES += \
     agv.cpp \
@@ -146,6 +151,10 @@ SOURCES += \
     mapmap/mapspirit.cpp \
     mapmap/onemap.cpp \
     base64.cpp \
-    agvImpl/ros/agv/rosAgv.cpp
+    agvImpl/ros/agv/rosAgv.cpp \
+    qunchuang/qunchuangtaskmaker.cpp \
+    qunchuang/qunchuangnodethingget.cpp \
+    qunchuang/qunchuangnodetingput.cpp \
+    qunchuang/qunchuangtcsconnection.cpp
 
 

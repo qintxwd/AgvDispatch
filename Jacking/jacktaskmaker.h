@@ -1,4 +1,4 @@
-#ifndef JACKTASKMAKER_H
+﻿#ifndef JACKTASKMAKER_H
 #define JACKTASKMAKER_H
 
 #include "../taskmaker.h"
@@ -7,6 +7,8 @@ class JackTaskMaker : public TaskMaker
 {
 public:
     JackTaskMaker();
+
+    void init();
 
     void makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
 };

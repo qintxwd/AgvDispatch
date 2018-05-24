@@ -1,4 +1,5 @@
 ﻿#include "taskmanager.h"
+#include "taskmaker.h"
 #include "mapmap/mapmanager.h"
 #include "agvmanager.h"
 #include "usermanager.h"
@@ -102,6 +103,9 @@ int main(int argc, char *argv[])
     // test ros agv
     //rosAgvPtr agv(new rosAgv(1,"robot_0","127.0.0.1",7070));
     //agv->init();
+
+    //8.初始化任务生成
+    TaskMaker::getInstance()->init();
 
     //8.初始化tcp/ip 接口
     qyhnetwork::SessionManager::getInstance()->start();

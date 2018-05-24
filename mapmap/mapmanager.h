@@ -33,6 +33,8 @@ public:
 
 	MapSpirit *getMapSpiritById(int id);
 
+    MapSpirit *getMapSpiritByName(std::string name);
+
     //一个Agv占领一个站点
     void occuStation(int station, AgvPtr occuAgv);
 

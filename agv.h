@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <mutex>
+#include <map>
 
 class AgvTask;
 using AgvTaskPtr = std::shared_ptr<AgvTask>;
@@ -91,6 +92,13 @@ protected:
 
     std::mutex stationMtx;
     std::vector<int> excutestations;
+    std::vector<int> excutespaths;
+
+private:
+    std::map<std::string,std::string> extra_params;
+public:
+    void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
+    std::string getExtraParam(std::string key){return extra_params[key];}
 };
 
 #endif // AGV_H
