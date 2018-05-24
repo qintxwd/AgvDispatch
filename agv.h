@@ -65,15 +65,15 @@ public:
 
     //回调
     virtual void onRead(const char *data,int len);
-    void onConnect();
-    void onDisconnect();
+    virtual void onConnect();
+    virtual void onDisconnect();
 
     void onArriveStation(int station);
     void onLeaveStation(int stationid);
     void onError(int code,std::string msg);
     void onWarning(int code, std::string msg);
     void reconnect();
-private:
+protected:
     AgvTaskPtr currentTask;
     int id;
     std::string name;

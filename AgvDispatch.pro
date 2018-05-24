@@ -107,7 +107,9 @@ HEADERS += \
     utils/Log/spdlog/fmt/bundled/ostream.h \
     utils/Log/spdlog/fmt/bundled/posix.h \
     utils/Log/spdlog/fmt/bundled/printf.h \
-    utils/Log/spdlog/fmt/bundled/time.h
+    utils/Log/spdlog/fmt/bundled/time.h \
+    agvImpl/ros/agv/rosAgv.h \
+    agvImpl/ros/agv/linepath.h
 
 SOURCES += \
     agv.cpp \
@@ -143,6 +145,7 @@ SOURCES += \
     mapmap/mappoint.cpp \
     mapmap/mapspirit.cpp \
     mapmap/onemap.cpp \
-    base64.cpp
+    base64.cpp \
+    agvImpl/ros/agv/rosAgv.cpp
 
 

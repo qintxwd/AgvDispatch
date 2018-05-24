@@ -7,6 +7,7 @@
 #include "userlogmanager.h"
 #include "utils/Log/spdlog/spdlog.h"
 #include "common.h"
+//#include "agvImpl/ros/agv/rosAgv.h"
 
 void initLog()
 {
@@ -97,6 +98,10 @@ int main(int argc, char *argv[])
 
     //7.初始化日志发布
     UserLogManager::getInstance()->init();
+
+    // test ros agv
+    //rosAgvPtr agv(new rosAgv(1,"robot_0","127.0.0.1",7070));
+    //agv->init();
 
     //8.初始化tcp/ip 接口
     qyhnetwork::SessionManager::getInstance()->start();
