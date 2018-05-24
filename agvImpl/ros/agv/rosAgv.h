@@ -1,11 +1,11 @@
 #ifndef ROSAGV_H
 #define ROSAGV_H
 
-#include "agv.h"
-#include "agvtask.h"
-#include "qyhtcpclient.h"
-#include "userlogmanager.h"
-#include "msgprocess.h"
+#include "../../../agv.h"
+#include "../../../agvtask.h"
+#include "../../../qyhtcpclient.h"
+#include "../../../userlogmanager.h"
+#include "../../../msgprocess.h"
 #include "linepath.h"
 
 using namespace std;

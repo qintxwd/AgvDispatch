@@ -219,10 +219,10 @@ bool MapManager::loadFromDb()
             int realY = atoi(table_station.fieldValue(6));
             int labeXoffset = atoi(table_station.fieldValue(7));
             int labelYoffset = atoi(table_station.fieldValue(8));
-            bool mapChanged = atoi(table_station.fieldValue(9)) == 1;
+            bool mapchange = atoi(table_station.fieldValue(9)) == 1;
             bool locked = atoi(table_station.fieldValue(10)) == 1;
 
-            MapPoint *point = new MapPoint(id, name, (MapPoint::Map_Point_Type)type, x, y, realX, realY, labeXoffset, labelYoffset, mapChanged, locked);
+            MapPoint *point = new MapPoint(id, name, (MapPoint::Map_Point_Type)type, x, y, realX, realY, labeXoffset, labelYoffset, mapchange, locked);
 
             g_onemap.addSpirit(point);
         }
@@ -719,9 +719,9 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 int realY = station["realY"].asInt();
                 int labelXoffset = station["labelXoffset"].asInt();
                 int labelYoffset = station["labelYoffset"].asInt();
-                bool mapchanged = station["mapchanged"].asBool();
+                bool mapchange = station["mapchange"].asBool();
                 bool locked = station["locked"].asBool();
-                MapPoint *p = new MapPoint(id, name, (MapPoint::Map_Point_Type)station_type, x, y, realX, realY, labelXoffset, labelYoffset, mapchanged, locked);
+                MapPoint *p = new MapPoint(id, name, (MapPoint::Map_Point_Type)station_type, x, y, realX, realY, labelXoffset, labelYoffset, mapchange, locked);
                 g_onemap.addSpirit(p);
             }
 

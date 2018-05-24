@@ -129,6 +129,24 @@
     <ClInclude Include="..\..\base64.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\agvImpl\ros\agv\linepath.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\agvImpl\ros\agv\rosAgv.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qunchuang\qunchuangnodethingget.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qunchuang\qunchuangnodetingput.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qunchuang\qunchuangtaskmaker.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qunchuang\qunchuangtcsconnection.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp">
@@ -225,6 +243,21 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\base64.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\agvImpl\ros\agv\rosAgv.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qunchuang\qunchuangnodethingget.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qunchuang\qunchuangnodetingput.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qunchuang\qunchuangtaskmaker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qunchuang\qunchuangtcsconnection.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

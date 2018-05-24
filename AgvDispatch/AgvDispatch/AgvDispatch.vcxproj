@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\agv.h" />
+    <ClInclude Include="..\..\agvImpl\ros\agv\linepath.h" />
+    <ClInclude Include="..\..\agvImpl\ros\agv\rosAgv.h" />
     <ClInclude Include="..\..\agvmanager.h" />
     <ClInclude Include="..\..\agvtasknode.h" />
     <ClInclude Include="..\..\agvtasknodedothing.h" />
@@ -49,6 +51,10 @@
     <ClInclude Include="..\..\network\tcpsession.h" />
     <ClInclude Include="..\..\network\timer\timer.h" />
     <ClInclude Include="..\..\protocol.h" />
+    <ClInclude Include="..\..\qunchuang\qunchuangnodethingget.h" />
+    <ClInclude Include="..\..\qunchuang\qunchuangnodetingput.h" />
+    <ClInclude Include="..\..\qunchuang\qunchuangtaskmaker.h" />
+    <ClInclude Include="..\..\qunchuang\qunchuangtcsconnection.h" />
     <ClInclude Include="..\..\qyhtcpclient.h" />
     <ClInclude Include="..\..\sqlite3\CppSQLite3.h" />
     <ClInclude Include="..\..\taskmanager.h" />
@@ -60,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp" />
+    <ClCompile Include="..\..\agvImpl\ros\agv\rosAgv.cpp" />
     <ClCompile Include="..\..\agvmanager.cpp" />
     <ClCompile Include="..\..\base64.cpp" />
     <ClCompile Include="..\..\common.cpp" />
@@ -85,6 +92,10 @@
     <ClCompile Include="..\..\network\sessionmanager.cpp" />
     <ClCompile Include="..\..\network\tcpsession.cpp" />
     <ClCompile Include="..\..\network\timer\timer.cpp" />
+    <ClCompile Include="..\..\qunchuang\qunchuangnodethingget.cpp" />
+    <ClCompile Include="..\..\qunchuang\qunchuangnodetingput.cpp" />
+    <ClCompile Include="..\..\qunchuang\qunchuangtaskmaker.cpp" />
+    <ClCompile Include="..\..\qunchuang\qunchuangtcsconnection.cpp" />
     <ClCompile Include="..\..\qyhtcpclient.cpp" />
     <ClCompile Include="..\..\sqlite3\CppSQLite3.cpp" />
     <ClCompile Include="..\..\taskmaker.cpp" />
