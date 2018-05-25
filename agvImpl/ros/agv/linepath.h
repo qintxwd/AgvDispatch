@@ -1,7 +1,7 @@
 #ifndef LINEPATH_H
 #define LINEPATH_H
 
-#include "../../../common.h"
+#include "common.h"
 #include <iostream>
 #include <fstream>
 
@@ -75,34 +75,5 @@ public:
     }
 
 };
-
-
-/*LineSegmentPath::LineSegmentPath(double start_x, double start_y, double end_x, double end_y, double interval){
-    length=sqrt((end_x-start_x)*(end_x-start_x)+(end_y-start_y)*(end_y-start_y));
-    direction=atan2(end_y-start_y,end_x-start_x);
-
-    geometry_msgs::Pose2D pose2d;
-
-    pose2d.theta=direction;
-
-    double sinth=sin(direction);
-    double costh=cos(direction);
-
-    int num_pathpts=ceil(length/interval)+1;
-    double residue=length-(num_pathpts-2)*interval;
-    path.clear();
-    pose2d.x=start_x;
-    pose2d.y=start_y;
-    path.push_back(pose2d);
-    //cout<<"residue: "<<residue<<endl;
-    pose2d.x+=costh*residue;
-    pose2d.y+=sinth*residue;
-    path.push_back(pose2d);
-    for(int i=0;i<num_pathpts-1;i++){
-        pose2d.x+=costh*interval;
-        pose2d.y+=sinth*interval;
-        path.push_back(pose2d);
-    }
-}*/
 
 #endif // LINEPATH_H
