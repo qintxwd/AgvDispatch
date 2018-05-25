@@ -36,6 +36,7 @@ public:
 
     virtual std::string discribe()  = 0;//用于保存数据库//简单描述以下干什么的
 
+	std::vector<std::string> getParams() { return params; }
 protected:
     std::vector<std::string> params;
 };

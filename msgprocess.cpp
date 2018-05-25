@@ -225,7 +225,68 @@ void MsgProcess::publisher_task()
 
 			//组装信息
 			Json::Value response;
-			//TODO
+			response["type"] = MSG_TYPE_PUBLISH;
+			response["todo"] = MSG_TODO_PUB_TASK;
+			response["queuenumber"] = 0;
+			auto tasks = TaskManager::getInstance()->getCurrentTasks();
+			Json::Value v_tasks;
+			for (auto task : tasks) {
+				Json::Value v_task;
+				v_task["id"] = task->getId();
+				v_task["agv"] = task->getAgv();
+				v_task["priority"] = task->getPriority();
+				v_task["status"] = task->getStatus();
+				v_task["produceTime"] = task->getProduceTime();
+				v_task["doTime"] = task->getDoTime();
+				v_task["doneTime"] = task->getDoneTime();
+				v_task["cancelTime"] = task->getCancelTime();
+				v_task["doingIndex"] = task->getDoingIndex();
+				v_task["errorCode"] = task->getErrorCode();
+				v_task["errorInfo"] = task->getErrorInfo();
+				v_task["errorTime"] = task->getErrorTime();
+				v_task["isCancel"] = task->getIsCancel();
+				
+				Json::Value v_extraParams;
+				auto params = task->getExtraParams();
+				for (auto param : params) {
+					v_extraParams[param.first] = param.second;
+				}
+				if (!v_extraParams.isNull()) {
+					v_task["extraParams"] = v_extraParams;
+				}
+				auto nodes = task->getTaskNodes();
+				Json::Value v_nodes;
+				for (auto node : nodes) {
+					Json::Value v_node;
+					
+
+					auto things = node->getDoThings();
+
+					Json::Value v_things;
+					for (auto thing : things) {
+						Json::Value v_thing;
+						v_thing["id"] = thing->type() - AgvTaskNodeDoThing::Type;
+						v_thing["name"] = thing->discribe();
+						Json::Value v_params;
+						auto pparams = thing->getParams();
+						int kk = 0;
+						for (auto pparam : pparams) {
+							v_params[kk] = pparam;
+						}
+						if(!v_params.isNull())
+							v_thing["params"] = v_params;
+
+						v_things.append(v_thing);
+					}
+
+					v_node["station"] = node->getStation();
+					v_node["things"] = v_things;
+					v_nodes.append(v_node);
+				}
+				v_tasks["nodes"] = v_nodes;				
+				v_tasks.append(v_task);
+			}
+			response["tasks"] = v_tasks;
 
 			//执行发送
 			UNIQUE_LCK(tsMtx);

@@ -61,8 +61,8 @@ public:
     int getAgv(){return excuteAgv;}
     void setAgv(int agv){excuteAgv=agv;}
 
-    std::vector<AgvTaskNodePtr> getTaskNode(){return nodes;}
-    void setTaskNode(std::vector<AgvTaskNodePtr> _nodes){nodes=_nodes;}
+    std::vector<AgvTaskNodePtr> getTaskNodes(){return nodes;}
+    void setTaskNodes(std::vector<AgvTaskNodePtr> _nodes){nodes=_nodes;}
     void push_backNode(AgvTaskNodePtr _node){nodes.push_back(_node);}
 
     int getDoingIndex(){return doingIndex;}
@@ -116,6 +116,7 @@ private:
 public:
     void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
     std::string getExtraParam(std::string key){return extra_params[key];}
+	std::map<std::string, std::string> getExtraParams() { return extra_params; }
 };
 
 #endif // AGVTASK_H

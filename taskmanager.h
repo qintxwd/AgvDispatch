@@ -48,6 +48,8 @@ public:
     //执行一个任务
     void excuteTask(AgvTaskPtr task);
 
+	std::vector<AgvTaskPtr> getCurrentTasks();
+
     //用户接口
     void interCreate(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
     void interQueryStatus(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
