@@ -1,6 +1,7 @@
 #include "rosAgv.h"
 #include "mapmap/mappoint.h"
 //#include <locale>
+#include <condition_variable>
 
 
 rosAgv::rosAgv(int id, std::string name, std::string ip, int port):
@@ -13,15 +14,18 @@ void rosAgv::onConnect()
     combined_logger->info("rosAgv onConnect OK! name: "+getName());
 #if SIMULATOR
     //subTopic((getName() + AGV_POSE_TOPIC_NAME).c_str(), AGV_POSE_TOPIC_TYPE);
+    subTopic((getName() + "/rosnodejs/shell_feedback").c_str(), "std_msgs/String");
 #else
-    subTopic(AGV_POSE_TOPIC_NAME, AGV_POSE_TOPIC_TYPE);
+    subTopic("/rosnodejs/shell_feedback", "std_msgs/String");
 #endif
     if(NAV_CTRL_USING_TOPIC)
     {
 #if SIMULATOR
         advertiseTopic((getName() + "/nav_ctrl").c_str(), "yocs_msgs/NavigationControl");
+        advertiseTopic((getName() + "/rosnodejs/cmd_string").c_str(), "std_msgs/String");
 #else
         advertiseTopic("/nav_ctrl", "yocs_msgs/NavigationControl");
+        advertiseTopic("/rosnodejs/cmd_string", "std_msgs/String");
 #endif
     }
     else //使用service接收AGV Navigation control status
@@ -32,7 +36,9 @@ void rosAgv::onConnect()
         advertiseService("/nav_ctrl_status_service","scheduling_msgs/ReportNavigationControlStatus");
 #endif
     }
-    test();
+    //test();
+
+    //changeMap("");
 
 }
 
@@ -44,7 +50,7 @@ void rosAgv::onRead(const char *data,int len)
 {
     try{
         parseDataMtx.lock();
-        combined_logger->info("rosAgv onRead, data : " + string(data));
+        combined_logger->info("111, rosAgv onRead, data : " + string(data));
         parseJsondata(data,len);
         parseDataMtx.unlock();
     }
@@ -56,6 +62,8 @@ void rosAgv::onRead(const char *data,int len)
 
 void rosAgv::navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status)
 {
+    std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
+
     if(nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED) //任务完成
     {
         combined_logger->info("task: " + waypoint_name + "完成, status: NAV_CTRL_STATUS_COMPLETED");
@@ -68,6 +76,8 @@ void rosAgv::navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status)
     {
         combined_logger->info("task: " + waypoint_name + "取消, status: NAV_CTRL_STATUS_CANCELLED");
     }
+
+    nav_ctrl_status_var.notify_all();
 }
 
 void rosAgv::parseJsondata(const char *data,int len)
@@ -142,8 +152,6 @@ void rosAgv::processServiceResponse(Json::Value response)
     {
 
     }
-
-
 }
 
 
@@ -201,6 +209,13 @@ void rosAgv::sendServiceResponse(string service_name,Json::Value *value,string i
         combined_logger->error("rosAgv, sendServiceResponse: " + string(service_name) + "error...");
 }
 
+void rosAgv::changeMap(string map_name)
+{
+    Json::Value msg;
+    msg["data"]="dbparam-update:test2";
+    publishTopic("/rosnodejs/cmd_string", msg);
+}
+
 void rosAgv::subTopic(const char * topic, const char * topic_type)
 {
     Json::Value json;
@@ -237,8 +252,12 @@ void rosAgv::advertiseService(const char * service_name, const char * msg_type)
 void rosAgv::publishTopic(const char * topic, Json::Value msg)
 {
     Json::Value json;
-    json["op"]="publish";
+    json["op"]="publish";    
+#if SIMULATOR
+    json["topic"]=getName()+topic;
+#else
     json["topic"]=topic;
+#endif
     json["msg"]=msg;
 
     if(!sendJsonToAGV(json))
@@ -252,11 +271,8 @@ bool rosAgv::startTask(std::string task_name)
          Json::Value msg;
          msg["goal_name"]=task_name;
          msg["control"]=START;
-#if SIMULATOR
-         publishTopic((getName() + "/nav_ctrl").c_str(), msg);
-#else
          publishTopic("/nav_ctrl", msg);
-#endif
+
      }
      else
      {
@@ -468,6 +484,7 @@ void rosAgv::callMapChange(int station)
 
 void rosAgv::excutePath(std::vector<int> lines)
 {
+    std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
 
     stationMtx.lock();
     excutestations.clear();
@@ -482,6 +499,13 @@ void rosAgv::excutePath(std::vector<int> lines)
     stationMtx.unlock();
     //告诉小车接下来要执行的路径
     goStation(lines, true);
+
+    combined_logger->info("wait for task complete!!!!");
+
+    nav_ctrl_status_var.wait(lock);
+
+    combined_logger->info("task finished...................");
+
 }
 
 bool rosAgv::sendJsonToAGV(Json::Value json)
@@ -516,6 +540,9 @@ void rosAgv::test()
     int path0=6;
     int path1=7;
     int path2=8;
+
+    sleep(3);
+
     lines.push_back(path0);
     lines.push_back(path1);
     lines.push_back(path2);
@@ -523,3 +550,18 @@ void rosAgv::test()
     excutePath(lines);
 }
 
+void rosAgv::test2()
+{
+    std::vector<int> lines;
+    int path0=10;
+    int path1=7;
+    int path2=8;
+
+    sleep(15);
+
+    lines.push_back(path0);
+    lines.push_back(path1);
+    lines.push_back(path2);
+
+    excutePath(lines);
+}

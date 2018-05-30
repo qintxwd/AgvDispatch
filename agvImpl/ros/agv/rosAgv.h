@@ -49,6 +49,9 @@ private:
        //geometry_msgs::Pose agvPose;
        std::mutex parseDataMtx;
 
+       std::mutex nav_ctrl_status_mutex;
+       std::condition_variable nav_ctrl_status_var; // nav_ctrl_status条件变量.
+
        void subTopic(const char * topic, const char * topic_type);
        void advertiseTopic(const char * topic, const char * topic_type);
        void advertiseService(const char * service_name, const char * msg_type);
@@ -59,6 +62,8 @@ private:
        void processServiceResponse(Json::Value response);
        void sendServiceResponse(string service_name,Json::Value *value=nullptr,string id="");
        void navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status);
+       void changeMap(string map_name);
+
 
 public:
     rosAgv(int id,std::string name,std::string ip,int port);
@@ -75,6 +80,8 @@ public:
     virtual void cancelTask();
     //virtual void excutePath(std::vector<AgvLinePtr> lines);
     virtual void excutePath(std::vector<int> lines);
+    void test();
+    void test2();
 
 private:
     virtual void arrve(int x,int y);
@@ -87,7 +94,6 @@ private:
     virtual void stop();
     virtual void callMapChange(int station);
     void setAgvPath(std::vector<Pose2D> path);
-    void test();
     bool sendJsonToAGV(Json::Value json);
 
     //nav ctrl status 状态
