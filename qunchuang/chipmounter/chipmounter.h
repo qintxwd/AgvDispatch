@@ -10,7 +10,7 @@
 #define LOADING_FINISHED           0x0020
 //AGV已到达(下料到达), (点位0x0000~0xFFFF)+(消息类别 0x0001)
 #define AGV_UNLOADING_ARRVIED      0x0001
-//PLC告知AGVC上料完成, (点位0x0000~0xFFFF)+(消息类别 0x0021)
+//PLC告知AGVC下料完成, (点位0x0000~0xFFFF)+(消息类别 0x0021)
 #define UNLOADING_FINISHED         0x0021
 
 //偏贴机client class
@@ -21,8 +21,17 @@ public:
     chipmounter(int id,std::string name,std::string ip,int port);
     virtual ~chipmounter();
 
-    bool startLoading(int16_t id, int16_t task);
-    bool startUnLoading(int16_t id, int16_t task);
+    bool startLoading(int16_t id);
+    bool startUnLoading(int16_t id);
+    bool isLoadingFinished()
+    {
+        return loading_finished;
+    }
+
+    bool isUnLoadingFinished()
+    {
+        return unloading_finished;
+    }
 
     /* AGV已到达
      *id: 工位 ID,  点位
@@ -55,6 +64,13 @@ private:
     void onRead(const char *data,int len);
     void onConnect();
     void onDisconnect();
+
+
+    std::mutex rolling_mutex;
+    std::condition_variable rolling_status; // rolling_status条件变量.
+
+    bool loading_finished;
+    bool unloading_finished;
 
 
 

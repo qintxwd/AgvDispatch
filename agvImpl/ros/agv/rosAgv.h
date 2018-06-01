@@ -7,6 +7,8 @@
 #include "userlogmanager.h"
 #include "msgprocess.h"
 #include "linepath.h"
+#include "device/device.h"
+#include "qunchuang/chipmounter/chipmounter.h"
 
 using namespace std;
 
@@ -43,6 +45,10 @@ enum nav_control{
 #define NAV_CTRL_STATUS_SUB_CANCELLED  5
 //如上 NAV_CONTROL define 是在 AGV中定义, 不能随便更改
 
+//AGV 货架转动方向
+#define AGV_SHELVES_ROLLING_FORWORD true  // 向前转， AGV方向
+#define AGV_SHELVES_ROLLING_BACKWORD false // 向后转
+
 class rosAgv : public Agv
 {
 private:
@@ -63,6 +69,8 @@ private:
        void sendServiceResponse(string service_name,Json::Value *value=nullptr,string id="");
        void navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status);
        void changeMap(string map_name);
+       void startRolling(bool forword);//send to 偏贴机AGV start rolling topic
+       void stopRolling();//send to 偏贴机AGV stop rolling topic
 
 
 public:
@@ -83,6 +91,11 @@ public:
     void test();
     void test2();
 
+    bool beforeDoing(string ip, int port, string action, int station_id);
+    bool Doing(string action, int station_id);
+    bool afterDoing(string action, int station_id);
+
+
 private:
     virtual void arrve(int x,int y);
     //void goStation(AgvStationPtr station, bool stop = false, std::vector<AgvLinePtr> lines);
@@ -98,6 +111,8 @@ private:
 
     //nav ctrl status 状态
     int nav_ctrl_status;
+
+    chipmounter* mChipmounter; //偏贴机
 
 };
 

@@ -3,6 +3,8 @@
 chipmounter::chipmounter(int _id, std::string _name, std::string _ip, int _port) :
     Device(_id,_name,_ip, _port)
 {
+     loading_finished = false;
+     unloading_finished = false;
 }
 
 chipmounter::~chipmounter()
@@ -15,24 +17,34 @@ chipmounter::~chipmounter()
 void chipmounter::onConnect()
 {
     combined_logger->info("偏贴机, connect ok!!! ");
-    NotifyAGVArrived(0xFFFF, 0x0001);
+    connected = true;
+
+    //NotifyAGVArrived(0xFFFF, 0xABCD);
 }
 
 void chipmounter::onDisconnect()
 {
     combined_logger->info("偏贴机, disconnect !!! ");
+    connected = false;
 
 }
 
-bool chipmounter::startLoading(int16_t id, int16_t task)
+bool chipmounter::startLoading(int16_t id)
 {
+    std::unique_lock <std::mutex> lock(rolling_mutex);
+
+    loading_finished = false;
+    NotifyAGVArrived(id,AGV_LOADING_ARRVIED);
+    //wait for PLC告知转动信息
+    rolling_status.wait(lock);
+
 
 }
 
 
-bool chipmounter::startUnLoading(int16_t id, int16_t task)
+bool chipmounter::startUnLoading(int16_t id)
 {
-
+     unloading_finished = false;
 }
 
 void chipmounter::onRead(const char *data,int len)
@@ -89,7 +101,9 @@ void chipmounter::NotifyAGVArrived(int16_t id, int16_t task)
     data[1] = task;
 
     if(tcpClient != nullptr)
+    {
         this->send((char*)data, sizeof(data));
+    }
     else
         combined_logger->error("偏贴机, tcpClient is null ");
 
@@ -102,6 +116,7 @@ void chipmounter::NotifyAGVArrived(int16_t id, int16_t task)
 void chipmounter::OnDeviceStartRolling()
 {
     combined_logger->info("偏贴机, 告知转动");
+    rolling_status.notify_all();
 }
 
 
@@ -111,6 +126,7 @@ void chipmounter::OnDeviceStartRolling()
 void chipmounter::OnloadFinished()
 {
     combined_logger->info("偏贴机, 告知上料完成");
+    loading_finished = true;
 }
 
 
@@ -120,5 +136,6 @@ void chipmounter::OnloadFinished()
 void chipmounter::OnUnloadFinished()
 {
     combined_logger->info("偏贴机, 告知下料完成");
+    unloading_finished = true;
 }
 

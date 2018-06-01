@@ -7,6 +7,7 @@
 rosAgv::rosAgv(int id, std::string name, std::string ip, int port):
     Agv(id,name,ip,port)
 {
+    mChipmounter = nullptr;
 }
 
 void rosAgv::onConnect()
@@ -532,6 +533,114 @@ bool rosAgv::sendJsonToAGV(Json::Value json)
     }
 
     return result;
+}
+
+
+bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
+{
+    int try_times = 0;
+    std::chrono::milliseconds dura(200);
+
+    if("none" == action)
+        return true;
+    else if("put" == action || "get" == action)
+    {
+        //if(station_id is chipmount_station )
+        {
+            mChipmounter = new chipmounter(1, "", ip, port);
+            if(mChipmounter->init())
+            {
+                while(!mChipmounter->isConnected())
+                {
+                    std::this_thread::sleep_for(dura);
+                    try_times ++;
+                    if(try_times > 30)
+                    {
+                        combined_logger->error("rosAgv, beforeDoing, connect error...");
+
+                        delete mChipmounter;
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                delete mChipmounter;
+                return false;
+            }
+
+        }
+    }
+    return false;
+
+}
+
+bool rosAgv::Doing(string action, int station_id)
+{
+    std::chrono::milliseconds dura(20);
+
+    //if(station_id is chipmount_station )
+    {
+        if("put" == action )
+        {
+            if(mChipmounter == nullptr)
+            {
+                combined_logger->error("rosAgv,Doing, mChipmounter == nullptr...");
+                return false;
+            }
+
+
+            mChipmounter->startLoading(station_id);
+            //PLC start to rolling, need AGV also start to rolling
+            startRolling(AGV_SHELVES_ROLLING_FORWORD);
+            while(!mChipmounter->isLoadingFinished())
+            {
+                std::this_thread::sleep_for(dura);
+                combined_logger->info("rosAgv, waitting for chipmounter loading finished...");
+            }
+
+            stopRolling();
+
+            return true;
+
+        }
+        else if("get" == action)
+        {
+            startRolling(AGV_SHELVES_ROLLING_FORWORD);
+
+            if(mChipmounter == nullptr)
+            {
+                combined_logger->error("rosAgv,Doing, mChipmounter == nullptr...");
+                return false;
+            }
+
+            mChipmounter->startUnLoading(station_id);
+
+            while(!mChipmounter->isUnLoadingFinished())
+            {
+                std::this_thread::sleep_for(dura);
+                combined_logger->info("rosAgv, waitting for chipmounter unloading finished...");
+            }
+
+            stopRolling();
+        }
+    }
+
+}
+
+bool rosAgv::afterDoing(string action, int station_id)
+{
+
+}
+
+void rosAgv::startRolling(bool forword)
+{
+
+}
+void rosAgv::stopRolling()
+{
+
 }
 
 void rosAgv::test()

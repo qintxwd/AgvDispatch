@@ -20,6 +20,11 @@ public:
     bool init();
     void unInit();
 
+    bool isConnected()
+    {
+        return connected;
+    }
+
 protected:
     bool send(const char *data, int len);
     //回调
@@ -35,6 +40,7 @@ protected:
     std::string name;
     std::string ip;
     int port;
+    bool connected;
 
     QyhTcpClient *tcpClient;
 };

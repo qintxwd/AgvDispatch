@@ -7,6 +7,7 @@ Device::Device(int _id, std::string _name, std::string _ip, int _port) :
     port(_port),
     tcpClient(nullptr)
 {
+    connected = false;
 }
 
 Device::~Device()
@@ -44,12 +45,12 @@ void Device::onRead(const char *data,int len)
 
 void Device::onConnect()
 {
-
+    connected = true;
 }
 
 void Device::onDisconnect()
 {
-
+    connected = false;
 }
 
 void Device::reconnect()
