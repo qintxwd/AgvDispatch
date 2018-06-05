@@ -8,7 +8,8 @@
 #include "userlogmanager.h"
 #include "utils/Log/spdlog/spdlog.h"
 #include "common.h"
-//#include "agvImpl/ros/agv/rosAgv.h"
+#include "agvImpl/ros/agv/rosAgv.h"
+#include "qunchuang/chipmounter/chipmounter.h"
 
 void initLog()
 {
@@ -53,6 +54,52 @@ void initLog()
     {
         std::cout << "Log initialization failed: " << ex.what() << std::endl;
     }
+}
+
+
+void testAGV()
+{
+    g_threadPool.enqueue([&] {
+        // test ros agv
+        rosAgvPtr agv(new rosAgv(1,"robot_0","192.168.8.206",7070));
+        agv->init();
+        chipmounter *chip = new chipmounter(1,"chipmounter","10.63.39.190",1000);
+        //chipmounter *chip = new chipmounter(1,"chipmounter","192.168.8.101",1024);
+        chip->init();
+        agv->setChipMounter(chip);
+
+        sleep(5);
+
+        chipinfo info;
+    while(chip != nullptr)
+    {
+        if(!chip->isConnected())
+        {
+            //chip->init();
+            std::cout << "chipmounter disconnected, need reconnect...."<< std::endl;
+        }
+
+        if(chip->getAction(&info))
+        {
+            std::cout << "new task ...." << "action: " <<info.action<< "point: " <<info.point<< std::endl;
+            agv->startTask(info.point, info.action);
+        }
+        /*else
+        {
+            std::cout << "new task for test...." << "action: " <<info.action<< "point: " <<info.point<< std::endl;
+
+            agv->startTask( "2510", "loading");
+            //agv->startTask( "", "");
+            break;
+        }*/
+
+        sleep(1);
+    }
+    });
+
+
+    std::cout << "testAGV end...." << std::endl;
+
 }
 
 int main(int argc, char *argv[])
@@ -100,9 +147,7 @@ int main(int argc, char *argv[])
     //7.初始化日志发布
     UserLogManager::getInstance()->init();
 
-    // test ros agv
-    //rosAgvPtr agv(new rosAgv(1,"robot_0","127.0.0.1",7070));
-    //agv->init();
+    //testAGV();//test ROS AGV, this only for test
 
     //8.初始化任务生成
     TaskMaker::getInstance()->init();
@@ -117,5 +162,7 @@ int main(int argc, char *argv[])
     qyhnetwork::SessionManager::getInstance()->run();
 
     spdlog::drop_all();
+
+
     return 0;
 }

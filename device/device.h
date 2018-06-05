@@ -25,6 +25,7 @@ public:
         return connected;
     }
 
+
 protected:
     bool send(const char *data, int len);
     //回调

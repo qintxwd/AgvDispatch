@@ -73,3 +73,6 @@ void Device::bytesToHexstring(const char* bytes,int bytelength,char *hexstring,i
            hexstring[j] = s2;
   }
 }
+
+
+

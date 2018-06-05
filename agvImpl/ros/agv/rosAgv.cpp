@@ -63,7 +63,7 @@ void rosAgv::onRead(const char *data,int len)
 
 void rosAgv::navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status)
 {
-    std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
+    //std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
 
     if(nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED) //任务完成
     {
@@ -181,6 +181,8 @@ void rosAgv::processServiceCall(Json::Value call_service)
                 value["received"]=true;
                 string id = call_service.isMember("id")? call_service["id"].asString():"";
 
+                //combined_logger->error("don't send Service Response to agv");
+
                 combined_logger->info("send Service Response to agv");
                 sendServiceResponse(service_name, &value, id);
             }
@@ -267,6 +269,9 @@ void rosAgv::publishTopic(const char * topic, Json::Value msg)
 
 bool rosAgv::startTask(std::string task_name)
 {
+
+    combined_logger->info("rosAgv, startTask: " + task_name);
+
      if(NAV_CTRL_USING_TOPIC)
      {
          Json::Value msg;
@@ -293,6 +298,8 @@ bool rosAgv::startTask(std::string task_name)
          json["service"]="/nav_ctrl_service";
 #endif
          json["args"]=nav_ctrl_srv;
+
+         combined_logger->info("rosAgv, startTask: sendJsonToAGV");
 
          if(!sendJsonToAGV(json))
          {
@@ -535,6 +542,18 @@ bool rosAgv::sendJsonToAGV(Json::Value json)
     return result;
 }
 
+void rosAgv::setChipMounter(chipmounter* device)
+{
+    if(device != nullptr)
+    {
+        mChipmounter = device;
+        combined_logger->info("rosAgv, setChipMounter success...");
+    }
+    else
+    {
+        combined_logger->error("rosAgv, setChipMounter failed...");
+    }
+}
 
 bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
 {
@@ -579,35 +598,55 @@ bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
 bool rosAgv::Doing(string action, int station_id)
 {
     std::chrono::milliseconds dura(20);
+    int times = 0;
+
+    combined_logger->info("rosAgv, . start doing..");
+
 
     //if(station_id is chipmount_station )
     {
-        if("put" == action )
+        if("loading" == action )
         {
+            combined_logger->info("rosAgv, .startShelftUp..");
+
+            startShelftUp(0);
+
+            combined_logger->info("rosAgv, .startShelftUp end..");
+
+
             if(mChipmounter == nullptr)
             {
                 combined_logger->error("rosAgv,Doing, mChipmounter == nullptr...");
                 return false;
             }
 
+            combined_logger->info("rosAgv, startLoading...");
 
             mChipmounter->startLoading(station_id);
+
+            combined_logger->info("rosAgv, startRolling...");
+
             //PLC start to rolling, need AGV also start to rolling
             startRolling(AGV_SHELVES_ROLLING_FORWORD);
+            combined_logger->info("rosAgv, waitting for chipmounter loading finished...");
+
             while(!mChipmounter->isLoadingFinished())
             {
                 std::this_thread::sleep_for(dura);
-                combined_logger->info("rosAgv, waitting for chipmounter loading finished...");
+                /*times ++;
+                if(times >= 50)
+                    break;*/
             }
-
             stopRolling();
-
             return true;
-
         }
-        else if("get" == action)
+        else if("unloading" == action)
         {
-            startRolling(AGV_SHELVES_ROLLING_FORWORD);
+            combined_logger->info("rosAgv, .startShelftUp..");
+            startShelftUp(0);
+            combined_logger->info("rosAgv, .startShelftUp  end..");
+
+            startRolling(AGV_SHELVES_ROLLING_BACKWORD);
 
             if(mChipmounter == nullptr)
             {
@@ -617,15 +656,24 @@ bool rosAgv::Doing(string action, int station_id)
 
             mChipmounter->startUnLoading(station_id);
 
+            combined_logger->info("rosAgv, waitting for chipmounter unloading finished...");
+
             while(!mChipmounter->isUnLoadingFinished())
             {
                 std::this_thread::sleep_for(dura);
-                combined_logger->info("rosAgv, waitting for chipmounter unloading finished...");
+                /*times ++;
+                if(times >= 50)
+                    break;*/
             }
+
+            combined_logger->info("rosAgv,Doing, call stopRolling...");
 
             stopRolling();
         }
     }
+
+    combined_logger->info("rosAgv,Doing, end...");
+
 
 }
 
@@ -636,11 +684,42 @@ bool rosAgv::afterDoing(string action, int station_id)
 
 void rosAgv::startRolling(bool forword)
 {
-
+    std::unique_lock <std::mutex> lock(shelf_status_mutex);
+    if(forword)
+        startTask("roll_forword");
+    else
+        startTask("roll_backword");
+    nav_ctrl_status_var.wait(lock);
 }
 void rosAgv::stopRolling()
 {
+    startTask("stop_part");
+}
 
+void rosAgv::startShelftUp(int)
+{
+    combined_logger->info("rosAgv, startTask startShelftUp...");
+
+    std::unique_lock <std::mutex> lock(shelf_status_mutex);
+
+    combined_logger->info("rosAgv, startTask lift_up_900...");
+
+    startTask("lift_up_900");
+
+    combined_logger->info("rosAgv, lift_up_900 wait lock...");
+
+    nav_ctrl_status_var.wait(lock);
+
+    combined_logger->info("rosAgv, lift_up_900 end...");
+
+}
+
+void rosAgv::startShelftDown(int)
+{
+    std::unique_lock <std::mutex> lock(shelf_status_mutex);
+
+    startTask("lift_down_0");
+    nav_ctrl_status_var.wait(lock);
 }
 
 void rosAgv::test()
@@ -673,4 +752,85 @@ void rosAgv::test2()
     lines.push_back(path2);
 
     excutePath(lines);
+}
+
+
+void rosAgv::startTask(string station, string action)
+{
+    int16_t station_id;
+    std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
+
+    combined_logger->info("rosAgv, startTask ");
+
+    if(station == "2510")
+    {
+        station_id=0x2510;
+        combined_logger->info("rosAgv, startTask polar 06");
+    }
+    else if(station == "2511")
+    {
+        station_id=0x2511;
+        combined_logger->info("rosAgv, polar 07 ");
+    }
+
+    if(action == "unloading")
+    {
+        combined_logger->info("rosAgv,  取空卡塞");
+        startTask("lift_polar_" + station);
+
+        combined_logger->info("rosAgv, wait lock...");
+
+        nav_ctrl_status_var.wait(lock);
+
+        combined_logger->info("rosAgv, call doing...");
+
+        Doing(action, station_id);
+
+        combined_logger->info("rosAgv,  doing end...");
+
+        startTask("lift_polar_back");
+
+        combined_logger->info("rosAgv,  startTask lift_polar_back...");
+
+
+        nav_ctrl_status_var.wait(lock);
+        combined_logger->info("rosAgv, startTask 取空卡塞 end.....");
+    }
+    else if(action == "loading")
+    {      
+        combined_logger->info("rosAgv, polar 07  上料");
+        startTask("lift_polar_" + station);
+
+        combined_logger->info("rosAgv, wait lock...");
+
+        nav_ctrl_status_var.wait(lock);
+
+        combined_logger->info("rosAgv, start doing..");
+
+        Doing(action, station_id);
+
+        combined_logger->info("rosAgv, start lift_polar_back..");
+
+        startTask("lift_polar_back");
+        nav_ctrl_status_var.wait(lock);
+
+    }
+    else //only for test
+    {
+        combined_logger->info("rosAgv, start task .........");
+
+        /*startTask("lift_up_900");
+        nav_ctrl_status_var.wait(lock);
+        startTask("lift_down_0");
+        nav_ctrl_status_var.wait(lock);*/
+        startShelftUp(0);
+
+        startShelftDown(0);
+        combined_logger->info("rosAgv, start task end .........");
+
+
+    }
+
+    combined_logger->info("rosAgv, task end haha..");
+
 }

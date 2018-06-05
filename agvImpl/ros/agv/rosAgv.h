@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#define SIMULATOR 1
+#define SIMULATOR 0
 
 #define NAV_CTRL_USING_TOPIC  0
 
@@ -56,6 +56,8 @@ private:
        std::mutex parseDataMtx;
 
        std::mutex nav_ctrl_status_mutex;
+       std::mutex shelf_status_mutex;
+
        std::condition_variable nav_ctrl_status_var; // nav_ctrl_status条件变量.
 
        void subTopic(const char * topic, const char * topic_type);
@@ -71,6 +73,10 @@ private:
        void changeMap(string map_name);
        void startRolling(bool forword);//send to 偏贴机AGV start rolling topic
        void stopRolling();//send to 偏贴机AGV stop rolling topic
+
+       void startShelftUp(int);
+       void startShelftDown(int);
+
 
 
 public:
@@ -91,9 +97,13 @@ public:
     void test();
     void test2();
 
+    void startTask(string station, string action);
+
+
     bool beforeDoing(string ip, int port, string action, int station_id);
     bool Doing(string action, int station_id);
     bool afterDoing(string action, int station_id);
+    void setChipMounter(chipmounter* device);// only for test, will be removed
 
 
 private:
