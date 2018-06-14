@@ -14,15 +14,16 @@ QunChuangTaskMaker::QunChuangTaskMaker():
 
 QunChuangTaskMaker::~QunChuangTaskMaker()
 {
-    if(tcsConnection!=nullptr){
-        delete tcsConnection;
-        tcsConnection = nullptr;
-    }
+    // if(tcsConnection!=nullptr){
+    //     delete tcsConnection;
+    //     tcsConnection = nullptr;
+    // }
 }
 
 void QunChuangTaskMaker::init()
 {
-    tcsConnection = new QunChuangTcsConnection("127.0.0.1",8888);
+    // tcsConnection = new QunChuangTcsConnection("192.168.2.113",2000);
+    tcsConnection = QunChuangTcsConnection::Instance();
     tcsConnection->init();
 }
 
@@ -33,17 +34,30 @@ void QunChuangTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Va
 }
 
 //创建一个取货+送货任务
-void QunChuangTaskMaker::makeTask(std::string from ,std::string to,int dispatch_id,int ceid)
+void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid)
 {
+    //combined_logger->info("makeTask 创建一个取货+送货任务, from: %s, to: %s", from, to);
+    std::cout << "makeTask 创建一个取货+送货任务, from: " + from + "  to: " + to << std::endl;
+
     auto fromSpirit = MapManager::getInstance()->getMapSpiritByName(from);
     auto toSpirit = MapManager::getInstance()->getMapSpiritByName(to);
-    if(fromSpirit==nullptr || fromSpirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)return ;
-    if(toSpirit==nullptr || toSpirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)return ;
+    if(fromSpirit==nullptr || fromSpirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)
+    {
+        combined_logger->info("makeTask  fromSpirit==nullptr ");
+        return ;
+    }
+    if(toSpirit==nullptr || toSpirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)
+    {
+        combined_logger->info(" makeTask  toSpirit==nullptr ");
+        return ;
+    }
 
     AgvTaskPtr task(new AgvTask());
 
+
+
     //两个参数
-    task->setExtraParam("dispatch_id",intToString(dispatch_id));
+    task->setExtraParam("dispatch_id",dispatch_id);
     task->setExtraParam("ceid",intToString(ceid));
 
     //取货node
@@ -63,5 +77,9 @@ void QunChuangTaskMaker::makeTask(std::string from ,std::string to,int dispatch_
 
 
     task->setProduceTime(getTimeStrNow());
+
+    combined_logger->info(" getInstance()->addTask ");
+
+
     TaskManager::getInstance()->addTask(task);
 }

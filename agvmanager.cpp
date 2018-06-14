@@ -3,6 +3,7 @@
 #include "sqlite3/CppSQLite3.h"
 #include "common.h"
 #include "userlogmanager.h"
+#include "agvImpl/ros/agv/rosAgv.h"
 
 
 AgvManager::AgvManager()
@@ -42,7 +43,9 @@ bool AgvManager::init()
             std::string name = std::string(table_agv.fieldValue(1));
             std::string ip = std::string(table_agv.fieldValue(2));
             int port = atoi(table_agv.fieldValue(3));
-            AgvPtr agv(new Agv(id,name,ip,port));
+            //AgvPtr agv(new Agv(id,name,ip,port));
+            AgvPtr agv(new rosAgv(id,name,ip,port));
+            agv->init();
             agvs.push_back(agv);
         }
     }catch(CppSQLite3Exception e){

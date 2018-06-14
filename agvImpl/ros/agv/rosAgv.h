@@ -74,8 +74,8 @@ private:
        void startRolling(bool forword);//send to 偏贴机AGV start rolling topic
        void stopRolling();//send to 偏贴机AGV stop rolling topic
 
-       void startShelftUp(int);
-       void startShelftDown(int);
+       void startShelftUp(string action);
+       void startShelftDown(string action);
 
 
 
@@ -105,6 +105,8 @@ public:
     bool afterDoing(string action, int station_id);
     void setChipMounter(chipmounter* device);// only for test, will be removed
 
+    bool isAGVInit();
+
 
 private:
     virtual void arrve(int x,int y);
@@ -123,6 +125,12 @@ private:
     int nav_ctrl_status;
 
     chipmounter* mChipmounter; //偏贴机
+
+    bool m_bInitlayer;
+    int  m_agv_type;
+
+    void InitShelfLayer();
+    void ControlShelfUpDown(int layer, string height);
 
 };
 

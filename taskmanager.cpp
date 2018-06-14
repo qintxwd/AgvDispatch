@@ -65,6 +65,10 @@ bool TaskManager::init()
 	g_threadPool.enqueue([&] {
 		while (true) {
 			toDisMtx.lock();
+
+            if(toDistributeTasks.size() > 0)
+                combined_logger->info(" 未分配任务: ", toDistributeTasks.size());
+
 			for (auto itr = toDistributeTasks.begin(); itr != toDistributeTasks.end(); ++itr) {
 				for (auto pos = itr->second.begin(); pos != itr->second.end();) {
 					AgvTaskPtr task = *pos;
@@ -72,6 +76,9 @@ bool TaskManager::init()
 					int index = task->getDoingIndex();
 					if (index >= nodes.size()) {
 						//任务完成了
+
+                        combined_logger->info(" 任务完成了 ");
+
 						pos = itr->second.erase(pos);
 						finishTask(task);
 						continue;
@@ -82,6 +89,9 @@ bool TaskManager::init()
 						AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
 						if (agv != nullptr && aimStation == 0 && agv->getTask() == task) {
 							//拿去执行//从未分配队列中拿出去agv
+
+                            combined_logger->info(" 从未分配队列中拿出去agv ");
+
 							pos = itr->second.erase(pos);
 							excuteTask(task);
 							continue;
@@ -89,10 +99,14 @@ bool TaskManager::init()
 						else {
 							if (agv == nullptr) {
 								//未分配AGV
+                                combined_logger->info(" 未分配AGV ");
 								AgvPtr bestAgv = nullptr;
 								int minDis = DISTANCE_INFINITY;
 								std::vector<int> result;
 								//遍历所有的agv
+
+                                combined_logger->info(" 遍历所有的agv ");
+
 								AgvManager::getInstance()->foreachAgv(
 									[&](AgvPtr tempagv) {
 									if (tempagv->status != Agv::AGV_STATUS_IDLE)
@@ -119,6 +133,7 @@ bool TaskManager::init()
 
 								if (bestAgv != NULL && minDis != DISTANCE_INFINITY) {
 									//找到了最优线路和最佳agv
+                                    combined_logger->info(" 找到了最优线路和最佳agv ");
 									bestAgv->setTask(task);
 									task->setPath(result);
 									pos = itr->second.erase(pos);
@@ -129,6 +144,8 @@ bool TaskManager::init()
 							else {
 								//已分配AGV
 								//指定车辆不空闲
+                                combined_logger->info(" 指定车辆不空闲 ");
+
 								if (agv->getTask() != task) {
 									if (agv->status != Agv::AGV_STATUS_IDLE)
 										continue;
@@ -138,6 +155,8 @@ bool TaskManager::init()
 
 								if (distance != DISTANCE_INFINITY && result.size() > 0) {
 									//拿去执行//从未分配队列中拿出去
+                                    combined_logger->info(" 从未分配队列中拿出去 ");
+
 									agv->setTask(task);
 									task->setPath(result);
 									pos = itr->second.erase(pos);
@@ -164,10 +183,16 @@ bool TaskManager::addTask(AgvTaskPtr task)
 	task->setId(++task_id);
 	bool add = false;
 	toDisMtx.lock();
+
+    combined_logger->info(" add new task");
+
+
 	for (auto itr = toDistributeTasks.begin(); itr != toDistributeTasks.end(); ++itr) {
 		if (itr->first == task->getPriority()) {
 			itr->second.push_back(task);
 			add = true;
+
+            combined_logger->info(" add new task success");
 			break;
 		}
 	}

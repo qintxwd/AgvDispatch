@@ -117,7 +117,9 @@ HEADERS += \
     qunchuang/qunchuangtcsconnection.h \
     device/device.h \
     device/elevator/elevator.h \
+    device/elevator/elevator_protocol.h \
     qunchuang/chipmounter/chipmounter.h
+    qunchuang/msg.h
 
 SOURCES += \
     agv.cpp \
@@ -161,7 +163,9 @@ SOURCES += \
     qunchuang/qunchuangtcsconnection.cpp \
     device/device.cpp \
     device/elevator/elevator.cpp \
-    qunchuang/chipmounter/chipmounter.cpp
+    qunchuang/chipmounter/chipmounter.cpp \
+    qunchuang/msg.cpp \
+    device/elevator/elevator_protocol.cpp
 
 
 

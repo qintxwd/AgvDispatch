@@ -11,7 +11,7 @@ public:
     ~QunChuangTaskMaker();
     virtual void init();
     virtual void makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    virtual void makeTask(std::string from ,std::string to,int dispatch_id,int ceid);
+    virtual void makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid);
 
 private:
     QunChuangTcsConnection *tcsConnection;

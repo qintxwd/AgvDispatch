@@ -8,6 +8,9 @@ rosAgv::rosAgv(int id, std::string name, std::string ip, int port):
     Agv(id,name,ip,port)
 {
     mChipmounter = nullptr;
+
+    m_bInitlayer = false;
+    m_agv_type = AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF;
 }
 
 void rosAgv::onConnect()
@@ -24,6 +27,7 @@ void rosAgv::onConnect()
 #if SIMULATOR
         advertiseTopic((getName() + "/nav_ctrl").c_str(), "yocs_msgs/NavigationControl");
         advertiseTopic((getName() + "/rosnodejs/cmd_string").c_str(), "std_msgs/String");
+        advertiseTopic((getName() + "/waypoint_user_pub").c_str(), "std_msgs/String");
 #else
         advertiseTopic("/nav_ctrl", "yocs_msgs/NavigationControl");
         advertiseTopic("/rosnodejs/cmd_string", "std_msgs/String");
@@ -36,6 +40,11 @@ void rosAgv::onConnect()
 #else
         advertiseService("/nav_ctrl_status_service","scheduling_msgs/ReportNavigationControlStatus");
 #endif
+    }
+
+    if(m_agv_type == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)
+    {
+        InitShelfLayer();
     }
     //test();
 
@@ -609,7 +618,7 @@ bool rosAgv::Doing(string action, int station_id)
         {
             combined_logger->info("rosAgv, .startShelftUp..");
 
-            startShelftUp(0);
+            startShelftUp(action);
 
             combined_logger->info("rosAgv, .startShelftUp end..");
 
@@ -638,12 +647,15 @@ bool rosAgv::Doing(string action, int station_id)
                     break;*/
             }
             stopRolling();
+
+            startShelftDown(action);
+
             return true;
         }
         else if("unloading" == action)
         {
             combined_logger->info("rosAgv, .startShelftUp..");
-            startShelftUp(0);
+            startShelftUp(action);
             combined_logger->info("rosAgv, .startShelftUp  end..");
 
             startRolling(AGV_SHELVES_ROLLING_BACKWORD);
@@ -669,12 +681,18 @@ bool rosAgv::Doing(string action, int station_id)
             combined_logger->info("rosAgv,Doing, call stopRolling...");
 
             stopRolling();
+            startShelftDown(action);
+
+            combined_logger->info("rosAgv,Doing,unloading end...");
+
+            return true;
+
         }
     }
 
     combined_logger->info("rosAgv,Doing, end...");
 
-
+    return false;
 }
 
 bool rosAgv::afterDoing(string action, int station_id)
@@ -684,21 +702,38 @@ bool rosAgv::afterDoing(string action, int station_id)
 
 void rosAgv::startRolling(bool forword)
 {
-    std::unique_lock <std::mutex> lock(shelf_status_mutex);
+    /*std::unique_lock <std::mutex> lock(shelf_status_mutex);
     if(forword)
         startTask("roll_forword");
     else
         startTask("roll_backword");
     nav_ctrl_status_var.wait(lock);
+    */
+
+    Json::Value msg;
+
+    if(forword)
+    {
+        msg["data"]="load_all:1" ;
+    }
+    else
+    {
+        msg["data"]="load_all:2";
+    }
+
+    publishTopic("/waypoint_user_pub", msg);
 }
 void rosAgv::stopRolling()
 {
-    startTask("stop_part");
-}
+    Json::Value msg;
 
-void rosAgv::startShelftUp(int)
+    msg["data"]="load_all:0" ;
+
+    publishTopic("/waypoint_user_pub", msg);}
+
+void rosAgv::startShelftUp(string action)
 {
-    combined_logger->info("rosAgv, startTask startShelftUp...");
+    /*combined_logger->info("rosAgv, startTask startShelftUp...");
 
     std::unique_lock <std::mutex> lock(shelf_status_mutex);
 
@@ -711,15 +746,71 @@ void rosAgv::startShelftUp(int)
     nav_ctrl_status_var.wait(lock);
 
     combined_logger->info("rosAgv, lift_up_900 end...");
+    */
+    if(action == "loading")
+    {
+        ControlShelfUpDown(3, "87500");
+        combined_logger->info("rosAgv, 3, 87500.end..................");
+
+        sleep(1);
+        combined_logger->info("rosAgv, 2, 63000...");
+
+        ControlShelfUpDown(2, "63000");
+
+        combined_logger->info("rosAgv, 2, 63000. end...............");
+
+        sleep(1);
+
+        combined_logger->info("rosAgv, 40000...");
+
+        ControlShelfUpDown(1, "40000");
+        sleep(10);
+    }
+    else if(action == "unloading")
+    {
+        ControlShelfUpDown(3, "86000");
+        combined_logger->info("rosAgv, 3, 86000.end..................");
+
+        sleep(1);
+        combined_logger->info("rosAgv, 2, 62000...");
+
+        ControlShelfUpDown(2, "62000");
+
+        combined_logger->info("rosAgv, 2, 62000. end...............");
+
+        sleep(1);
+
+        combined_logger->info("rosAgv, 37500...");
+
+        ControlShelfUpDown(1, "37500");
+        sleep(10);
+    }
 
 }
 
-void rosAgv::startShelftDown(int)
+void rosAgv::startShelftDown(string action)
 {
-    std::unique_lock <std::mutex> lock(shelf_status_mutex);
+    /*std::unique_lock <std::mutex> lock(shelf_status_mutex);
 
     startTask("lift_down_0");
     nav_ctrl_status_var.wait(lock);
+    */
+    ControlShelfUpDown(1, "0");
+    combined_logger->info("rosAgv, 1, 00000.end..................");
+
+    sleep(1);
+    combined_logger->info("rosAgv, 2, 20000...");
+
+    ControlShelfUpDown(2, "20000");
+
+    combined_logger->info("rosAgv, 2, 20000. end...............");
+
+    sleep(1);
+
+    combined_logger->info("rosAgv, 40000...");
+
+    ControlShelfUpDown(3, "40000");
+    sleep(1);
 }
 
 void rosAgv::test()
@@ -815,22 +906,109 @@ void rosAgv::startTask(string station, string action)
         nav_ctrl_status_var.wait(lock);
 
     }
-    else //only for test
-    {
-        combined_logger->info("rosAgv, start task .........");
-
-        /*startTask("lift_up_900");
-        nav_ctrl_status_var.wait(lock);
-        startTask("lift_down_0");
-        nav_ctrl_status_var.wait(lock);*/
-        startShelftUp(0);
-
-        startShelftDown(0);
-        combined_logger->info("rosAgv, start task end .........");
-
-
-    }
 
     combined_logger->info("rosAgv, task end haha..");
 
+}
+
+
+
+
+void rosAgv::ControlShelfUpDown(int layer, string height)
+{
+    Json::Value msg;
+
+    if(layer == 1)
+    {
+        msg["data"]="elevate:10," + height;
+    }
+    else if(layer == 2)
+    {
+        msg["data"]="elevate:12," + height;
+    }
+    else if(layer == 3)
+    {
+        msg["data"]="elevate:14," + height;
+    }
+
+    publishTopic("/waypoint_user_pub", msg);
+}
+
+
+void rosAgv::InitShelfLayer()
+{
+    if(m_bInitlayer == false)
+    {
+        /*combined_logger->info("rosAgv, InitShelfLayer...");
+
+        //std::unique_lock <std::mutex> lock(shelf_status_mutex);
+
+        combined_logger->info("rosAgv, InitShelfLayer 222...");
+
+        startTask("init_layers");
+
+        combined_logger->info("rosAgv, InitShelfLayer lock...");
+
+        //nav_ctrl_status_var.wait(lock);
+
+        combined_logger->info("rosAgv, InitShelfLayer end...");
+
+        sleep(20);*/
+
+        startShelftDown("");
+
+        m_bInitlayer = true;
+    }
+    else
+    {
+        combined_logger->info("rosAgv, InitShelfLayer m_bInitlayer is true, no need to init...");
+        /*ControlShelfUpDown(1, "0");
+        ControlShelfUpDown(2, "0");
+        ControlShelfUpDown(3, "0");
+        */
+        startShelftDown("");
+    }
+
+    /*sleep(5);
+
+    combined_logger->info("rosAgv, 3, 86500...");
+
+
+    ControlShelfUpDown(3, "86500");
+    combined_logger->info("rosAgv, 3, 87000.end..................");
+
+    sleep(10);
+    combined_logger->info("rosAgv, 2, 62500...");
+
+    ControlShelfUpDown(2, "62500");
+
+    combined_logger->info("rosAgv, 2, 62500. end...............");
+
+    sleep(10);
+
+    combined_logger->info("rosAgv, 40500...");
+
+    ControlShelfUpDown(1, "40500");
+
+    combined_logger->info("rosAgv, 40500...end..............");
+
+
+    combined_logger->info("rosAgv, startRolling sleep...");
+
+    sleep(3);
+    startRolling(true);
+    */
+
+    //sleep(30);
+
+    //combined_logger->info("rosAgv, stopRolling...");
+
+    //stopRolling();
+
+}
+
+
+bool rosAgv::isAGVInit()
+{
+    return m_bInitlayer;
 }

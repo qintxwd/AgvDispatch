@@ -33,7 +33,7 @@ TaskMaker* TaskMaker::getInstance()
     return nullptr;
 }
 
-void TaskMaker::makeTask(std::string from ,std::string to,int dispatch_id,int ceid)
+void TaskMaker::makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid)
 {
 
 }

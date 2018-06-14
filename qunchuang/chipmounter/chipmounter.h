@@ -66,11 +66,17 @@ public:
         else
         {
             info = chip_info.at(0);
-            chip_info.erase(chip_info.begin());//删除第一个元素
+            //chip_info.erase(chip_info.begin());//删除第一个元素
             c->action = info.action;
             c->point = info.point;
             return true;
         }
+    }
+
+    void deleteHeadAction()
+    {
+        if(!chip_info.empty())
+            chip_info.erase(chip_info.begin());//删除第一个元素
     }
 
 private:
