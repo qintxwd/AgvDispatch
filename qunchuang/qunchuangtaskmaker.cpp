@@ -34,7 +34,7 @@ void QunChuangTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Va
 }
 
 //创建一个取货+送货任务
-void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid)
+void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid,std::string line_id, int agv_id)
 {
     //combined_logger->info("makeTask 创建一个取货+送货任务, from: %s, to: %s", from, to);
     std::cout << "makeTask 创建一个取货+送货任务, from: " + from + "  to: " + to << std::endl;
@@ -43,12 +43,12 @@ void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string d
     auto toSpirit = MapManager::getInstance()->getMapSpiritByName(to);
     if(fromSpirit==nullptr || fromSpirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)
     {
-        combined_logger->info("makeTask  fromSpirit==nullptr ");
+        combined_logger->error("makeTask  fromSpirit==nullptr ");
         return ;
     }
     if(toSpirit==nullptr || toSpirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)
     {
-        combined_logger->info(" makeTask  toSpirit==nullptr ");
+        combined_logger->error(" makeTask  toSpirit==nullptr ");
         return ;
     }
 
@@ -56,9 +56,12 @@ void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string d
 
 
 
-    //两个参数
+    //4个参数
     task->setExtraParam("dispatch_id",dispatch_id);
     task->setExtraParam("ceid",intToString(ceid));
+    task->setExtraParam("line_id",line_id);
+    task->setExtraParam("agv_id",intToString(agv_id));
+
 
     //取货node
     AgvTaskNodePtr getNode(new AgvTaskNode());

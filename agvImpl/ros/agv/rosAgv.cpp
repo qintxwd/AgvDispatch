@@ -11,6 +11,9 @@ rosAgv::rosAgv(int id, std::string name, std::string ip, int port):
 
     m_bInitlayer = false;
     m_agv_type = AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF;
+
+    //每个AGV需要根据原点修改
+    initStation("0031"); //初始化站点, 通常为AGV原点
 }
 
 void rosAgv::onConnect()
@@ -179,10 +182,10 @@ void rosAgv::processServiceCall(Json::Value call_service)
                 //获得 nav ctrl status 状态
                 if(call_service.isMember("args")){
                     Json::Value args = call_service["args"];
-                    nav_ctrl_status=args["status"].asInt();
+                    m_nav_ctrl_status=args["status"].asInt();
                     string waypoint_name = args["waypoint_name"].asString();
 
-                    navCtrlStatusNotify(waypoint_name, nav_ctrl_status);
+                    navCtrlStatusNotify(waypoint_name, m_nav_ctrl_status);
                 }
 
                 //send service response
@@ -501,6 +504,9 @@ void rosAgv::callMapChange(int station)
 
 void rosAgv::excutePath(std::vector<int> lines)
 {
+    int endId = 0;
+    combined_logger->info("rosAgv,  excutePath");
+
     std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
 
     stationMtx.lock();
@@ -510,7 +516,7 @@ void rosAgv::excutePath(std::vector<int> lines)
         if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
 
         MapPath *path = static_cast<MapPath *>(spirit);
-        int endId = path->getEnd();
+        endId = path->getEnd();
         excutestations.push_back(endId);
     }
     stationMtx.unlock();
@@ -522,6 +528,11 @@ void rosAgv::excutePath(std::vector<int> lines)
     nav_ctrl_status_var.wait(lock);
 
     combined_logger->info("task finished...................");
+
+    combined_logger->info("reset nowStation...................");
+
+    //lastStation = nowStation;
+    nowStation = endId;
 
 }
 
@@ -567,7 +578,7 @@ void rosAgv::setChipMounter(chipmounter* device)
 bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
 {
     int try_times = 0;
-    std::chrono::milliseconds dura(200);
+    std::chrono::milliseconds dura(1000);
 
     if("none" == action)
         return true;
@@ -582,7 +593,7 @@ bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
                 {
                     std::this_thread::sleep_for(dura);
                     try_times ++;
-                    if(try_times > 30)
+                    if(try_times > 60)
                     {
                         combined_logger->error("rosAgv, beforeDoing, connect error...");
 
@@ -637,17 +648,15 @@ bool rosAgv::Doing(string action, int station_id)
 
             //PLC start to rolling, need AGV also start to rolling
             startRolling(AGV_SHELVES_ROLLING_FORWORD);
-            combined_logger->info("rosAgv, waitting for chipmounter loading finished...");
+            combined_logger->info("rosAgv, 等待上料完成...");
 
-            while(!mChipmounter->isLoadingFinished())
+            while(!mChipmounter->isLoadingFinished())//等待上料完成
             {
                 std::this_thread::sleep_for(dura);
-                /*times ++;
-                if(times >= 50)
-                    break;*/
             }
-            stopRolling();
 
+            sleep(10);
+            stopRolling();
             startShelftDown(action);
 
             return true;
@@ -668,19 +677,17 @@ bool rosAgv::Doing(string action, int station_id)
 
             mChipmounter->startUnLoading(station_id);
 
-            combined_logger->info("rosAgv, waitting for chipmounter unloading finished...");
+            combined_logger->info("rosAgv, 等待下料完成...");
 
-            while(!mChipmounter->isUnLoadingFinished())
+            while(!mChipmounter->isUnLoadingFinished())//等待下料完成
             {
                 std::this_thread::sleep_for(dura);
-                /*times ++;
-                if(times >= 50)
-                    break;*/
             }
 
             combined_logger->info("rosAgv,Doing, call stopRolling...");
 
             stopRolling();
+            sleep(10);
             startShelftDown(action);
 
             combined_logger->info("rosAgv,Doing,unloading end...");
@@ -761,9 +768,9 @@ void rosAgv::startShelftUp(string action)
 
         sleep(1);
 
-        combined_logger->info("rosAgv, 40000...");
+        combined_logger->info("rosAgv, 39000...");
 
-        ControlShelfUpDown(1, "40000");
+        ControlShelfUpDown(1, "39000");
         sleep(10);
     }
     else if(action == "unloading")
@@ -873,19 +880,26 @@ void rosAgv::startTask(string station, string action)
 
         nav_ctrl_status_var.wait(lock);
 
-        combined_logger->info("rosAgv, call doing...");
+        if(m_nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED)//AGV已到达(下料到达)
+        {
+            combined_logger->info("rosAgv, AGV已到达(下料到达),call doing...");
 
-        Doing(action, station_id);
+            Doing(action, station_id);
 
-        combined_logger->info("rosAgv,  doing end...");
+            combined_logger->info("rosAgv,  doing end...");
 
-        startTask("lift_polar_back");
+            startTask("lift_polar_back");
 
-        combined_logger->info("rosAgv,  startTask lift_polar_back...");
+            combined_logger->info("rosAgv,  startTask lift_polar_back...");
 
 
-        nav_ctrl_status_var.wait(lock);
-        combined_logger->info("rosAgv, startTask 取空卡塞 end.....");
+            nav_ctrl_status_var.wait(lock);
+            combined_logger->info("rosAgv, startTask 取空卡塞 end.....");
+        }
+        else
+        {
+            combined_logger->error("rosAgv, 取空卡塞 error ...");
+        }
     }
     else if(action == "loading")
     {      
@@ -896,14 +910,21 @@ void rosAgv::startTask(string station, string action)
 
         nav_ctrl_status_var.wait(lock);
 
-        combined_logger->info("rosAgv, start doing..");
+        if(m_nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED)//AGV已到达(上料到达)
+        {
+            combined_logger->info("rosAgv, AGV已到达(上料到达) start doing..");
 
-        Doing(action, station_id);
+            Doing(action, station_id);
 
-        combined_logger->info("rosAgv, start lift_polar_back..");
+            combined_logger->info("rosAgv, start lift_polar_back..");
 
-        startTask("lift_polar_back");
-        nav_ctrl_status_var.wait(lock);
+            startTask("lift_polar_back");
+            nav_ctrl_status_var.wait(lock);
+        }
+        else
+        {
+            combined_logger->error("rosAgv, 上料 error ...");
+        }
 
     }
 
@@ -918,15 +939,15 @@ void rosAgv::ControlShelfUpDown(int layer, string height)
 {
     Json::Value msg;
 
-    if(layer == 1)
+    if(layer == 1)//最下面一层
     {
         msg["data"]="elevate:10," + height;
     }
-    else if(layer == 2)
+    else if(layer == 2)//中间层
     {
         msg["data"]="elevate:12," + height;
     }
-    else if(layer == 3)
+    else if(layer == 3)//最高层
     {
         msg["data"]="elevate:14," + height;
     }
@@ -939,22 +960,6 @@ void rosAgv::InitShelfLayer()
 {
     if(m_bInitlayer == false)
     {
-        /*combined_logger->info("rosAgv, InitShelfLayer...");
-
-        //std::unique_lock <std::mutex> lock(shelf_status_mutex);
-
-        combined_logger->info("rosAgv, InitShelfLayer 222...");
-
-        startTask("init_layers");
-
-        combined_logger->info("rosAgv, InitShelfLayer lock...");
-
-        //nav_ctrl_status_var.wait(lock);
-
-        combined_logger->info("rosAgv, InitShelfLayer end...");
-
-        sleep(20);*/
-
         startShelftDown("");
 
         m_bInitlayer = true;
@@ -962,48 +967,8 @@ void rosAgv::InitShelfLayer()
     else
     {
         combined_logger->info("rosAgv, InitShelfLayer m_bInitlayer is true, no need to init...");
-        /*ControlShelfUpDown(1, "0");
-        ControlShelfUpDown(2, "0");
-        ControlShelfUpDown(3, "0");
-        */
         startShelftDown("");
     }
-
-    /*sleep(5);
-
-    combined_logger->info("rosAgv, 3, 86500...");
-
-
-    ControlShelfUpDown(3, "86500");
-    combined_logger->info("rosAgv, 3, 87000.end..................");
-
-    sleep(10);
-    combined_logger->info("rosAgv, 2, 62500...");
-
-    ControlShelfUpDown(2, "62500");
-
-    combined_logger->info("rosAgv, 2, 62500. end...............");
-
-    sleep(10);
-
-    combined_logger->info("rosAgv, 40500...");
-
-    ControlShelfUpDown(1, "40500");
-
-    combined_logger->info("rosAgv, 40500...end..............");
-
-
-    combined_logger->info("rosAgv, startRolling sleep...");
-
-    sleep(3);
-    startRolling(true);
-    */
-
-    //sleep(30);
-
-    //combined_logger->info("rosAgv, stopRolling...");
-
-    //stopRolling();
 
 }
 
@@ -1011,4 +976,18 @@ void rosAgv::InitShelfLayer()
 bool rosAgv::isAGVInit()
 {
     return m_bInitlayer;
+}
+
+void rosAgv::initStation(string station_name)
+{
+    auto nowSpirit = MapManager::getInstance()->getMapSpiritByName(station_name);
+    if(nowSpirit!=nullptr && nowSpirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point)
+    {
+        nowStation = nowSpirit->getId();
+    }
+    else
+    {
+        combined_logger->error("rosAgv, initStation: " + station_name + " error...");
+    }
+
 }

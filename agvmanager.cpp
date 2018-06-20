@@ -44,9 +44,20 @@ bool AgvManager::init()
             std::string ip = std::string(table_agv.fieldValue(2));
             int port = atoi(table_agv.fieldValue(3));
             //AgvPtr agv(new Agv(id,name,ip,port));
-            AgvPtr agv(new rosAgv(id,name,ip,port));
-            agv->init();
-            agvs.push_back(agv);
+
+            if(GLOBAL_AGV_PROJECT == AGV_PROJECT_QUNCHUANG) // 群创
+            {
+                AgvPtr agv(new rosAgv(id,name,ip,port));
+                agv->init();
+                agvs.push_back(agv);
+            }
+            else
+            {
+                AgvPtr agv(new Agv(id,name,ip,port));
+                agv->init();
+                agvs.push_back(agv);
+            }
+
         }
     }catch(CppSQLite3Exception e){
         combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
@@ -76,8 +87,10 @@ void AgvManager::updateAgv(int id, std::string name, std::string ip, int port)
 AgvPtr AgvManager::getAgvById(int id)
 {
     for(auto agv:agvs){
-        if(agv->getId() == id)return agv;
+        if(agv->getId() == id)
+            return agv;
     }
+
     return nullptr;
 }
 

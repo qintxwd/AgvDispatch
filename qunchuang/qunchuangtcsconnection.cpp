@@ -99,7 +99,7 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
 {
 //#define MAX_MSG_LEN     (1024*10)
     std::string msg(data, (size_t)len);
-    msg = "S1F11L[13]<A[1] CEID ID='0010'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID=''><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='0032'><A[20] DESTINATION ID='0034'><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='2'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='3'><A[3] PRODUCT_CNT ID=''>";
+    msg = "S1F11L[13]<A[1] CEID ID='0010'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID=''><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='0032'><A[20] DESTINATION ID='0033'><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='2'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='3'><A[3] PRODUCT_CNT ID=''>";
     combined_logger->info("TCS RECV:"+msg);
 
     // 解析msg, SnFn<MSG>
@@ -122,12 +122,27 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
         int ceid            = std::stoi(msg_data["CEID"].string_value());
         std::string dispatch_id  = msg_data["DISPATCH_ID"].string_value();
 
+        std::string agv_id_str  = msg_data["AGV_ID"].string_value();
+        int agv_id = -1;
+        try
+        {
+            agv_id = std::stoi(agv_id_str);
+        }
+        catch(std::exception e)
+        {
 
-        combined_logger->info(" QunChuangTcsConnection,  makeTask");
+        }
 
+        std::string line_id = msg_data["LINE_ID"].string_value();
+
+        combined_logger->info(" QunChuang new task, from : " + from);
+        combined_logger->info("                       to : " + to);
+        combined_logger->info("              dispatch_id : " + dispatch_id);
+        combined_logger->info("                   agv_id : " + agv_id_str);
+        combined_logger->info("                  line_id : " + line_id);
 
         //TODO
-        TaskMaker::getInstance()->makeTask(from,to,dispatch_id,ceid);
+        TaskMaker::getInstance()->makeTask(from,to,dispatch_id,ceid,line_id,agv_id);
 
         // 返回信息
         lynx::Msg ret_msg({

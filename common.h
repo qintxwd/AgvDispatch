@@ -62,6 +62,8 @@ enum{
     //...
 };
 
+#define QUNCHUANG_PROJECT
+
 extern const int GLOBAL_AGV_PROJECT;
 
 

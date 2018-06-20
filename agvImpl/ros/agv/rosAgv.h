@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#define SIMULATOR 0
+#define SIMULATOR 1
 
 #define NAV_CTRL_USING_TOPIC  0
 
@@ -76,6 +76,7 @@ private:
 
        void startShelftUp(string action);
        void startShelftDown(string action);
+       void initStation(string station_name);
 
 
 
@@ -122,7 +123,7 @@ private:
     bool sendJsonToAGV(Json::Value json);
 
     //nav ctrl status 状态
-    int nav_ctrl_status;
+    int m_nav_ctrl_status;
 
     chipmounter* mChipmounter; //偏贴机
 
