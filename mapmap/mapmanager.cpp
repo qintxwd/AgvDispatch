@@ -73,6 +73,18 @@ MapSpirit *MapManager::getMapSpiritByName(std::string name)
     return nullptr;
 }
 
+MapPath *MapManager::getMapPathByStartEnd(int start,int end)
+{
+    auto ae = g_onemap.getAllElement();
+    for(auto e:ae){
+        if(e->getSpiritType() == MapSpirit::Map_Sprite_Type_Path){
+            MapPath *path = static_cast<MapPath *>(e);
+            if(path->getStart() == start && path->getEnd() == end)return path;
+        }
+    }
+    return nullptr;
+}
+
 //一个Agv占领一个站点
 void MapManager::occuStation(int station, AgvPtr occuAgv)
 {

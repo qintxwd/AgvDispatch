@@ -1,7 +1,7 @@
-#ifndef ROSAGV_H
+﻿#ifndef ROSAGV_H
 #define ROSAGV_H
 
-#include "agv.h"
+#include "realagv.h"
 #include "agvtask.h"
 #include "qyhtcpclient.h"
 #include "userlogmanager.h"
@@ -49,7 +49,7 @@ enum nav_control{
 #define AGV_SHELVES_ROLLING_FORWORD true  // 向前转， AGV方向
 #define AGV_SHELVES_ROLLING_BACKWORD false // 向后转
 
-class rosAgv : public Agv
+class rosAgv : public RealAgv
 {
 private:
        //geometry_msgs::Pose agvPose;

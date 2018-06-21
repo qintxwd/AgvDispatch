@@ -5,7 +5,7 @@
 
 
 rosAgv::rosAgv(int id, std::string name, std::string ip, int port):
-    Agv(id,name,ip,port)
+    RealAgv(id,name,ip,port)
 {
     mChipmounter = nullptr;
 

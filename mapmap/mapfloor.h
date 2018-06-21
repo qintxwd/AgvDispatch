@@ -23,6 +23,7 @@ public:
     void setOriginX(int _originX){originX = _originX;}
     void setOriginY(int _originY){originY = _originY;}
     void setRate(double _rate){rate = _rate;}
+    void setOriginTheta(int _originTheta){originTheta=_originTheta;}
 
     void removePoint(int p){points.remove(p);}
     void removePath(int p){paths.remove(p);}
@@ -38,6 +39,7 @@ public:
     int getOriginX(){return originX;}
     int getOriginY(){return originY;}
     double getRate(){return rate;}
+    int getOriginTheta(){return originTheta;}
 private:
     std::list<int> points;///若干站点
     std::list<int> paths;///若干路径
@@ -45,6 +47,7 @@ private:
     int originX;//原点位置的 对应位置
     int originY;//原点位置的 对应位置
     double rate;//agv的距离（实际距离） 和 地图位置的比例
+    int originTheta;//原点位置 对应的角度
 };
 
 #endif // MAPFLOOR_H

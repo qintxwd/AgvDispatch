@@ -9,8 +9,6 @@
 class AgvTask;
 using AgvTaskPtr = std::shared_ptr<AgvTask>;
 
-class QyhTcpClient;
-
 class Agv;
 using AgvPtr = std::shared_ptr<Agv>;
 //AGV
@@ -19,7 +17,7 @@ class Agv:public std::enable_shared_from_this<Agv>
 public:
     Agv(int id,std::string name,std::string ip,int port);
 
-    void init();
+    virtual void init();
 
     virtual ~Agv();
 
@@ -27,11 +25,12 @@ public:
 
     virtual int type(){return Type;}
 
+    //阻塞的函数,知道执行完成后才可以返回
     virtual void excutePath(std::vector<int> lines);
 
     virtual void cancelTask();
 
-    bool send(const char *data, int len);
+    virtual void reconnect();
 
     //状态
     enum {
@@ -54,31 +53,37 @@ public:
 
     //计算路径用的
     int lastStation = 0;//上一个站点
-	int nowStation = 0;//当前所在站点
-	int nextStation = 0;//下一个站点
+    int nowStation = 0;//当前所在站点
+    int nextStation = 0;//下一个站点
 
     void setTask(AgvTaskPtr _task){currentTask = _task;}
     AgvTaskPtr getTask(){return currentTask;}
-
     int getId(){return id;}
     std::string getName(){return name;}
     std::string getIp(){return ip;}
     int getPort(){return port;}
-
     void setName(std::string _name){name=_name;}
     void setIp(std::string _ip){ip=_ip;}
     void setPort(int _port){port=_port;}
-
-    //回调
-    virtual void onRead(const char *data,int len);
-    virtual void onConnect();
-    virtual void onDisconnect();
+    void setX(int _x){x=_x;}
+    void setY(int _y){y=_y;}
+    void setTheta(int _theta){theta=_theta;}
+    int getX(){return x;}
+    int getY(){return y;}
+    int getTheta(){return theta;}
 
     void onArriveStation(int station);
     void onLeaveStation(int stationid);
     void onError(int code,std::string msg);
     void onWarning(int code, std::string msg);
-    void reconnect();
+
+    virtual void arrve(int x,int y);
+    virtual void goStation(int station, bool stop = false);
+    virtual void stop();
+    virtual void callMapChange(int station);
+
+    void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
+    std::string getExtraParam(std::string key){return extra_params[key];}
 protected:
     AgvTaskPtr currentTask;
     int id;
@@ -86,25 +91,16 @@ protected:
     std::string ip;
     int port;
 
-    virtual void arrve(int x,int y);
-    virtual void goStation(int station, bool stop = false);
-    virtual void stop();
-    virtual void callMapChange(int station);
-
-    QyhTcpClient *tcpClient;
-
-    volatile int arriveStation;
+    //位置信息//直接显示要显示的位置
+    int x;
+    int y;
+    int theta;
 
     std::mutex stationMtx;
     std::vector<int> excutestations;
     std::vector<int> excutespaths;
 
-private:
     std::map<std::string,std::string> extra_params;
-
-public:
-    void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
-    std::string getExtraParam(std::string key){return extra_params[key];}
 };
 
 #endif // AGV_H

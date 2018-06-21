@@ -56,11 +56,8 @@ HEADERS += \
     usermanager.h \
     utils/threadpool.h \
     userlogmanager.h \
-    Jacking/jackingagv.h \
-    Jacking/jackingagvthingturn.h \
     usermanager.h \
     taskmaker.h \
-    Jacking/jacktaskmaker.h \
     mapmap/mapbackground.h \
     mapmap/mapblock.h \
     mapmap/mapfloor.h \
@@ -118,7 +115,10 @@ HEADERS += \
     device/device.h \
     device/elevator/elevator.h \
     device/elevator/elevator_protocol.h \
-    qunchuang/chipmounter/chipmounter.h
+    qunchuang/chipmounter/chipmounter.h \
+    realagv.h \
+    virtualagv.h \
+    virtualrosagv.h
     qunchuang/msg.h
 
 SOURCES += \
@@ -142,10 +142,7 @@ SOURCES += \
     msgprocess.cpp \
     usermanager.cpp \
     userlogmanager.cpp \
-    Jacking/jackingagv.cpp \
-    Jacking/jackingagvthingturn.cpp \
     taskmaker.cpp \
-    Jacking/jacktaskmaker.cpp \
     mapmap/mapbackground.cpp \
     mapmap/mapblock.cpp \
     mapmap/mapfloor.cpp \
@@ -165,7 +162,10 @@ SOURCES += \
     device/elevator/elevator.cpp \
     qunchuang/chipmounter/chipmounter.cpp \
     qunchuang/msg.cpp \
-    device/elevator/elevator_protocol.cpp
+    device/elevator/elevator_protocol.cpp \
+    realagv.cpp \
+    virtualagv.cpp \
+    virtualrosagv.cpp
 
 
 
