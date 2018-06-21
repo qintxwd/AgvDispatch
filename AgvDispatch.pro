@@ -114,7 +114,12 @@ HEADERS += \
     qunchuang/qunchuangtaskmaker.h \
     qunchuang/qunchuangnodethingget.h \
     qunchuang/qunchuangnodetingput.h \
-    qunchuang/qunchuangtcsconnection.h
+    qunchuang/qunchuangtcsconnection.h \
+    device/device.h \
+    device/elevator/elevator.h \
+    device/elevator/elevator_protocol.h \
+    qunchuang/chipmounter/chipmounter.h
+    qunchuang/msg.h
 
 SOURCES += \
     agv.cpp \
@@ -155,6 +160,12 @@ SOURCES += \
     qunchuang/qunchuangtaskmaker.cpp \
     qunchuang/qunchuangnodethingget.cpp \
     qunchuang/qunchuangnodetingput.cpp \
-    qunchuang/qunchuangtcsconnection.cpp
+    qunchuang/qunchuangtcsconnection.cpp \
+    device/device.cpp \
+    device/elevator/elevator.cpp \
+    qunchuang/chipmounter/chipmounter.cpp \
+    qunchuang/msg.cpp \
+    device/elevator/elevator_protocol.cpp
+
 
 

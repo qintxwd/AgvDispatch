@@ -1,11 +1,19 @@
-#include "rosAgv.h"
+﻿#include "rosAgv.h"
 #include "mapmap/mappoint.h"
 //#include <locale>
+#include <condition_variable>
 
 
 rosAgv::rosAgv(int id, std::string name, std::string ip, int port):
     Agv(id,name,ip,port)
 {
+    mChipmounter = nullptr;
+
+    m_bInitlayer = false;
+    m_agv_type = AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF;
+
+    //每个AGV需要根据原点修改
+    initStation("0031"); //初始化站点, 通常为AGV原点
 }
 
 void rosAgv::onConnect()
@@ -13,15 +21,19 @@ void rosAgv::onConnect()
     combined_logger->info("rosAgv onConnect OK! name: "+getName());
 #if SIMULATOR
     //subTopic((getName() + AGV_POSE_TOPIC_NAME).c_str(), AGV_POSE_TOPIC_TYPE);
+    subTopic((getName() + "/rosnodejs/shell_feedback").c_str(), "std_msgs/String");
 #else
-    subTopic(AGV_POSE_TOPIC_NAME, AGV_POSE_TOPIC_TYPE);
+    subTopic("/rosnodejs/shell_feedback", "std_msgs/String");
 #endif
     if(NAV_CTRL_USING_TOPIC)
     {
 #if SIMULATOR
         advertiseTopic((getName() + "/nav_ctrl").c_str(), "yocs_msgs/NavigationControl");
+        advertiseTopic((getName() + "/rosnodejs/cmd_string").c_str(), "std_msgs/String");
+        advertiseTopic((getName() + "/waypoint_user_pub").c_str(), "std_msgs/String");
 #else
         advertiseTopic("/nav_ctrl", "yocs_msgs/NavigationControl");
+        advertiseTopic("/rosnodejs/cmd_string", "std_msgs/String");
 #endif
     }
     else //使用service接收AGV Navigation control status
@@ -32,7 +44,14 @@ void rosAgv::onConnect()
         advertiseService("/nav_ctrl_status_service","scheduling_msgs/ReportNavigationControlStatus");
 #endif
     }
-    test();
+
+    if(m_agv_type == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)
+    {
+        InitShelfLayer();
+    }
+    //test();
+
+    //changeMap("");
 
 }
 
@@ -44,7 +63,7 @@ void rosAgv::onRead(const char *data,int len)
 {
     try{
         parseDataMtx.lock();
-        combined_logger->info("rosAgv onRead, data : " + string(data));
+        combined_logger->info("111, rosAgv onRead, data : " + string(data));
         parseJsondata(data,len);
         parseDataMtx.unlock();
     }
@@ -56,6 +75,8 @@ void rosAgv::onRead(const char *data,int len)
 
 void rosAgv::navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status)
 {
+    //std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
+
     if(nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED) //任务完成
     {
         combined_logger->info("task: " + waypoint_name + "完成, status: NAV_CTRL_STATUS_COMPLETED");
@@ -68,6 +89,8 @@ void rosAgv::navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status)
     {
         combined_logger->info("task: " + waypoint_name + "取消, status: NAV_CTRL_STATUS_CANCELLED");
     }
+
+    nav_ctrl_status_var.notify_all();
 }
 
 void rosAgv::parseJsondata(const char *data,int len)
@@ -142,8 +165,6 @@ void rosAgv::processServiceResponse(Json::Value response)
     {
 
     }
-
-
 }
 
 
@@ -161,16 +182,18 @@ void rosAgv::processServiceCall(Json::Value call_service)
                 //获得 nav ctrl status 状态
                 if(call_service.isMember("args")){
                     Json::Value args = call_service["args"];
-                    nav_ctrl_status=args["status"].asInt();
+                    m_nav_ctrl_status=args["status"].asInt();
                     string waypoint_name = args["waypoint_name"].asString();
 
-                    navCtrlStatusNotify(waypoint_name, nav_ctrl_status);
+                    navCtrlStatusNotify(waypoint_name, m_nav_ctrl_status);
                 }
 
                 //send service response
                 Json::Value value;
                 value["received"]=true;
                 string id = call_service.isMember("id")? call_service["id"].asString():"";
+
+                //combined_logger->error("don't send Service Response to agv");
 
                 combined_logger->info("send Service Response to agv");
                 sendServiceResponse(service_name, &value, id);
@@ -199,6 +222,13 @@ void rosAgv::sendServiceResponse(string service_name,Json::Value *value,string i
 
     if(!sendJsonToAGV(response))
         combined_logger->error("rosAgv, sendServiceResponse: " + string(service_name) + "error...");
+}
+
+void rosAgv::changeMap(string map_name)
+{
+    Json::Value msg;
+    msg["data"]="dbparam-update:test2";
+    publishTopic("/rosnodejs/cmd_string", msg);
 }
 
 void rosAgv::subTopic(const char * topic, const char * topic_type)
@@ -237,8 +267,12 @@ void rosAgv::advertiseService(const char * service_name, const char * msg_type)
 void rosAgv::publishTopic(const char * topic, Json::Value msg)
 {
     Json::Value json;
-    json["op"]="publish";
+    json["op"]="publish";    
+#if SIMULATOR
+    json["topic"]=getName()+topic;
+#else
     json["topic"]=topic;
+#endif
     json["msg"]=msg;
 
     if(!sendJsonToAGV(json))
@@ -247,16 +281,16 @@ void rosAgv::publishTopic(const char * topic, Json::Value msg)
 
 bool rosAgv::startTask(std::string task_name)
 {
+
+    combined_logger->info("rosAgv, startTask: " + task_name);
+
      if(NAV_CTRL_USING_TOPIC)
      {
          Json::Value msg;
          msg["goal_name"]=task_name;
          msg["control"]=START;
-#if SIMULATOR
-         publishTopic((getName() + "/nav_ctrl").c_str(), msg);
-#else
          publishTopic("/nav_ctrl", msg);
-#endif
+
      }
      else
      {
@@ -276,6 +310,8 @@ bool rosAgv::startTask(std::string task_name)
          json["service"]="/nav_ctrl_service";
 #endif
          json["args"]=nav_ctrl_srv;
+
+         combined_logger->info("rosAgv, startTask: sendJsonToAGV");
 
          if(!sendJsonToAGV(json))
          {
@@ -468,6 +504,10 @@ void rosAgv::callMapChange(int station)
 
 void rosAgv::excutePath(std::vector<int> lines)
 {
+    int endId = 0;
+    combined_logger->info("rosAgv,  excutePath");
+
+    std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
 
     stationMtx.lock();
     excutestations.clear();
@@ -476,12 +516,24 @@ void rosAgv::excutePath(std::vector<int> lines)
         if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
 
         MapPath *path = static_cast<MapPath *>(spirit);
-        int endId = path->getEnd();
+        endId = path->getEnd();
         excutestations.push_back(endId);
     }
     stationMtx.unlock();
     //告诉小车接下来要执行的路径
     goStation(lines, true);
+
+    combined_logger->info("wait for task complete!!!!");
+
+    nav_ctrl_status_var.wait(lock);
+
+    combined_logger->info("task finished...................");
+
+    combined_logger->info("reset nowStation...................");
+
+    //lastStation = nowStation;
+    nowStation = endId;
+
 }
 
 bool rosAgv::sendJsonToAGV(Json::Value json)
@@ -510,12 +562,273 @@ bool rosAgv::sendJsonToAGV(Json::Value json)
     return result;
 }
 
+void rosAgv::setChipMounter(chipmounter* device)
+{
+    if(device != nullptr)
+    {
+        mChipmounter = device;
+        combined_logger->info("rosAgv, setChipMounter success...");
+    }
+    else
+    {
+        combined_logger->error("rosAgv, setChipMounter failed...");
+    }
+}
+
+bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
+{
+    int try_times = 0;
+    std::chrono::milliseconds dura(1000);
+
+    if("none" == action)
+        return true;
+    else if("put" == action || "get" == action)
+    {
+        //if(station_id is chipmount_station )
+        {
+            mChipmounter = new chipmounter(1, "", ip, port);
+            if(mChipmounter->init())
+            {
+                while(!mChipmounter->isConnected())
+                {
+                    std::this_thread::sleep_for(dura);
+                    try_times ++;
+                    if(try_times > 60)
+                    {
+                        combined_logger->error("rosAgv, beforeDoing, connect error...");
+
+                        delete mChipmounter;
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                delete mChipmounter;
+                return false;
+            }
+
+        }
+    }
+    return false;
+
+}
+
+bool rosAgv::Doing(string action, int station_id)
+{
+    std::chrono::milliseconds dura(20);
+    int times = 0;
+
+    combined_logger->info("rosAgv, . start doing..");
+
+
+    //if(station_id is chipmount_station )
+    {
+        if("loading" == action )
+        {
+            combined_logger->info("rosAgv, .startShelftUp..");
+
+            startShelftUp(action);
+
+            combined_logger->info("rosAgv, .startShelftUp end..");
+
+
+            if(mChipmounter == nullptr)
+            {
+                combined_logger->error("rosAgv,Doing, mChipmounter == nullptr...");
+                return false;
+            }
+
+            combined_logger->info("rosAgv, startLoading...");
+
+            mChipmounter->startLoading(station_id);
+
+            combined_logger->info("rosAgv, startRolling...");
+
+            //PLC start to rolling, need AGV also start to rolling
+            startRolling(AGV_SHELVES_ROLLING_FORWORD);
+            combined_logger->info("rosAgv, 等待上料完成...");
+
+            while(!mChipmounter->isLoadingFinished())//等待上料完成
+            {
+                std::this_thread::sleep_for(dura);
+            }
+
+            sleep(10);
+            stopRolling();
+            startShelftDown(action);
+
+            return true;
+        }
+        else if("unloading" == action)
+        {
+            combined_logger->info("rosAgv, .startShelftUp..");
+            startShelftUp(action);
+            combined_logger->info("rosAgv, .startShelftUp  end..");
+
+            startRolling(AGV_SHELVES_ROLLING_BACKWORD);
+
+            if(mChipmounter == nullptr)
+            {
+                combined_logger->error("rosAgv,Doing, mChipmounter == nullptr...");
+                return false;
+            }
+
+            mChipmounter->startUnLoading(station_id);
+
+            combined_logger->info("rosAgv, 等待下料完成...");
+
+            while(!mChipmounter->isUnLoadingFinished())//等待下料完成
+            {
+                std::this_thread::sleep_for(dura);
+            }
+
+            combined_logger->info("rosAgv,Doing, call stopRolling...");
+
+            stopRolling();
+            sleep(10);
+            startShelftDown(action);
+
+            combined_logger->info("rosAgv,Doing,unloading end...");
+
+            return true;
+
+        }
+    }
+
+    combined_logger->info("rosAgv,Doing, end...");
+
+    return false;
+}
+
+bool rosAgv::afterDoing(string action, int station_id)
+{
+    return true;
+}
+
+void rosAgv::startRolling(bool forword)
+{
+    /*std::unique_lock <std::mutex> lock(shelf_status_mutex);
+    if(forword)
+        startTask("roll_forword");
+    else
+        startTask("roll_backword");
+    nav_ctrl_status_var.wait(lock);
+    */
+
+    Json::Value msg;
+
+    if(forword)
+    {
+        msg["data"]="load_all:1" ;
+    }
+    else
+    {
+        msg["data"]="load_all:2";
+    }
+
+    publishTopic("/waypoint_user_pub", msg);
+}
+void rosAgv::stopRolling()
+{
+    Json::Value msg;
+
+    msg["data"]="load_all:0" ;
+
+    publishTopic("/waypoint_user_pub", msg);}
+
+void rosAgv::startShelftUp(string action)
+{
+    /*combined_logger->info("rosAgv, startTask startShelftUp...");
+
+    std::unique_lock <std::mutex> lock(shelf_status_mutex);
+
+    combined_logger->info("rosAgv, startTask lift_up_900...");
+
+    startTask("lift_up_900");
+
+    combined_logger->info("rosAgv, lift_up_900 wait lock...");
+
+    nav_ctrl_status_var.wait(lock);
+
+    combined_logger->info("rosAgv, lift_up_900 end...");
+    */
+    if(action == "loading")
+    {
+        ControlShelfUpDown(3, "87500");
+        combined_logger->info("rosAgv, 3, 87500.end..................");
+
+        sleep(1);
+        combined_logger->info("rosAgv, 2, 63000...");
+
+        ControlShelfUpDown(2, "63000");
+
+        combined_logger->info("rosAgv, 2, 63000. end...............");
+
+        sleep(1);
+
+        combined_logger->info("rosAgv, 39000...");
+
+        ControlShelfUpDown(1, "39000");
+        sleep(10);
+    }
+    else if(action == "unloading")
+    {
+        ControlShelfUpDown(3, "86000");
+        combined_logger->info("rosAgv, 3, 86000.end..................");
+
+        sleep(1);
+        combined_logger->info("rosAgv, 2, 62000...");
+
+        ControlShelfUpDown(2, "62000");
+
+        combined_logger->info("rosAgv, 2, 62000. end...............");
+
+        sleep(1);
+
+        combined_logger->info("rosAgv, 37500...");
+
+        ControlShelfUpDown(1, "37500");
+        sleep(10);
+    }
+
+}
+
+void rosAgv::startShelftDown(string action)
+{
+    /*std::unique_lock <std::mutex> lock(shelf_status_mutex);
+
+    startTask("lift_down_0");
+    nav_ctrl_status_var.wait(lock);
+    */
+    ControlShelfUpDown(1, "0");
+    combined_logger->info("rosAgv, 1, 00000.end..................");
+
+    sleep(1);
+    combined_logger->info("rosAgv, 2, 20000...");
+
+    ControlShelfUpDown(2, "20000");
+
+    combined_logger->info("rosAgv, 2, 20000. end...............");
+
+    sleep(1);
+
+    combined_logger->info("rosAgv, 40000...");
+
+    ControlShelfUpDown(3, "40000");
+    sleep(1);
+}
+
 void rosAgv::test()
 {
     std::vector<int> lines;
     int path0=6;
     int path1=7;
     int path2=8;
+
+    sleep(3);
+
     lines.push_back(path0);
     lines.push_back(path1);
     lines.push_back(path2);
@@ -523,3 +836,158 @@ void rosAgv::test()
     excutePath(lines);
 }
 
+void rosAgv::test2()
+{
+    std::vector<int> lines;
+    int path0=10;
+    int path1=7;
+    int path2=8;
+
+    sleep(15);
+
+    lines.push_back(path0);
+    lines.push_back(path1);
+    lines.push_back(path2);
+
+    excutePath(lines);
+}
+
+
+void rosAgv::startTask(string station, string action)
+{
+    int16_t station_id;
+    std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
+
+    combined_logger->info("rosAgv, startTask ");
+
+    if(station == "2510")
+    {
+        station_id=0x2510;
+        combined_logger->info("rosAgv, startTask polar 06");
+    }
+    else if(station == "2511")
+    {
+        station_id=0x2511;
+        combined_logger->info("rosAgv, polar 07 ");
+    }
+
+    if(action == "unloading")
+    {
+        combined_logger->info("rosAgv,  取空卡塞");
+        startTask("lift_polar_" + station);
+
+        combined_logger->info("rosAgv, wait lock...");
+
+        nav_ctrl_status_var.wait(lock);
+
+        if(m_nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED)//AGV已到达(下料到达)
+        {
+            combined_logger->info("rosAgv, AGV已到达(下料到达),call doing...");
+
+            Doing(action, station_id);
+
+            combined_logger->info("rosAgv,  doing end...");
+
+            startTask("lift_polar_back");
+
+            combined_logger->info("rosAgv,  startTask lift_polar_back...");
+
+
+            nav_ctrl_status_var.wait(lock);
+            combined_logger->info("rosAgv, startTask 取空卡塞 end.....");
+        }
+        else
+        {
+            combined_logger->error("rosAgv, 取空卡塞 error ...");
+        }
+    }
+    else if(action == "loading")
+    {      
+        combined_logger->info("rosAgv, polar 07  上料");
+        startTask("lift_polar_" + station);
+
+        combined_logger->info("rosAgv, wait lock...");
+
+        nav_ctrl_status_var.wait(lock);
+
+        if(m_nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED)//AGV已到达(上料到达)
+        {
+            combined_logger->info("rosAgv, AGV已到达(上料到达) start doing..");
+
+            Doing(action, station_id);
+
+            combined_logger->info("rosAgv, start lift_polar_back..");
+
+            startTask("lift_polar_back");
+            nav_ctrl_status_var.wait(lock);
+        }
+        else
+        {
+            combined_logger->error("rosAgv, 上料 error ...");
+        }
+
+    }
+
+    combined_logger->info("rosAgv, task end haha..");
+
+}
+
+
+
+
+void rosAgv::ControlShelfUpDown(int layer, string height)
+{
+    Json::Value msg;
+
+    if(layer == 1)//最下面一层
+    {
+        msg["data"]="elevate:10," + height;
+    }
+    else if(layer == 2)//中间层
+    {
+        msg["data"]="elevate:12," + height;
+    }
+    else if(layer == 3)//最高层
+    {
+        msg["data"]="elevate:14," + height;
+    }
+
+    publishTopic("/waypoint_user_pub", msg);
+}
+
+
+void rosAgv::InitShelfLayer()
+{
+    if(m_bInitlayer == false)
+    {
+        startShelftDown("");
+
+        m_bInitlayer = true;
+    }
+    else
+    {
+        combined_logger->info("rosAgv, InitShelfLayer m_bInitlayer is true, no need to init...");
+        startShelftDown("");
+    }
+
+}
+
+
+bool rosAgv::isAGVInit()
+{
+    return m_bInitlayer;
+}
+
+void rosAgv::initStation(string station_name)
+{
+    auto nowSpirit = MapManager::getInstance()->getMapSpiritByName(station_name);
+    if(nowSpirit!=nullptr && nowSpirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point)
+    {
+        nowStation = nowSpirit->getId();
+    }
+    else
+    {
+        combined_logger->error("rosAgv, initStation: " + station_name + " error...");
+    }
+
+}

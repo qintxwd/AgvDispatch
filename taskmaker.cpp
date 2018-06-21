@@ -33,7 +33,8 @@ TaskMaker* TaskMaker::getInstance()
     return nullptr;
 }
 
-void TaskMaker::makeTask(std::string from ,std::string to,int dispatch_id,int ceid)
+//群创接口//非群创不需要重写
+void TaskMaker::makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid,std::string line_id, int agv_id)
 {
 
 }

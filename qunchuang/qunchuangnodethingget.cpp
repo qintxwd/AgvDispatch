@@ -8,14 +8,17 @@ QunChuangNodeThingGet::QunChuangNodeThingGet(std::vector<std::string> _params):
 }
 void QunChuangNodeThingGet::beforeDoing(AgvPtr agv)
 {
+    assert(agv->type() == rosAgv::Type);
+    //rosAgvPtr rAgv((rosAgv *)agv.get());
+    rosAgvPtr ros_agv = std::static_pointer_cast<rosAgv>(agv);
     //DONOTHING
 }
 
 void QunChuangNodeThingGet::doing(AgvPtr agv)
 {
     assert(agv->type() == rosAgv::Type);
-    rosAgvPtr rAgv((rosAgv *)agv.get());
-//    jap.reset((JackingAgv *)agv.get());
+    //rosAgvPtr rAgv((rosAgv *)agv.get());
+    rosAgvPtr ros_agv = std::static_pointer_cast<rosAgv>(agv);
     bresult = false;
     bool sendResult /*= rAgv->get()*/;
     bresult = true;
@@ -24,6 +27,9 @@ void QunChuangNodeThingGet::doing(AgvPtr agv)
 
 void QunChuangNodeThingGet::afterDoing(AgvPtr agv)
 {
+    assert(agv->type() == rosAgv::Type);
+    //rosAgvPtr rAgv((rosAgv *)agv.get());
+    rosAgvPtr ros_agv = std::static_pointer_cast<rosAgv>(agv);
    //DONOTHING
 }
 

@@ -7,6 +7,8 @@
 #include "userlogmanager.h"
 #include "msgprocess.h"
 #include "linepath.h"
+#include "device/device.h"
+#include "qunchuang/chipmounter/chipmounter.h"
 
 using namespace std;
 
@@ -43,11 +45,20 @@ enum nav_control{
 #define NAV_CTRL_STATUS_SUB_CANCELLED  5
 //如上 NAV_CONTROL define 是在 AGV中定义, 不能随便更改
 
+//AGV 货架转动方向
+#define AGV_SHELVES_ROLLING_FORWORD true  // 向前转， AGV方向
+#define AGV_SHELVES_ROLLING_BACKWORD false // 向后转
+
 class rosAgv : public Agv
 {
 private:
        //geometry_msgs::Pose agvPose;
        std::mutex parseDataMtx;
+
+       std::mutex nav_ctrl_status_mutex;
+       std::mutex shelf_status_mutex;
+
+       std::condition_variable nav_ctrl_status_var; // nav_ctrl_status条件变量.
 
        void subTopic(const char * topic, const char * topic_type);
        void advertiseTopic(const char * topic, const char * topic_type);
@@ -59,6 +70,15 @@ private:
        void processServiceResponse(Json::Value response);
        void sendServiceResponse(string service_name,Json::Value *value=nullptr,string id="");
        void navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status);
+       void changeMap(string map_name);
+       void startRolling(bool forword);//send to 偏贴机AGV start rolling topic
+       void stopRolling();//send to 偏贴机AGV stop rolling topic
+
+       void startShelftUp(string action);
+       void startShelftDown(string action);
+       void initStation(string station_name);
+
+
 
 public:
     rosAgv(int id,std::string name,std::string ip,int port);
@@ -75,6 +95,19 @@ public:
     virtual void cancelTask();
     //virtual void excutePath(std::vector<AgvLinePtr> lines);
     virtual void excutePath(std::vector<int> lines);
+    void test();
+    void test2();
+
+    void startTask(string station, string action);
+
+
+    bool beforeDoing(string ip, int port, string action, int station_id);
+    bool Doing(string action, int station_id);
+    bool afterDoing(string action, int station_id);
+    void setChipMounter(chipmounter* device);// only for test, will be removed
+
+    bool isAGVInit();
+
 
 private:
     virtual void arrve(int x,int y);
@@ -87,11 +120,18 @@ private:
     virtual void stop();
     virtual void callMapChange(int station);
     void setAgvPath(std::vector<Pose2D> path);
-    void test();
     bool sendJsonToAGV(Json::Value json);
 
     //nav ctrl status 状态
-    int nav_ctrl_status;
+    int m_nav_ctrl_status;
+
+    chipmounter* mChipmounter; //偏贴机
+
+    bool m_bInitlayer;
+    int  m_agv_type;
+
+    void InitShelfLayer();
+    void ControlShelfUpDown(int layer, string height);
 
 };
 

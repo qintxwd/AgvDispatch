@@ -45,6 +45,11 @@ public:
         AGV_STATUS_CHARGING = 6,//正在充电
     };
 
+    //状态
+    enum {
+        AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF = 0,//3层升降货架AGV,  群创
+    };
+
     int status = AGV_STATUS_IDLE;
 
     //计算路径用的
@@ -96,6 +101,7 @@ protected:
 
 private:
     std::map<std::string,std::string> extra_params;
+
 public:
     void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
     std::string getExtraParam(std::string key){return extra_params[key];}
