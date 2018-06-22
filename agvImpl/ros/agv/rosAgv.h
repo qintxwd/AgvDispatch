@@ -49,6 +49,11 @@ enum nav_control{
 #define AGV_SHELVES_ROLLING_FORWORD true  // 向前转， AGV方向
 #define AGV_SHELVES_ROLLING_BACKWORD false // 向后转
 
+#define AGV_ACTION_LOADIING   "loading"    // 向偏贴机上料
+#define AGV_ACTION_UNLOADIING "unloading"  // 从偏贴机下料
+#define AGV_ACTION_NONE       "none"       //无动作
+
+
 class rosAgv : public Agv
 {
 private:
@@ -81,7 +86,7 @@ private:
 
 
 public:
-    rosAgv(int id,std::string name,std::string ip,int port);
+    rosAgv(int id,std::string name,std::string ip,int port,int agvType=-1, int agvClass=-1, std::string lineName="");
 
     enum { Type = Agv::Type+1 };
 

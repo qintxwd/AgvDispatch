@@ -4,7 +4,7 @@
 #include <condition_variable>
 
 
-rosAgv::rosAgv(int id, std::string name, std::string ip, int port):
+rosAgv::rosAgv(int id, std::string name, std::string ip, int port,int agvType, int agvClass, std::string lineName):
     Agv(id,name,ip,port)
 {
     mChipmounter = nullptr;
@@ -580,11 +580,12 @@ bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
     int try_times = 0;
     std::chrono::milliseconds dura(1000);
 
-    if("none" == action)
+    if(AGV_ACTION_NONE == action)
         return true;
-    else if("put" == action || "get" == action)
+    else if(AGV_ACTION_LOADIING == action || AGV_ACTION_UNLOADIING == action)
     {
         //if(station_id is chipmount_station )
+        if(m_agv_type == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)//3层升降货架AGV,  群创
         {
             mChipmounter = new chipmounter(1, "", ip, port);
             if(mChipmounter->init())
@@ -624,8 +625,9 @@ bool rosAgv::Doing(string action, int station_id)
 
 
     //if(station_id is chipmount_station )
+    if(m_agv_type == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)//3层升降货架AGV,  群创
     {
-        if("loading" == action )
+        if(AGV_ACTION_LOADIING == action )
         {
             combined_logger->info("rosAgv, .startShelftUp..");
 
@@ -661,7 +663,7 @@ bool rosAgv::Doing(string action, int station_id)
 
             return true;
         }
-        else if("unloading" == action)
+        else if(AGV_ACTION_UNLOADIING == action)
         {
             combined_logger->info("rosAgv, .startShelftUp..");
             startShelftUp(action);
@@ -707,7 +709,7 @@ bool rosAgv::afterDoing(string action, int station_id)
 
 }
 
-void rosAgv::startRolling(bool forword)
+void rosAgv::startRolling(bool forword) //3层升降货架AGV
 {
     /*std::unique_lock <std::mutex> lock(shelf_status_mutex);
     if(forword)
@@ -730,7 +732,7 @@ void rosAgv::startRolling(bool forword)
 
     publishTopic("/waypoint_user_pub", msg);
 }
-void rosAgv::stopRolling()
+void rosAgv::stopRolling()//3层升降货架AGV
 {
     Json::Value msg;
 
@@ -738,7 +740,7 @@ void rosAgv::stopRolling()
 
     publishTopic("/waypoint_user_pub", msg);}
 
-void rosAgv::startShelftUp(string action)
+void rosAgv::startShelftUp(string action)//3层升降货架AGV
 {
     /*combined_logger->info("rosAgv, startTask startShelftUp...");
 
@@ -754,7 +756,7 @@ void rosAgv::startShelftUp(string action)
 
     combined_logger->info("rosAgv, lift_up_900 end...");
     */
-    if(action == "loading")
+    if(action == AGV_ACTION_LOADIING)
     {
         ControlShelfUpDown(3, "87500");
         combined_logger->info("rosAgv, 3, 87500.end..................");
@@ -773,7 +775,7 @@ void rosAgv::startShelftUp(string action)
         ControlShelfUpDown(1, "39000");
         sleep(10);
     }
-    else if(action == "unloading")
+    else if(action == AGV_ACTION_UNLOADIING)
     {
         ControlShelfUpDown(3, "86000");
         combined_logger->info("rosAgv, 3, 86000.end..................");
@@ -795,7 +797,7 @@ void rosAgv::startShelftUp(string action)
 
 }
 
-void rosAgv::startShelftDown(string action)
+void rosAgv::startShelftDown(string action)//3层升降货架AGV
 {
     /*std::unique_lock <std::mutex> lock(shelf_status_mutex);
 
@@ -853,7 +855,7 @@ void rosAgv::test2()
 }
 
 
-void rosAgv::startTask(string station, string action)
+void rosAgv::startTask(string station, string action)//3层升降货架AGV test
 {
     int16_t station_id;
     std::unique_lock <std::mutex> lock(nav_ctrl_status_mutex);
@@ -871,7 +873,7 @@ void rosAgv::startTask(string station, string action)
         combined_logger->info("rosAgv, polar 07 ");
     }
 
-    if(action == "unloading")
+    if(action == AGV_ACTION_UNLOADIING)
     {
         combined_logger->info("rosAgv,  取空卡塞");
         startTask("lift_polar_" + station);
@@ -901,7 +903,7 @@ void rosAgv::startTask(string station, string action)
             combined_logger->error("rosAgv, 取空卡塞 error ...");
         }
     }
-    else if(action == "loading")
+    else if(action == AGV_ACTION_LOADIING)
     {      
         combined_logger->info("rosAgv, polar 07  上料");
         startTask("lift_polar_" + station);
@@ -935,7 +937,7 @@ void rosAgv::startTask(string station, string action)
 
 
 
-void rosAgv::ControlShelfUpDown(int layer, string height)
+void rosAgv::ControlShelfUpDown(int layer, string height)//3层升降货架AGV
 {
     Json::Value msg;
 
@@ -956,7 +958,7 @@ void rosAgv::ControlShelfUpDown(int layer, string height)
 }
 
 
-void rosAgv::InitShelfLayer()
+void rosAgv::InitShelfLayer()//3层升降货架AGV
 {
     if(m_bInitlayer == false)
     {
@@ -975,7 +977,13 @@ void rosAgv::InitShelfLayer()
 
 bool rosAgv::isAGVInit()
 {
-    return m_bInitlayer;
+    if(m_agv_type == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)
+        return m_bInitlayer;
+    else
+    {
+        combined_logger->error("rosAgv, isAGVInit : false");
+        return false;
+    }
 }
 
 void rosAgv::initStation(string station_name)

@@ -16,7 +16,7 @@ void MapManager::checkTable()
     //检查表
     try {
         if (!g_db.tableExists("agv_station")) {
-            g_db.execDML("create table agv_station(id INTEGER,name char(64),type INTEGER, x INTEGER,y INTEGER,realX INTEGER,realY INTEGER,labelXoffset INTEGER,labelYoffset INTEGER,mapChange BOOL,locked BOOL);");
+            g_db.execDML("create table agv_station(id INTEGER,name char(64),type INTEGER, x INTEGER,y INTEGER,realX INTEGER,realY INTEGER,labelXoffset INTEGER,labelYoffset INTEGER,mapChange BOOL,locked BOOL,ip char(64),port INTEGER,agvType INTEGER,lineId char(64));");
         }
         if (!g_db.tableExists("agv_line")) {
             g_db.execDML("create table agv_line(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p2x INTEGER,p2y INTEGER,length INTEGER,locked BOOL);");
@@ -105,6 +105,8 @@ void MapManager::freeLine(int line, AgvPtr occuAgv)
 //保存到数据库
 bool MapManager::save()
 {
+    combined_logger->info("保存到数据库");
+
     try {
         checkTable();
 
@@ -129,8 +131,11 @@ bool MapManager::save()
         for (auto spirit : spirits) {
             if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point) {
                 MapPoint *station = static_cast<MapPoint *>(spirit);
-                bufSQL.format("insert into agv_station(id,name,type, x,y,realX,realY,labelXoffset,labelYoffset ,mapChange,locked) values (%d, '%s',%d,%d,%d,%d,%d,%d,%d,%d,%d);", station->getId(), station->getName().c_str(), station->getPointType(), station->getX(), station->getY(),
-                              station->getRealX(), station->getRealY(), station->getLabelXoffset(), station->getLabelYoffset(), station->getMapChange(), station->getLocked());
+                bufSQL.format("insert into agv_station(id,name,type, x,y,realX,realY,labelXoffset,labelYoffset ,mapChange,locked,ip,port,agvType,lineId) values (%d, '%s',%d,%d,%d,%d,%d,%d,%d,%d,%d,'%s',%d,%d,'%s');", station->getId(), station->getName().c_str(), station->getPointType(), station->getX(), station->getY(),
+                              station->getRealX(), station->getRealY(), station->getLabelXoffset(), station->getLabelYoffset(), station->getMapChange(), station->getLocked(), station->getIp().c_str(), station->getPort(), station->getAgvType(),station->getLineId().c_str());
+
+                //std::cout<<"bufSQL : " << bufSQL <<std::endl;
+
                 g_db.execDML(bufSQL);
             }
             else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Path) {
@@ -204,8 +209,12 @@ bool MapManager::loadFromDb()
     try {
         checkTable();
 
-        CppSQLite3Table table_station = g_db.getTable("select id, name, x ,y ,type ,realX ,realY ,labelXoffset ,labelYoffset ,mapChange ,locked  from agv_station;");
-        if (table_station.numRows() > 0 && table_station.numFields() != 11)return false;
+        CppSQLite3Table table_station = g_db.getTable("select id, name, x ,y ,type ,realX ,realY ,labelXoffset ,labelYoffset ,mapChange ,locked ,ip ,port ,agvType ,lineId  from agv_station;");
+        if (table_station.numRows() > 0 && table_station.numFields() != 15)
+        {
+            combined_logger->error("MapManager loadFromDb agv_station error!");
+            return false;
+        }
         for (int row = 0; row < table_station.numRows(); row++)
         {
             table_station.setRow(row);
@@ -221,8 +230,12 @@ bool MapManager::loadFromDb()
             int labelYoffset = atoi(table_station.fieldValue(8));
             bool mapchange = atoi(table_station.fieldValue(9)) == 1;
             bool locked = atoi(table_station.fieldValue(10)) == 1;
+            std::string ip = std::string(table_station.fieldValue(11));
+            int port = atoi(table_station.fieldValue(12));
+            int agvType = atoi(table_station.fieldValue(13));
+            std::string lineId = std::string(table_station.fieldValue(14));
 
-            MapPoint *point = new MapPoint(id, name, (MapPoint::Map_Point_Type)type, x, y, realX, realY, labeXoffset, labelYoffset, mapchange, locked);
+            MapPoint *point = new MapPoint(id, name, (MapPoint::Map_Point_Type)type, x, y, realX, realY, labeXoffset, labelYoffset, mapchange, locked, ip, port, agvType, lineId);
 
             g_onemap.addSpirit(point);
         }
@@ -721,7 +734,13 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 int labelYoffset = station["labelYoffset"].asInt();
                 bool mapchange = station["mapchange"].asBool();
                 bool locked = station["locked"].asBool();
-                MapPoint *p = new MapPoint(id, name, (MapPoint::Map_Point_Type)station_type, x, y, realX, realY, labelXoffset, labelYoffset, mapchange, locked);
+                std::string ip = station["ip"].asString();
+                int port = station["port"].asInt();
+                int agvType = station["agvType"].asInt();
+                std::string lineId = station["lineId"].asString();
+
+
+                MapPoint *p = new MapPoint(id, name, (MapPoint::Map_Point_Type)station_type, x, y, realX, realY, labelXoffset, labelYoffset, mapchange, locked,ip,port,agvType,lineId);
                 g_onemap.addSpirit(p);
             }
 
@@ -854,6 +873,9 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
             getAdj();
 
             if (!save()) {
+
+                std::cout << "save error!!!!!!!!!!!!...." << std::endl;
+
                 response["result"] = RETURN_MSG_RESULT_FAIL;
                 response["error_code"] = RETURN_MSG_ERROR_CODE_SAVE_SQL_FAIL;
                 clear();
@@ -921,6 +943,10 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 pv["labelYoffset"] = p->getLabelYoffset();
                 pv["mapChange"] = p->getMapChange();
                 pv["locked"] = p->getLocked();
+                pv["ip"] = p->getIp();
+                pv["port"] = p->getPort();
+                pv["agvType"] = p->getAgvType();
+                pv["lineId"] = p->getLineId();
                 v_points.append(pv);
             }
             else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Path) {

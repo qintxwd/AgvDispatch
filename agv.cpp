@@ -10,7 +10,7 @@
 #include "mapmap/mapmanager.h"
 
 
-Agv::Agv(int _id, std::string _name, std::string _ip, int _port) :
+Agv::Agv(int _id, std::string _name, std::string _ip, int _port,int _agvType, int _agvClass, std::string _lineName) :
     currentTask(nullptr),
     id(_id),
     name(_name),
@@ -20,7 +20,10 @@ Agv::Agv(int _id, std::string _name, std::string _ip, int _port) :
     nowStation(0),
     nextStation(0),
     tcpClient(nullptr),
-    arriveStation(0)
+    arriveStation(0),
+    agvType(_agvType),
+    agvClass(_agvClass),
+    lineName(_lineName)
 {
 }
 

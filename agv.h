@@ -17,15 +17,36 @@ using AgvPtr = std::shared_ptr<Agv>;
 class Agv:public std::enable_shared_from_this<Agv>
 {
 public:
-    Agv(int id,std::string name,std::string ip,int port);
+    Agv(int id,std::string name,std::string ip,int port,int agvType=-1, int agvClass=0, std::string lineName="");
 
     void init();
 
     virtual ~Agv();
 
     enum { Type = 0 };
-
     virtual int type(){return Type;}
+
+    //AGV type
+    enum {
+        AGV_TYPE_UNDEFINED = -1,//undefined
+        AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF = 0,//3层升降货架AGV,  群创
+    };
+
+    enum {
+        AGV_CLASS_UNDEFINED = -1,//undefined
+        AGV_CLASS_LASER_AGV = 0,//激光AGV
+        AGV_CLASS_MAGNETIC_STRIPE_AGV = 1,//磁条AGV
+        AGV_CLASS_LASER_FORKLIFT = 2,//激光叉车
+    };
+
+    void setAgvType(int type){agvType=type;}
+    int getAgvType(){return agvType;}
+
+    void setAgvClass(int _agvClass){agvClass=_agvClass;}
+    int getAgvClass(){return agvClass;}
+
+    void setLineName(std::string name){lineName=name;}
+    std::string getLineName(){return lineName;}
 
     virtual void excutePath(std::vector<int> lines);
 
@@ -45,10 +66,7 @@ public:
         AGV_STATUS_CHARGING = 6,//正在充电
     };
 
-    //状态
-    enum {
-        AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF = 0,//3层升降货架AGV,  群创
-    };
+
 
     int status = AGV_STATUS_IDLE;
 
@@ -85,6 +103,9 @@ protected:
     std::string name;
     std::string ip;
     int port;
+    int agvClass; //激光叉车, 激光AGV, 磁条AGV, 二维码AGV
+    int agvType; //AGV type;
+    std::string lineName; //agv对应产线name, 没有可以忽略
 
     virtual void arrve(int x,int y);
     virtual void goStation(int station, bool stop = false);

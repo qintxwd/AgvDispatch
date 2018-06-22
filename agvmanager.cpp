@@ -15,7 +15,7 @@ void AgvManager::checkTable()
     //检查表
     try{
         if(!g_db.tableExists("agv_agv")){
-            g_db.execDML("create table agv_agv(id INTEGER primary key AUTOINCREMENT, name char(64),ip char(64),port INTEGER);");
+            g_db.execDML("create table agv_agv(id INTEGER primary key AUTOINCREMENT, name char(64),ip char(64),port INTEGER,agvType INTEGER,agvClass INTEGER, lineName char(64));");
         }
     }catch(CppSQLite3Exception e){
         combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
@@ -31,23 +31,32 @@ bool AgvManager::init()
 {
     checkTable();
     try{
-        CppSQLite3Table table_agv = g_db.getTable("select id,name,ip,port from agv_agv;");
-        if(table_agv.numRows()>0 && table_agv.numFields()!=4)return false;
+        CppSQLite3Table table_agv = g_db.getTable("select id,name,ip,port,agvType,agvClass,lineName from agv_agv;");
+        if(table_agv.numRows()>0 && table_agv.numFields()!=7)
+        {
+            combined_logger->error("AgvManager init agv_agv table error!");
+            return false;
+        }
         std::unique_lock<std::mutex> lck(mtx);
         for (int row = 0; row < table_agv.numRows(); row++)
         {
             table_agv.setRow(row);
 
-            if(table_agv.fieldIsNull(0) ||table_agv.fieldIsNull(1) ||table_agv.fieldIsNull(2)||table_agv.fieldIsNull(3))return false;
+            if(table_agv.fieldIsNull(0) ||table_agv.fieldIsNull(1) ||table_agv.fieldIsNull(2)||table_agv.fieldIsNull(3)||table_agv.fieldIsNull(4)||table_agv.fieldIsNull(5)||table_agv.fieldIsNull(6))return false;
             int id = atoi(table_agv.fieldValue(0));
             std::string name = std::string(table_agv.fieldValue(1));
             std::string ip = std::string(table_agv.fieldValue(2));
             int port = atoi(table_agv.fieldValue(3));
+            int agvType = atoi(table_agv.fieldValue(4));
+            int agvClass = atoi(table_agv.fieldValue(5));
+            std::string lineName = std::string(table_agv.fieldValue(6));
+
+
             //AgvPtr agv(new Agv(id,name,ip,port));
 
             if(GLOBAL_AGV_PROJECT == AGV_PROJECT_QUNCHUANG) // 群创
             {
-                AgvPtr agv(new rosAgv(id,name,ip,port));
+                AgvPtr agv(new rosAgv(id,name,ip,port,agvType,agvClass,lineName));
                 agv->init();
                 agvs.push_back(agv);
             }
@@ -69,7 +78,7 @@ bool AgvManager::init()
     return true;
 }
 
-void AgvManager::updateAgv(int id, std::string name, std::string ip, int port)
+void AgvManager::updateAgv(int id, std::string name, std::string ip, int port, int agvType, int agvClass, std::string lineName)
 {
     std::unique_lock<std::mutex> lck(mtx);
     for(auto agv:agvs){
@@ -79,6 +88,10 @@ void AgvManager::updateAgv(int id, std::string name, std::string ip, int port)
                 agv->setIp(ip);
                 agv->setPort(port);
                 agv->reconnect();
+                /*agv->setAgvType(agvType);
+                agv->setAgvClass(agvClass);
+                agv->setLineName(lineName);
+                */
             }
         }
     }
@@ -163,18 +176,21 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &req
 	response["queuenumber"] = request["queuenumber"];
 	response["result"] = RETURN_MSG_RESULT_SUCCESS;
 
-    if(request["id"].isNull()||
-            request["name"].isNull()||
+    if(request["name"].isNull()||
             request["ip"].isNull()||
             request["port"].isNull()||
-            request["type"].isNull()){
+            request["type"].isNull()/*||
+            request["agvType"].isNull()||
+            request["agvClass"].isNull()||
+            request["lineName"].isNull()*/){
 		response["result"] = RETURN_MSG_RESULT_FAIL;
         response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
     }
     else {
         UserLogManager::getInstance()->push(conn->getUserName()+" add AGV.name:"+ request["name"].asString() +" ip:"+request["ip"].asString()+intToString(request["port"].asInt()));
         char buf[SQL_MAX_LENGTH];
-        snprintf(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port) values('%s','%s',%d);", request["name"].asString().c_str(), request["ip"].asString().c_str(), request["port"].asInt());
+        string lineName = "";
+        snprintf(buf,SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port,agvType,agvClass,lineName) values('%s','%s',%d,%d,%d,'%s');", request["name"].asString().c_str(), request["ip"].asString().c_str(), request["port"].asInt(), -1, 0, lineName.c_str());
         try{
             g_db.execDML(buf);
             int id = g_db.execScalar("select max(id) from agv_agv;");
@@ -268,14 +284,20 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 		std::string name = request["name"].asString();
 		int port = request["port"].asInt();
 		std::string ip = request["ip"].asString();
+        /*int agvType = request["agvType"].asInt();
+        int agvClass = request["agvClass"].asInt();
+        std::string lineName = request["lineName"].asString();*/
+        int agvType = -1;
+        int agvClass = 0;
+        std::string lineName = "";
 
         UserLogManager::getInstance()->push(conn->getUserName()+" modify AGV.ID:"+ intToString(id)+" newname:"+ name +" newip:"+ ip +" newport:"+intToString(port));
         char buf[SQL_MAX_LENGTH];
-        snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d where id = %d;", name.c_str(), ip.c_str(),port,id);
+        snprintf(buf,SQL_MAX_LENGTH, "update agv_agv set name=%s,ip=%s,port=%d,agvType=%d,agvClass=%d,lineName=%s where id = %d;", name.c_str(), ip.c_str(),port,agvType,agvClass,lineName,id);
 
         try{
             g_db.execDML(buf);
-            updateAgv(id,std::string(name),std::string(ip),port);
+            updateAgv(id,std::string(name),std::string(ip),port,agvType,agvClass,lineName);
         }
 		catch (CppSQLite3Exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
