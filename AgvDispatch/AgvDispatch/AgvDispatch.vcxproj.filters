@@ -96,9 +96,6 @@
     <ClInclude Include="..\..\utils\threadpool.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\utils\Log\easylogging.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\mapmap\mapbackground.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -145,6 +142,45 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\qunchuang\qunchuangtcsconnection.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\bezierarc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\realagv.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\virtualagv.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\virtualrosagv.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\device\device.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qunchuang\chipmounter\chipmounter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qunchuang\msg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\device\elevator\elevator.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\device\elevator\elevator_protocol.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qingdao\qingdaotaskmaker.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qingdao\qingdaonodetingput.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qingdao\qingdaonodetingget.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\qingdao\qingdaonodetingcharge.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -209,9 +245,6 @@
     <ClCompile Include="..\..\sqlite3\CppSQLite3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Jacking\jacktaskmaker.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\taskmaker.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -258,6 +291,45 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\qunchuang\qunchuangtcsconnection.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\bezierarc.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\realagv.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\virtualagv.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\virtualrosagv.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\device\device.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qunchuang\chipmounter\chipmounter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qunchuang\msg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\device\elevator\elevator.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\device\elevator\elevator_protocol.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qingdao\qingdaotaskmaker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qingdao\qingdaonodetingput.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qingdao\qingdaonodetingget.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\qingdao\qingdaonodetingcharge.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

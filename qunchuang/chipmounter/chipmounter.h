@@ -1,6 +1,6 @@
 #ifndef CHIPMOUNTER_H
 #define CHIPMOUNTER_H
-#include "device/device.h"
+#include "../../device/device.h"
 
 //AGV已到达(上料到达), (点位0x0000~0xFFFF)+(消息类别 0x0000)
 #define AGV_LOADING_ARRVIED        0x0000

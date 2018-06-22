@@ -22,8 +22,6 @@ public:
 
     virtual void cancelTask();
 
-    virtual void arrve(int x,int y);
-
     virtual void goStation(int station, bool stop = false);
 
     virtual void stop();
@@ -32,6 +30,7 @@ public:
 
 private:
     bool isStop;
+    int lastStationOdometer;
 };
 
 #endif // VIRTUALROSAGV_H

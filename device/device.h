@@ -5,8 +5,8 @@
 #include <memory>
 #include <mutex>
 #include <map>
-#include "qyhtcpclient.h"
-#include "userlogmanager.h"
+#include "../qyhtcpclient.h"
+#include "../userlogmanager.h"
 
 
 using namespace std;

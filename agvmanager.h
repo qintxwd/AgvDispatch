@@ -38,6 +38,8 @@ public:
 
     void foreachAgv(AgvEachCallback cb);
 
+    void getPositionJson(Json::Value &json);
+
     //用户接口
     void interList(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
     void interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);

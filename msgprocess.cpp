@@ -158,7 +158,7 @@ void MsgProcess::removeSubLog(int id)
 //100ms一次，发布AGV的位置
 void MsgProcess::publisher_agv_position()
 {
-	const int position_pub_interval = 100;//100ms
+    const int position_pub_interval = 300;//100ms
 	std::chrono::high_resolution_clock::time_point beginTime = std::chrono::high_resolution_clock::now();
 	while (true)
 	{
@@ -168,13 +168,16 @@ void MsgProcess::publisher_agv_position()
 		if (interval.count() >= position_pub_interval) {
 			beginTime = endTime;
 			//获取位置信息
-			//std::list<MSG_Response> msgs;//TODO
 			Json::Value aps;
+            aps["type"] = MSG_TYPE_PUBLISH;
+            aps["todo"] = MSG_TODO_PUB_AGV_POSITION;
+            aps["queuenumber"] = 0;
 
+            AgvManager::getInstance()->getPositionJson(aps);
 
-			//= AgvManager::getInstance()->getPositions();
 			if (agvPositionSubers.empty())continue;
-			//if(msgs.empty())continue;
+            AgvManager::getInstance()->getPositionJson(aps);
+            if(aps["agvs"].isNull())continue;
 			//执行发送
 			UNIQUE_LCK(psMtx);
 			for (auto c : agvPositionSubers) {
@@ -229,6 +232,7 @@ void MsgProcess::publisher_task()
 			response["todo"] = MSG_TODO_PUB_TASK;
 			response["queuenumber"] = 0;
 			auto tasks = TaskManager::getInstance()->getCurrentTasks();
+            if(tasks.size()<=0)continue;
 			Json::Value v_tasks;
 			for (auto task : tasks) {
 				Json::Value v_task;
@@ -283,13 +287,14 @@ void MsgProcess::publisher_task()
 					v_node["things"] = v_things;
 					v_nodes.append(v_node);
 				}
-				v_tasks["nodes"] = v_nodes;				
+				v_task["nodes"] = v_nodes;				
 				v_tasks.append(v_task);
 			}
 			response["tasks"] = v_tasks;
 
 			//执行发送
 			UNIQUE_LCK(tsMtx);
+			if (taskSubers.size() <= 0)continue;
 			for (auto c : taskSubers) {
 				qyhnetwork::SessionManager::getInstance()->sendSessionData(c, response);
 

@@ -26,7 +26,7 @@ public:
     virtual int type(){return Type;}
 
     //阻塞的函数,知道执行完成后才可以返回
-    virtual void excutePath(std::vector<int> lines);
+    virtual void excutePath(std::vector<int> lines) = 0;
 
     virtual void cancelTask();
 
@@ -77,7 +77,6 @@ public:
     void onError(int code,std::string msg);
     void onWarning(int code, std::string msg);
 
-    virtual void arrve(int x,int y);
     virtual void goStation(int station, bool stop = false);
     virtual void stop();
     virtual void callMapChange(int station);
@@ -92,9 +91,9 @@ protected:
     int port;
 
     //位置信息//直接显示要显示的位置
-    int x;
-    int y;
-    int theta;
+    double x;
+    double y;
+    double theta;
 
     std::mutex stationMtx;
     std::vector<int> excutestations;

@@ -1,9 +1,16 @@
 ﻿#include "virtualrosagv.h"
 #include "mapmap/onemap.h"
 #include "mapmap/mapmanager.h"
+#include "agvtask.h"
+#include "bezierarc.h"
+#include <limits>
+
+#define _USE_MATH_DEFINES
+#include "math.h"
 
 VirtualRosAgv::VirtualRosAgv(int id,std::string name):
-    VirtualAgv(id,name)
+    VirtualAgv(id,name),
+    lastStationOdometer(0)
 {
 
 }
@@ -20,7 +27,7 @@ void VirtualRosAgv::init()
 
 void VirtualRosAgv::excutePath(std::vector<int> lines)
 {
-    //
+    isStop = false;
     excutespaths = lines;
     stationMtx.lock();
     excutestations.clear();
@@ -31,16 +38,6 @@ void VirtualRosAgv::excutePath(std::vector<int> lines)
         MapPath *path = static_cast<MapPath *>(spirit);
         int endId = path->getEnd();
         excutestations.push_back(endId);
-
-        ////获取站点信息方法：
-        //MapSpirit *spirit2 = MapManager::getInstance()->getMapSpiritById(endId);
-        //if (spirit2 == nullptr || spirit2->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
-
-        //MapPoint *point = static_cast<MapPoint *>(spirit2);
-        //point->getId();
-        //point->getRealX();
-        //point->getName();
-        //point->getRealY();
     }
     stationMtx.unlock();
 
@@ -114,25 +111,20 @@ void VirtualRosAgv::cancelTask()
     stop();
 }
 
-void VirtualRosAgv::arrve(int x,int y)
-{
-
-}
-
-void VirtualRosAgv::goStation(int station, bool stop = false)
+void VirtualRosAgv::goStation(int station, bool stop)
 {
     //看是否是写特殊点
     MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
     if(spirit == nullptr)return ;
-    MapPoint *point = static_cast<MapPoint *>(spirit);
-    if(point == nullptr)return ;
+    MapPoint *endPoint = static_cast<MapPoint *>(spirit);
+    if(endPoint == nullptr)return ;
 
     //获取当前线路和当前站点
     MapPoint *startPoint = nullptr;
     if(nowStation > 0){
-        startPoint = MapManager::getInstance()->getMapSpiritById(nowStation);
+        startPoint = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(nowStation));
     }else{
-        startPoint = MapManager::getInstance()->getMapSpiritById(lastStation);
+        startPoint = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(lastStation));
     }
 
     if(startPoint==nullptr){
@@ -147,24 +139,89 @@ void VirtualRosAgv::goStation(int station, bool stop = false)
         return ;
     }
 
+    //计算线路长度[以图像上的长度为长度]
 
-    //进行模拟
+    PointF a(startPoint->getX(),startPoint->getY());
+    PointF b(path->getP1x(),path->getP1y());
+    PointF c(path->getP2x(),path->getP2y());
+    PointF d(endPoint->getX(),endPoint->getY());
+
+    double currentT = 0.;
+    BezierArc::POSITION_POSE currentPP;
+    double path_length = 0;
+    if(path->getPathType() == MapPath::Map_Path_Type_Line){
+        path_length = sqrt((endPoint->getY()-startPoint->getY())*(endPoint->getY()-startPoint->getY())+(endPoint->getX()-startPoint->getX())*(endPoint->getX()-startPoint->getX()));
+    }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
+        path_length = BezierArc::BezierArcLength(a,b,c);
+        //获取当前位置在曲线上的位置
+        double minDistance = DBL_MAX;
+        for(double tt = 0.0;tt<=1.0;tt+=0.01){
+            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,tt);
+            double distance = getDistance(pp.pos,PointF(x,y));
+            if(distance<minDistance){
+                minDistance = distance;
+                currentT = tt;
+                currentPP = pp;
+            }
+        }
+    }else if(path->getPathType() == MapPath::Map_Path_Type_Cubic_Bezier){
+        path_length = BezierArc::BezierArcLength(a,b,c,d);
+        //计算当前位置到曲线上最近的点的距离
+        //获取当前位置在曲线上的位置
+        double minDistance = DBL_MAX;
+        for(double tt = 0.0;tt<=1.0;tt+=0.01){
+            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,d,tt);
+            double distance = getDistance(pp.pos,PointF(x,y));
+            if(distance<minDistance){
+                minDistance = distance;
+                currentT = tt;
+                currentPP = pp;
+            }
+        }
+    }
+
+    //进行模拟 移动位置
+    bool firstMove = true;
     while(true){
-        //1.向目标前进100ms的距离 假设每次前进10
+        if(isStop)break;
+        //1.向目标前进100ms的距离 假设每次前进10 //3.重新计算当前位置
         if(path->getPathType() == MapPath::Map_Path_Type_Line){
-            //当前位置向 目标点移动10
-
+            //前移10
+            x+= 10*cos(atan2(endPoint->getY()-y,endPoint->getX()-x));
+            y+= 10*sin(atan2(endPoint->getY()-y,endPoint->getX()-x));
+            theta = atan2(endPoint->getY()-y,endPoint->getX()-x)*180/M_PI;
         }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
-
+            //前移10
+            currentT += 10.0/path_length;
+            if(currentT<0)currentT = 0.;
+            if(currentT>1)currentT = 1.;
+            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,currentT);
+            x = pp.pos.x();
+            y = pp.pos.y();
+            theta = pp.angle;
         }else if(path->getPathType() == MapPath::Map_Path_Type_Cubic_Bezier){
-
+            //前移10
+            currentT += 10.0/path_length;
+            if(currentT<0)currentT = 0.;
+            if(currentT>1)currentT = 1.;
+            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,d,currentT);
+            x = pp.pos.x();
+            y = pp.pos.y();
+            theta = pp.angle;
         }
         //2.初次移动，调用离开上一站
-
-        //3.重新计算当前位置
+        if(firstMove){
+            if(nowStation>0){
+                onLeaveStation(nowStation);
+            }
+            firstMove = false;
+        }
 
         //4.判断是否到达下一站 如果到达，break
-
+        if(currentT>=1.0){
+            onArriveStation(station);
+            break;
+        }
         Sleep(100);
     }
 }

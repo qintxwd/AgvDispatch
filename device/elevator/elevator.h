@@ -3,7 +3,7 @@
 #include <memory>
 #include <mutex>
 #include <map>
-#include "device/device.h"
+#include "../device.h"
 #include "elevator_protocol.h"
 
 class ElevatorPositon

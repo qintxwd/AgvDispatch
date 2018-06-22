@@ -118,7 +118,12 @@ HEADERS += \
     qunchuang/chipmounter/chipmounter.h \
     realagv.h \
     virtualagv.h \
-    virtualrosagv.h
+    virtualrosagv.h \
+    bezierarc.h \
+    qingdao/qingdaonodetingcharge.h \
+    qingdao/qingdaonodetingget.h \
+    qingdao/qingdaonodetingput.h \
+    qingdao/qingdaotaskmaker.h
     qunchuang/msg.h
 
 SOURCES += \
@@ -165,7 +170,12 @@ SOURCES += \
     device/elevator/elevator_protocol.cpp \
     realagv.cpp \
     virtualagv.cpp \
-    virtualrosagv.cpp
+    virtualrosagv.cpp \
+    bezierarc.cpp \
+    qingdao/qingdaonodetingcharge.cpp \
+    qingdao/qingdaonodetingget.cpp \
+    qingdao/qingdaonodetingput.cpp \
+    qingdao/qingdaotaskmaker.cpp
 
 
 
