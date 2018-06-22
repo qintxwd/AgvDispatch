@@ -32,11 +32,11 @@ void TaskManager::checkTable()
 		}
 	}
 	catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
+		combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
 		return;
 	}
 	catch (std::exception e) {
-        combined_logger->error("{0}",e.what());
+		combined_logger->error("{0}", e.what());
 		return;
 	}
 }
@@ -60,10 +60,10 @@ bool TaskManager::init()
 		thing_id = g_db.execScalar("select max(id) from agv_task_node_thing;");
 	}
 	catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
+		combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
 	}
 	catch (std::exception e) {
-        combined_logger->error("{0}",e.what());
+		combined_logger->error("{0}", e.what());
 	}
 
 	//启动一个分配任务的线程
@@ -78,7 +78,7 @@ bool TaskManager::init()
 			for (auto itr = toDistributeTasks.begin(); itr != toDistributeTasks.end(); ++itr) {
 				for (auto pos = itr->second.begin(); pos != itr->second.end();) {
 					AgvTaskPtr task = *pos;
-					std::vector<AgvTaskNodePtr> nodes = task->getTaskNode();
+					std::vector<AgvTaskNodePtr> nodes = task->getTaskNodes();
 					int index = task->getDoingIndex();
 					if (index >= nodes.size()) {
 						//任务完成了
@@ -272,7 +272,7 @@ bool TaskManager::saveTask(AgvTaskPtr task)
 		snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task values (%d,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d);", task->getId(), task->getProduceTime().c_str(), task->getDoTime().c_str(), task->getDoneTime().c_str(), task->getCancelTime().c_str(), task->getErrorTime().c_str(), task->getErrorInfo().c_str(), task->getErrorCode(), task->getAgv(), task->getStatus(), task->getPriority(), task->getDoingIndex());
 		g_db.execDML(buf);
 
-		for (auto node : task->getTaskNode()) {
+		for (auto node : task->getTaskNodes()) {
 			int node__id = ++node_id;
 			snprintf(buf, SQL_MAX_LENGTH, "insert into agv_task_node values (%d, %d,%d);", node__id, task->getId(), node->getStation());
 			g_db.execDML(buf);
@@ -285,11 +285,11 @@ bool TaskManager::saveTask(AgvTaskPtr task)
 		g_db.execDML("commit transaction;");
 	}
 	catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
+		combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
 		return false;
 	}
 	catch (std::exception e) {
-        combined_logger->error("{0}",e.what());
+		combined_logger->error("{0}", e.what());
 		return false;
 	}
 	return true;
@@ -342,7 +342,7 @@ int TaskManager::cancelTask(int taskId)
 			agv->cancelTask();
 			//TODO:
 			agv->status = Agv::AGV_STATUS_IDLE;
-		}		
+		}
 	}
 
 	return 0;
@@ -376,7 +376,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 	doingTaskMtx.unlock();
     g_threadPool.enqueue([&, task] {
 
-		std::vector<AgvTaskNodePtr> nodes = task->getTaskNode();
+		std::vector<AgvTaskNodePtr> nodes = task->getTaskNodes();
 		int index = task->getDoingIndex();
 
 		if (index >= nodes.size()) {
@@ -435,6 +435,28 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 			}
 		}
 	});
+}
+
+std::vector<AgvTaskPtr> TaskManager::getCurrentTasks()
+{
+
+	std::vector<AgvTaskPtr> tasks;
+	toDisMtx.lock();
+	for (auto d : toDistributeTasks) {
+		auto tTs = d.second;
+		for (auto t : tTs) {
+			tasks.push_back(t);
+		}
+	}
+	toDisMtx.unlock();
+
+	doingTaskMtx.lock();
+	for (auto d : doingTask) {
+		tasks.push_back(d);
+	}
+	doingTaskMtx.unlock();
+
+	return tasks;
 }
 
 void TaskManager::interCreate(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
@@ -573,7 +595,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json:
 		std::stringstream ss;
 		ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 		response["error_info"] = ss.str();
-        combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
+		combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
 	}
 	catch (std::exception e) {
 		response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -581,7 +603,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json:
 		std::stringstream ss;
 		ss << "info:" << e.what();
 		response["error_info"] = ss.str();
-        combined_logger->error("sqlerr code:{0}",e.what());
+		combined_logger->error("sqlerr code:{0}", e.what());
 	}
 
 	conn->send(response);
@@ -630,7 +652,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Va
 			std::stringstream ss;
 			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
 			response["error_info"] = ss.str();
-            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
+			combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
 		}
 		catch (std::exception e) {
 			response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -638,7 +660,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Va
 			std::stringstream ss;
 			ss << "info:" << e.what();
 			response["error_info"] = ss.str();
-            combined_logger->error("sqlerr code:{0}",e.what());
+			combined_logger->error("sqlerr code:{0}", e.what());
 		}
 	}
 	conn->send(response);

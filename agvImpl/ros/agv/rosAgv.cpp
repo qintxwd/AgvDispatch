@@ -1,4 +1,4 @@
-#include "rosAgv.h"
+﻿#include "rosAgv.h"
 #include "mapmap/mappoint.h"
 //#include <locale>
 #include <condition_variable>
@@ -706,7 +706,7 @@ bool rosAgv::Doing(string action, int station_id)
 
 bool rosAgv::afterDoing(string action, int station_id)
 {
-
+    return true;
 }
 
 void rosAgv::startRolling(bool forword) //3层升降货架AGV

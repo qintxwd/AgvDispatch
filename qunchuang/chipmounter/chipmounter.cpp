@@ -1,4 +1,4 @@
-#include "chipmounter.h"
+﻿#include "chipmounter.h"
 //#include "netinet/in.h"
 //#include <boost/lexical_cast.hpp>
 
@@ -44,6 +44,7 @@ bool chipmounter::startLoading(int16_t id)
 
     rolling_status.wait(lock);
     combined_logger->info("chipmounter, PLC告知转动信息..., startLoading end");
+    return true;
 }
 
 
@@ -51,6 +52,7 @@ bool chipmounter::startUnLoading(int16_t id)
 {
      unloading_finished = false;
      NotifyAGVArrived(id,AGV_UNLOADING_ARRVIED);
+     return true;
 }
 
 void chipmounter::onRead(const char *data,int len)

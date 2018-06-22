@@ -1,10 +1,11 @@
-
+﻿
 #include "msg.h"
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <limits>
+#include <cctype>
 
 
 namespace lynx {
@@ -207,6 +208,14 @@ struct MsgParser final {
     std::string& err;
     bool failed;
 
+    MsgParser(const std::string& _str,std::string& _err):
+        str(_str),
+        err(_err),
+        i(0),
+        failed(false)
+    {
+    }
+
     template<class T>
     T fail(std::string&& msg, const T err_ret) {
         if (!failed)
@@ -324,12 +333,7 @@ struct MsgParser final {
 
 // deserialize
 Msg Msg::parse(const std::string& in, std::string& err) {
-    MsgParser parser = {
-        .str    = in,
-        .i      = 0,
-        .err    = err,
-        .failed = false,
-    };
+    MsgParser parser(in,err);
     Msg msg = parser.parse_msg();
 
     parser.consume_whitespace();

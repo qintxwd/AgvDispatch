@@ -36,10 +36,10 @@ void initLog()
         combined_logger->set_level(spdlog::level::trace);
 
         //flush interval
-//        int q_size = 2000;
-//        spdlog::set_async_mode(q_size, spdlog::async_overflow_policy::block_retry,
-//                               nullptr,
-//                               std::chrono::seconds(1));
+        //        int q_size = 2000;
+        //        spdlog::set_async_mode(q_size, spdlog::async_overflow_policy::block_retry,
+        //                               nullptr,
+        //                               std::chrono::seconds(1));
 
         ////test
         //combined_logger->info("=============log test==================");
@@ -76,26 +76,26 @@ void testAGV()
         sleep(20);
 
         chipinfo info;
-    while(chip != nullptr)
-    {
-        if(!chip->isConnected())
+        while(chip != nullptr)
         {
-            //chip->init();
-            //std::cout << "chipmounter disconnected, need reconnect...."<< std::endl;
-        }
-
-        if(chip->getAction(&info))
-        {
-            std::cout << "new task ...." << "action: " <<info.action<< "point: " <<info.point<< std::endl;
-            if(agv->isAGVInit())
+            if(!chip->isConnected())
             {
-                chip->deleteHeadAction();
-                agv->startTask(info.point, info.action);
-                //agv->startTask( "2510", "loading");
-
+                //chip->init();
+                //std::cout << "chipmounter disconnected, need reconnect...."<< std::endl;
             }
-        }
-        /*else
+
+            if(chip->getAction(&info))
+            {
+                std::cout << "new task ...." << "action: " <<info.action<< "point: " <<info.point<< std::endl;
+                if(agv->isAGVInit())
+                {
+                    chip->deleteHeadAction();
+                    agv->startTask(info.point, info.action);
+                    //agv->startTask( "2510", "loading");
+
+                }
+            }
+            /*else
         {
             std::cout << "new task for test...." << "action: " <<info.action<< "point: " <<info.point<< std::endl;
 
@@ -104,8 +104,8 @@ void testAGV()
             break;
         }*/
 
-        sleep(1);
-    }
+            sleep(1);
+        }
     });
 
 
@@ -136,7 +136,7 @@ void testElevator()
                 // 直到完全进入, agv发送进入电梯应答, 电梯开始运行直到到达目标楼层
                 if (ele.AgvEnterUntilArrive(from, to, elevator, agv, 30)) {
                     // todo: 此时agv可以离开, 离开过程每5秒发送一次离开指令
-                    // 
+                    //
                     // 直到完全离开, 发送离开应答结束乘梯流程
                     ele.AgvLeft(from, to, elevator, agv, 30);
                     return true;

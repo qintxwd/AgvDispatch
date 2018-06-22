@@ -47,7 +47,6 @@ void MapManager::checkTable()
 //载入地图
 bool MapManager::load()
 {
-    checkTable();
     //载入数据
     mapModifying = true;
     if (!loadFromDb())
