@@ -27,6 +27,8 @@ TcpSocket::TcpSocket()
     //connect
     memset(&_connectHandle._overlapped, 0, sizeof(_connectHandle._overlapped));
     _connectHandle._type = ExtendHandle::HANDLE_CONNECT;
+
+	_linkStatus = LS_UNINITIALIZE;
 }
 
 

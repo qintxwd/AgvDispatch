@@ -71,9 +71,9 @@ bool TaskManager::init()
 		while (true) {
 			toDisMtx.lock();
 
-            /*if(toDistributeTasks.size() > 0)
-                combined_logger->info(" 未分配任务数量: " + intToString(toDistributeTasks.size()));
-                */
+			/*if(toDistributeTasks.size() > 0)
+				combined_logger->info(" 未分配任务数量: " + intToString(toDistributeTasks.size()));
+				*/
 
 			for (auto itr = toDistributeTasks.begin(); itr != toDistributeTasks.end(); ++itr) {
 				for (auto pos = itr->second.begin(); pos != itr->second.end();) {
@@ -83,7 +83,7 @@ bool TaskManager::init()
 					if (index >= nodes.size()) {
 						//任务完成了
 
-                        combined_logger->info(" 任务完成了 ");
+						combined_logger->info(" 任务完成了 ");
 						pos = itr->second.erase(pos);
 						finishTask(task);
 						continue;
@@ -93,7 +93,7 @@ bool TaskManager::init()
 						int aimStation = node->getStation();
 						AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
 						if (agv != nullptr && aimStation == 0 && agv->getTask() == task) {
-                            //拿去执行//从未分配队列中拿出去agv
+							//拿去执行//从未分配队列中拿出去agv
 
 							pos = itr->second.erase(pos);
 							excuteTask(task);
@@ -105,22 +105,22 @@ bool TaskManager::init()
 								AgvPtr bestAgv = nullptr;
 								int minDis = DISTANCE_INFINITY;
 								std::vector<int> result;
-                                //遍历所有的agv
+								//遍历所有的agv
 
 								AgvManager::getInstance()->foreachAgv(
 									[&](AgvPtr tempagv) {
 									if (tempagv->status != Agv::AGV_STATUS_IDLE)
-                                    {
-                                        combined_logger->error(" tempagv->status != Agv::AGV_STATUS_IDLE return... ");
+									{
+										combined_logger->error(" tempagv->status != Agv::AGV_STATUS_IDLE return... ");
 										return;
-                                    }
-									if (tempagv->nowStation != 0) {
-                                        int tempDis;
+									}
+									if (tempagv->getNowStation() != 0) {
+										int tempDis;
 
-                                        std::vector<int> result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->lastStation, tempagv->nowStation, aimStation, tempDis, CAN_CHANGE_DIRECTION);
+										std::vector<int> result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNowStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
 										if (result_temp.size() > 0 && tempDis < minDis) {
 											minDis = tempDis;
-                                            bestAgv = tempagv;
+											bestAgv = tempagv;
 											result = result_temp;
 
 										}
@@ -128,11 +128,11 @@ bool TaskManager::init()
 									else {
 										int tempDis;
 
-                                        std::vector<int> result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->lastStation, tempagv->nextStation, aimStation, tempDis, CAN_CHANGE_DIRECTION);
+										std::vector<int> result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
 
-                                        if (result_temp.size() > 0 && tempDis < minDis) {
+										if (result_temp.size() > 0 && tempDis < minDis) {
 											minDis = tempDis;
-                                            bestAgv = tempagv;
+											bestAgv = tempagv;
 											result = result_temp;
 										}
 									}
@@ -141,27 +141,27 @@ bool TaskManager::init()
 
 								if (bestAgv != NULL && minDis != DISTANCE_INFINITY) {
 									//找到了最优线路和最佳agv
-                                    task->setAgv(bestAgv->getId());
+									task->setAgv(bestAgv->getId());
 									bestAgv->setTask(task);
 									task->setPath(result);
 									pos = itr->second.erase(pos);
 
 									excuteTask(task);
 									continue;
-								}                               
+								}
 							}
 							else {
 								//已分配AGV
-                                //指定车辆不空闲
+								//指定车辆不空闲
 								if (agv->getTask() != task) {
 									if (agv->status != Agv::AGV_STATUS_IDLE)
-                                    {
+									{
 										continue;
-                                    }
+									}
 								}
 								int distance;
 
-								std::vector<int> result = MapManager::getInstance()->getBestPath(agv->getId(), agv->lastStation, agv->nowStation, aimStation, distance, CAN_CHANGE_DIRECTION);
+								std::vector<int> result = MapManager::getInstance()->getBestPath(agv->getId(), agv->getLastStation(), agv->getNowStation(), aimStation, distance, CAN_CHANGE_DIRECTION);
 
 								if (distance != DISTANCE_INFINITY && result.size() > 0) {
 									//拿去执行//从未分配队列中拿出去
@@ -374,7 +374,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 	doingTaskMtx.lock();
 	doingTask.push_back(task);
 	doingTaskMtx.unlock();
-    g_threadPool.enqueue([&, task] {
+	g_threadPool.enqueue([&, task] {
 
 		std::vector<AgvTaskNodePtr> nodes = task->getTaskNodes();
 		int index = task->getDoingIndex();
@@ -390,14 +390,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 			AgvTaskNodePtr node = nodes[index];
 			int station = node->getStation();
 
-#ifdef QUNCHUANG_PROJECT
-            AgvPtr agv_base = AgvManager::getInstance()->getAgvById(task->getAgv());
-            rosAgvPtr agv = std::static_pointer_cast<rosAgv>(agv_base);
-#else
-            AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
-#endif
-
-
+			AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
 
 			try {
 				if (station == NULL) {
@@ -411,13 +404,13 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 				}
 				else {
 					//去往这个点位
-                    agv->excutePath(task->getPath());
+					agv->excutePath(task->getPath());
 
 					//执行任务
 					for (auto thing : node->getDoThings()) {
 						if (task->getIsCancel())break;
 						thing->beforeDoing(agv);
-                        thing->doing(agv);
+						thing->doing(agv);
 						thing->afterDoing(agv);
 					}
 				}

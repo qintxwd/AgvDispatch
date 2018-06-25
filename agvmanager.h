@@ -30,7 +30,7 @@ public:
 
     void addAgv(AgvPtr agv);
 
-    void updateAgv(int id,std::string name,std::string ip,int port);
+    void updateAgv(int id,std::string name,std::string ip,int port,int lastStation, int nowStation, int nextStation);
 
     void removeAgv(AgvPtr agv);
 

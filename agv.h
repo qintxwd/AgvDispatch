@@ -19,6 +19,8 @@ public:
 
     virtual void init();
 
+	virtual void setPosition(int _lastStation, int _nowStation, int _nextStation);
+
     virtual ~Agv();
 
     enum { Type = 0 };
@@ -51,11 +53,6 @@ public:
 
     int status = AGV_STATUS_IDLE;
 
-    //计算路径用的
-    int lastStation = 0;//上一个站点
-    int nowStation = 0;//当前所在站点
-    int nextStation = 0;//下一个站点
-
     void setTask(AgvTaskPtr _task){currentTask = _task;}
     AgvTaskPtr getTask(){return currentTask;}
     int getId(){return id;}
@@ -71,6 +68,9 @@ public:
     int getX(){return x;}
     int getY(){return y;}
     int getTheta(){return theta;}
+	int getLastStation() { return lastStation; }
+	int getNowStation() { return nowStation; }
+	int getNextStation() { return nextStation; }
 
     void onArriveStation(int station);
     void onLeaveStation(int stationid);
@@ -94,6 +94,11 @@ protected:
     double x;
     double y;
     double theta;
+
+	//计算路径用的
+	int lastStation;//上一个站点
+	int nowStation;//当前所在站点
+	int nextStation;//下一个站点
 
     std::mutex stationMtx;
     std::vector<int> excutestations;

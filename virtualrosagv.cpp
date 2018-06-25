@@ -147,21 +147,27 @@ void VirtualRosAgv::goStation(int station, bool stop)
     PointF d(endPoint->getX(),endPoint->getY());
 
     double currentT = 0.;
-    BezierArc::POSITION_POSE currentPP;
     double path_length = 0;
     if(path->getPathType() == MapPath::Map_Path_Type_Line){
         path_length = sqrt((endPoint->getY()-startPoint->getY())*(endPoint->getY()-startPoint->getY())+(endPoint->getX()-startPoint->getX())*(endPoint->getX()-startPoint->getX()));
+		double minDistance = DBL_MAX;
+		for (double tt = 0.0; tt <= 1.0; tt += 0.01) {
+			double distance = getDistance(PointF(startPoint->getX()+(endPoint->getX()-startPoint->getX())*tt,startPoint->getY()+(endPoint->getY()-startPoint->getY())*tt), PointF(x, y));
+			if (distance<minDistance) {
+				minDistance = distance;
+				currentT = tt;
+			}
+		}
     }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
-        path_length = BezierArc::BezierArcLength(a,b,c);
+        path_length = BezierArc::BezierArcLength(a,b,d);
         //获取当前位置在曲线上的位置
         double minDistance = DBL_MAX;
         for(double tt = 0.0;tt<=1.0;tt+=0.01){
-            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,tt);
+            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,d,tt);
             double distance = getDistance(pp.pos,PointF(x,y));
             if(distance<minDistance){
                 minDistance = distance;
                 currentT = tt;
-                currentPP = pp;
             }
         }
     }else if(path->getPathType() == MapPath::Map_Path_Type_Cubic_Bezier){
@@ -175,7 +181,6 @@ void VirtualRosAgv::goStation(int station, bool stop)
             if(distance<minDistance){
                 minDistance = distance;
                 currentT = tt;
-                currentPP = pp;
             }
         }
     }
@@ -186,16 +191,17 @@ void VirtualRosAgv::goStation(int station, bool stop)
         if(isStop)break;
         //1.向目标前进100ms的距离 假设每次前进10 //3.重新计算当前位置
         if(path->getPathType() == MapPath::Map_Path_Type_Line){
+			currentT += 10.0 / path_length;
             //前移10
-            x+= 10*cos(atan2(endPoint->getY()-y,endPoint->getX()-x));
-            y+= 10*sin(atan2(endPoint->getY()-y,endPoint->getX()-x));
+            x = startPoint->getX()+(endPoint->getX()-startPoint->getX()) * currentT;
+            y = startPoint->getY() + (endPoint->getY() - startPoint->getY()) * currentT;
             theta = atan2(endPoint->getY()-y,endPoint->getX()-x)*180/M_PI;
         }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
             //前移10
             currentT += 10.0/path_length;
             if(currentT<0)currentT = 0.;
             if(currentT>1)currentT = 1.;
-            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,currentT);
+            BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,d,currentT);
             x = pp.pos.x();
             y = pp.pos.y();
             theta = pp.angle;
@@ -222,8 +228,10 @@ void VirtualRosAgv::goStation(int station, bool stop)
             onArriveStation(station);
             break;
         }
-        Sleep(100);
+        Sleep(500);
     }
+
+
 }
 
 void VirtualRosAgv::stop()

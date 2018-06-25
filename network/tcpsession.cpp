@@ -178,7 +178,7 @@ namespace qyhnetwork {
 			if (_sockptr)
 			{
 				_sockptr->doClose();
-				_sockptr.reset();
+				//_sockptr.reset();
 			}
             combined_logger->info("TcpSession to close socket. sID= {0}",_sessionID);
 			if (_status == 2)
@@ -353,8 +353,6 @@ namespace qyhnetwork {
 
 	void TcpSession::send(const Json::Value &json)
 	{
-		char headLeng[5];
-		headLeng[0] = MSG_MSG_HEAD;
 		SessionManager::getInstance()->_statInfo[STAT_SEND_COUNT]++;
 		SessionManager::getInstance()->_statInfo[STAT_SEND_PACKS]++;
 		std::string msg = json.toStyledString();
@@ -362,25 +360,16 @@ namespace qyhnetwork {
 		
         combined_logger->trace("SEND! session id={0}  len= {1}  json=\n{2}" ,this->_sessionID,length, msg);
 
-		//send head and length
-		snprintf(headLeng + 1, 4, (char *)&length, sizeof(length));
-        if(_sockptr==nullptr)return ;
-		bool sendRet = _sockptr->doSend(headLeng, 5);
-		if (!sendRet)
-		{
-            combined_logger->warn("send error ");
-			return;
-		}
-
-		char *copy_temp = new char[length + 1];
-		snprintf(copy_temp,length+1, "%s", msg.c_str());
-        if(_sockptr==nullptr)return ;
-		sendRet = _sockptr->doSend(copy_temp, length);
+		char *send_buffer = new char[length + 6];
+		send_buffer[0] = MSG_MSG_HEAD;
+		snprintf(send_buffer + 1, 4, (char *)&length, sizeof(length));
+		snprintf(send_buffer +5, length + 1, "%s", msg.c_str());
+		bool sendRet = _sockptr->doSend(send_buffer, length+5);
 		if (!sendRet)
 		{
             combined_logger->warn("send error ") ;
 		}
-		delete[] copy_temp;
+		delete[] send_buffer;
 	}
 
 	void TcpSession::onPulse()

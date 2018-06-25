@@ -68,8 +68,6 @@ private:
 
     void publisher_task();
 
-    //void publisher_log();
-
     MsgProcess();
 
     std::mutex psMtx;

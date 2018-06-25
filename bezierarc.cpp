@@ -46,15 +46,15 @@ double BezierArc::BezierArcLength(PointF p1, PointF p2, PointF p3)
     a.setY(p1.y() - 2*p2.y() + p3.y());
     b.setX(2*p2.x() - 2*p1.x());
     b.setY(2*p2.y() - 2*p1.y());
-    float A = 4*(a.x()*a.x() + a.y()*a.y());
-    float B = 4*(a.x()*b.x() + a.y()*b.y());
-    float C = b.x()*b.x() + b.y()*b.y();
+	double A = 4*(a.x()*a.x() + a.y()*a.y());
+	double B = 4*(a.x()*b.x() + a.y()*b.y());
+	double C = b.x()*b.x() + b.y()*b.y();
 
-    float Sabc = 2*sqrt(A+B+C);
-    float A_2 = sqrt(A);
-    float A_32 = 2*A*A_2;
-    float C_2 = 2*sqrt(C);
-    float BA = B/A_2;
+	double Sabc = 2*sqrt(A+B+C);
+	double A_2 = sqrt(A);
+	double A_32 = 2*A*A_2;
+	double C_2 = 2*sqrt(C);
+	double BA = B/A_2;
 
     return ( A_32*Sabc +
              A_2*B*(Sabc-C_2) +

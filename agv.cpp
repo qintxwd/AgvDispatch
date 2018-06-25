@@ -33,6 +33,16 @@ void Agv::init()
 {
 }
 
+void Agv::setPosition(int _lastStation, int _nowStation, int _nextStation) {
+	lastStation = _lastStation;
+	nowStation = _nowStation;
+	nextStation = _nextStation;
+
+	if (nowStation > 0) {
+		onArriveStation(nowStation);
+	}
+};
+
 //到达后是否停下，如果不停下，就是不减速。
 //是一个阻塞的函数
 void Agv::goStation(int station, bool stop)
@@ -45,7 +55,6 @@ void Agv::stop()
 
 void Agv::onArriveStation(int station)
 {
-
     MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
 
     if(spirit->getSpiritType()!=MapSpirit::Map_Sprite_Type_Point)return ;
@@ -101,16 +110,39 @@ void Agv::onArriveStation(int station)
             MapManager::getInstance()->freeLine(lineId,shared_from_this());
         }
     }
+
+	char buf[SQL_MAX_LENGTH];
+	snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
+	try {
+		g_db.execDML(buf);
+	}
+	catch (CppSQLite3Exception e) {
+		combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
+	}
+	catch (std::exception e) {
+		combined_logger->error("sqlerr code:{0} ", e.what());
+	}
+
 }
 
 void Agv::onLeaveStation(int stationid)
 {
-    if (nowStation == stationid) {
-        nowStation = 0;
-        lastStation = stationid;
-    }
+	nowStation = 0;
+    lastStation = stationid;
     //释放这个站点的占用
     MapManager::getInstance()->freeStation(stationid,shared_from_this());
+
+	char buf[SQL_MAX_LENGTH];
+	snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
+	try {
+		g_db.execDML(buf);
+	}
+	catch (CppSQLite3Exception e) {
+		combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
+	}
+	catch (std::exception e) {
+		combined_logger->error("sqlerr code:{0} ", e.what());
+	}
 }
 
 void Agv::onError(int code, std::string msg)

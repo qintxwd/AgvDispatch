@@ -1,4 +1,4 @@
-#include "QingdaoTaskMaker.h"
+ï»¿#include "QingdaoTaskMaker.h"
 #include "../taskmanager.h"
 #include "qingdaonodetingput.h"
 #include "qingdaonodetingget.h"
@@ -22,15 +22,15 @@ void QingdaoTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Valu
 {
 	AgvTaskPtr task(new AgvTask());
 
-	//1.Ö¸¶¨³µÁ¾
+	//1.æŒ‡å®šè½¦è¾†
 	int agvId = request["agv"].asInt();
 	task->setAgv(agvId);
 
-	//2.ÓÅÏÈ¼¶
+	//2.ä¼˜å…ˆçº§
 	int priority = request["priority"].asInt();
 	task->setPriority(priority);
 
-	//3.¶îÍâµÄ²ÎÊı
+	//3.é¢å¤–çš„å‚æ•°
 	if (!request["extra_params"].isNull()) {
 		Json::Value extra_params = request["extra_params"];
 		Json::Value::Members mem = extra_params.getMemberNames();
@@ -40,7 +40,7 @@ void QingdaoTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Valu
 		}		
 	}
 
-	//4.½Úµã
+	//4.èŠ‚ç‚¹
 	if (!request["nodes"].isNull()) {
 		Json::Value nodes = request["nodes"];
 		for (int i = 0; i < nodes.size(); ++i) {
@@ -50,8 +50,8 @@ void QingdaoTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Valu
 			std::string node_params_str = one_node["params"].asString();
 			std::vector<std::string> node_params = split(node_params_str, ";");
 
-			//¸ù¾İ¿Í»§¶ËµÄ´úÂë£¬
-			//dowhatÁĞ±íÎª
+			//æ ¹æ®å®¢æˆ·ç«¯çš„ä»£ç ï¼Œ
+			//dowhatåˆ—è¡¨ä¸º
 			// 0 --> pick
 			// 1 --> put
 			// 2 --> charge
@@ -72,7 +72,7 @@ void QingdaoTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Valu
 		}
 	}
 
-	//5.²úÉúÊ±¼ä 
+	//5.äº§ç”Ÿæ—¶é—´ 
 	task->setProduceTime(getTimeStrNow());
 
 	combined_logger->info(" getInstance()->addTask ");

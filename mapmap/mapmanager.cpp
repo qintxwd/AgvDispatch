@@ -131,7 +131,7 @@ bool MapManager::save()
 
         g_db.execDML("delete from agv_group;");
 
-        g_db.execDML("begin transaction;");
+        //g_db.execDML("begin transaction;");
 
         std::list<MapSpirit *> spirits = g_onemap.getAllElement();
 
@@ -196,7 +196,7 @@ bool MapManager::save()
             }
         }
 
-        g_db.execDML("commit transaction;");
+        //g_db.execDML("commit transaction;");
     }
     catch (CppSQLite3Exception &e) {
         combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
@@ -538,13 +538,20 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
                         Q.insert(std::make_pair(lineDistanceColors[line->getId()].distance, line->getId()));
                     }
 
-                }
+				}
+				else {
+					//没有反向线路
+					if (lineDistanceColors[line->getId()].color == AGV_LINE_COLOR_BLACK)continue;
+					lineDistanceColors[line->getId()].distance = line->getLength();
+					lineDistanceColors[line->getId()].color = AGV_LINE_COLOR_GRAY;
+					Q.insert(std::make_pair(lineDistanceColors[line->getId()].distance, line->getId()));
+				}
             }
         }
     }
     else {
         for (auto line : paths) {
-            if (line->getStart() == lastStation && line->getEnd() == lastStation) {
+            if (line->getStart() == startStation && line->getEnd() != lastStation) {
                 int reverse = m_reverseLines[line->getId()];
                 if (reverse > 0) {
                     if (line_occuagvs[reverse].size() == 0 && station_occuagv[line->getEnd()] == 0 || station_occuagv[line->getEnd()] == agv) {
@@ -554,7 +561,15 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
                         Q.insert(std::make_pair(lineDistanceColors[line->getId()].distance, line->getId()));
                         break;
                     }
-                }
+				}
+				else {
+					//没有反向线路
+					if (lineDistanceColors[line->getId()].color == AGV_LINE_COLOR_BLACK)continue;
+					lineDistanceColors[line->getId()].distance = line->getLength();
+					lineDistanceColors[line->getId()].color = AGV_LINE_COLOR_GRAY;
+					Q.insert(std::make_pair(lineDistanceColors[line->getId()].distance, line->getId()));
+					break;
+				}
             }
         }
     }
@@ -574,12 +589,20 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
 
             if (lineDistanceColors[adj].color == AGV_LINE_COLOR_WHITE) {
                 int  reverse = m_reverseLines[adj];
-                if (line_occuagvs[reverse].size() == 0 && station_occuagv[path->getEnd()] == 0 || station_occuagv[path->getEnd()] == agv) {
-                    lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
-                    lineDistanceColors[adj].color = AGV_LINE_COLOR_GRAY;
-                    lineDistanceColors[adj].father = startLine;
-                    Q.insert(std::make_pair(lineDistanceColors[adj].distance, adj));
-                }
+				if (reverse > 0) {
+					if (line_occuagvs[reverse].size() == 0 && station_occuagv[path->getEnd()] == 0 || station_occuagv[path->getEnd()] == agv) {
+						lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
+						lineDistanceColors[adj].color = AGV_LINE_COLOR_GRAY;
+						lineDistanceColors[adj].father = startLine;
+						Q.insert(std::make_pair(lineDistanceColors[adj].distance, adj));
+					}
+				}
+				else {
+					lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
+					lineDistanceColors[adj].color = AGV_LINE_COLOR_GRAY;
+					lineDistanceColors[adj].father = startLine;
+					Q.insert(std::make_pair(lineDistanceColors[adj].distance, adj));
+				}
             }
             else if (lineDistanceColors[adj].color == AGV_LINE_COLOR_GRAY) {
                 if (lineDistanceColors[adj].distance > lineDistanceColors[startLine].distance + path->getLength()) {
