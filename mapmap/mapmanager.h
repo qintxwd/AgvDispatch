@@ -83,6 +83,8 @@ private:
     void getReverseLines();
     void getAdj();
 
+	bool pathPassable(MapPath *line, int agvId);
+
     std::atomic_bool mapModifying;
 };
 

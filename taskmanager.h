@@ -70,6 +70,10 @@ private:
     std::vector<AgvTaskPtr> doingTask;
     std::mutex doingTaskMtx;
 
+	//已完成的任务
+	std::vector<AgvTaskPtr> doneTask;
+	std::mutex doneTaskMtx;
+
     bool saveTask(AgvTaskPtr task);
 
     std::atomic_int node_id;

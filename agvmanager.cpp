@@ -61,6 +61,7 @@ bool AgvManager::init()
 			{
 				AgvPtr agv(new VirtualRosAgv(id, name));
 				agv->init();
+				agv->setPosition(lastStation, nowStation, nextStation);
 				agvs.push_back(agv);
 			}
 		}

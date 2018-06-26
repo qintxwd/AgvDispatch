@@ -82,7 +82,6 @@ bool TaskManager::init()
 					int index = task->getDoingIndex();
 					if (index >= nodes.size()) {
 						//任务完成了
-
 						combined_logger->info(" 任务完成了 ");
 						pos = itr->second.erase(pos);
 						finishTask(task);
@@ -168,6 +167,11 @@ bool TaskManager::init()
 									agv->setTask(task);
 									task->setPath(result);
 									pos = itr->second.erase(pos);
+									//占用线路和站点
+									MapManager::getInstance()->occuStation(aimStation, agv);
+									for (auto tline : result) {
+										MapManager::getInstance()->addOccuLine(tline,agv);
+									}
 									excuteTask(task);
 									continue;
 								}
@@ -189,7 +193,8 @@ bool TaskManager::init()
 //添加任务
 bool TaskManager::addTask(AgvTaskPtr task)
 {
-	task->setId(++task_id);
+	if(task->getId()<=0)
+		task->setId(++task_id);
 	bool add = false;
 	toDisMtx.lock();
 
@@ -343,6 +348,7 @@ int TaskManager::cancelTask(int taskId)
 			//TODO:
 			agv->status = Agv::AGV_STATUS_IDLE;
 		}
+		task->setStatus(AgvTask::AGV_TASK_STATUS_CANCEL);
 	}
 
 	return 0;
@@ -364,18 +370,22 @@ void TaskManager::finishTask(AgvTaskPtr task)
 		//TODO:
 		agv->status = Agv::AGV_STATUS_IDLE;
 	}
-	//删除任务
+	//
+	doneTaskMtx.lock();
+	doneTask.push_back(task);
+	doneTaskMtx.unlock();
+	task->setStatus(AgvTask::AGV_TASK_STATUS_DONE);
 }
 
 void TaskManager::excuteTask(AgvTaskPtr task)
 {
 	//启动一个线程,去执行该任务
-
 	doingTaskMtx.lock();
 	doingTask.push_back(task);
 	doingTaskMtx.unlock();
 	g_threadPool.enqueue([&, task] {
 
+		task->setStatus(AgvTask::AGV_TASK_STATUS_EXCUTING);
 		std::vector<AgvTaskNodePtr> nodes = task->getTaskNodes();
 		int index = task->getDoingIndex();
 
@@ -432,7 +442,6 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 
 std::vector<AgvTaskPtr> TaskManager::getCurrentTasks()
 {
-
 	std::vector<AgvTaskPtr> tasks;
 	toDisMtx.lock();
 	for (auto d : toDistributeTasks) {
@@ -448,6 +457,12 @@ std::vector<AgvTaskPtr> TaskManager::getCurrentTasks()
 		tasks.push_back(d);
 	}
 	doingTaskMtx.unlock();
+
+	doneTaskMtx.lock();
+	for (auto d : doneTask) {
+		tasks.push_back(d);
+	}
+	doneTaskMtx.unlock();
 
 	return tasks;
 }

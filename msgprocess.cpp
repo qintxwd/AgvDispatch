@@ -263,7 +263,6 @@ void MsgProcess::publisher_task()
 				for (auto node : nodes) {
 					Json::Value v_node;
 					
-
 					auto things = node->getDoThings();
 
 					Json::Value v_things;
