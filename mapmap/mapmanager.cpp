@@ -610,7 +610,7 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
 			MapSpirit *pp = g_onemap.getSpiritById(adj);
 			if (pp->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
 			MapPath *path = static_cast<MapPath *>(pp);
-			if (pathPassable(path, agv))continue;
+			if (!pathPassable(path, agv))continue;
 			if (lineDistanceColors[adj].color == AGV_LINE_COLOR_WHITE) {
 				lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
 				lineDistanceColors[adj].color = AGV_LINE_COLOR_GRAY;
