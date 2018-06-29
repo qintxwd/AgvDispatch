@@ -464,21 +464,21 @@ bool MapManager::pathPassable(MapPath *line, int agvId) {
 	if (station_occuagv[line->getEnd()] != 0 && station_occuagv[line->getEnd()] != agvId)
 		return false;
 
-	//判断block占用
-	int lineBlock = -1;
-	auto blocks = g_onemap.getBlocks();
-	MapBlock *vlo;
-	for (auto block : blocks) {
-		auto sps = block->getSpirits();
-		if (std::find(sps.begin(), sps.end(), line->getId()) != sps.end() ||
-			std::find(sps.begin(), sps.end(), line->getEnd()) != sps.end())
-		{
-			//该线路/线路终点属于这个block
-			//判断该block是否有agv意外的其他agv
-			if (block_occuagv[block->getId()] != 0 && block_occuagv[block->getId()] != agvId)
-				return false;
-		}
-	}
+	////判断block占用
+	//int lineBlock = -1;
+	//auto blocks = g_onemap.getBlocks();
+	//MapBlock *vlo;
+	//for (auto block : blocks) {
+	//	auto sps = block->getSpirits();
+	//	if (std::find(sps.begin(), sps.end(), line->getId()) != sps.end() ||
+	//		std::find(sps.begin(), sps.end(), line->getEnd()) != sps.end())
+	//	{
+	//		//该线路/线路终点属于这个block
+	//		//判断该block是否有agv意外的其他agv
+	//		if (block_occuagv[block->getId()] != 0 && block_occuagv[block->getId()] != agvId)
+	//			return false;
+	//	}
+	//}
 
 	return true;
 }

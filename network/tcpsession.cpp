@@ -361,9 +361,10 @@ namespace qyhnetwork {
         combined_logger->trace("SEND! session id={0}  len= {1}  json=\n{2}" ,this->_sessionID,length, msg);
 
 		char *send_buffer = new char[length + 6];
+		memset(send_buffer, 0, length + 6);
 		send_buffer[0] = MSG_MSG_HEAD;
-		snprintf(send_buffer + 1, 4, (char *)&length, sizeof(length));
-		snprintf(send_buffer +5, length + 1, "%s", msg.c_str());
+		memcpy_s(send_buffer + 1, length+5, (char *)&length, sizeof(length));
+		memcpy_s(send_buffer +5, length + 1, msg.c_str(),msg.length());
 		bool sendRet = _sockptr->doSend(send_buffer, length+5);
 		if (!sendRet)
 		{
