@@ -21,6 +21,22 @@ public:
         return std::string("Qunchuang Agv PUT_GOOD");
     }
 
+    std::string getStationNum(std::string stationName)
+    {
+        std::string result;
+        if (stationName.length() == 0)
+            return result;
+
+        size_t pos = stationName.find_first_of("_");
+        if(pos == std::string::npos){
+            return stationName;
+        }
+
+        result = stationName.substr(pos+1);
+        return result;
+    }
+
+
 private:
     bool bresult;//执行结果
 };

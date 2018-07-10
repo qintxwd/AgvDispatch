@@ -1,19 +1,19 @@
 #ifndef CHIPMOUNTER_H
 #define CHIPMOUNTER_H
-#include "../../device/device.h"
+#include "device/device.h"
 
-//AGV已到达(上料到达), (点位0x0000~0xFFFF)+(消息类别 0x0000)
-#define AGV_LOADING_ARRVIED        0x0000
-#define AGV_LOADING_ARRVIED_STRING        "0000"
+//AGV已到达(上料到达), (点位0x0000~0xFFFF)+(消息类别 0x0007)
+//#define AGV_LOADING_ARRVIED        0x0007
+//#define AGV_LOADING_ARRVIED_STRING        "0007"
 //PLC告知AGVC转动信息 (点位0x0000~0xFFFF)+(消息类别 0x0010)
 #define CHIPMOUNTER_SATRT_ROLLING   0x0010
 #define CHIPMOUNTER_SATRT_ROLLING_STRING  "0010"
 //PLC告知AGVC上料完成, (点位0x0000~0xFFFF)+(消息类别 0x0020)
 #define LOADING_FINISHED           0x0020
 #define LOADING_FINISHED_STRING           "0020"
-//AGV已到达(下料到达), (点位0x0000~0xFFFF)+(消息类别 0x0001)
-#define AGV_UNLOADING_ARRVIED     0x0001
-#define AGV_UNLOADING_ARRVIED_STRING      "0001"
+//AGV已到达(下料到达), (点位0x0000~0xFFFF)+(消息类别 0x0011)
+#define AGV_UNLOADING_ARRVIED     0x0011
+#define AGV_UNLOADING_ARRVIED_STRING      "0011"
 //PLC告知AGVC下料完成, (点位0x0000~0xFFFF)+(消息类别 0x0021)
 #define UNLOADING_FINISHED         0x0021
 #define UNLOADING_FINISHED_STRING         "0021"
@@ -39,7 +39,13 @@ public:
     chipmounter(int id,std::string name,std::string ip,int port);
     virtual ~chipmounter();
 
-    bool startLoading(int16_t id);
+    /* info 为3层升降货架每一层是否有料信息
+     * 第3层 :    0        0        0        0        1        1        1        1
+     * 第2层 :    0        0        1        1        0        0        1        1
+     * 第1层 :    0        1        0        1        0        1        0        1
+     * info : 0x0000   0x0001   0x0002   0x0003   0x0004   0x0005   0x0006   0x0007
+     */
+    bool startLoading(int16_t id, int info);
     bool startUnLoading(int16_t id);
     bool isLoadingFinished()
     {
@@ -107,7 +113,7 @@ private:
     {
         chipinfo info;
         info.point = point;
-        info.action = "unloading"; //取空卡塞
+        info.action = "get"; //取空卡塞
 
         chip_info.push_back(info);
     }
@@ -119,7 +125,7 @@ private:
     {
         chipinfo info;
         info.point = point;
-        info.action = "loading"; //上料
+        info.action = "put"; //上料
 
         chip_info.push_back(info);
     }

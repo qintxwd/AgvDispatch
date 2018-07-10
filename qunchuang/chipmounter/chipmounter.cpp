@@ -11,8 +11,11 @@ chipmounter::chipmounter(int _id, std::string _name, std::string _ip, int _port)
 
 chipmounter::~chipmounter()
 {
-    if (tcpClient)
+    if (tcpClient!=nullptr)
+    {
         delete tcpClient;
+        tcpClient=nullptr;
+    }
 }
 
 
@@ -31,14 +34,14 @@ void chipmounter::onDisconnect()
 
 }
 
-bool chipmounter::startLoading(int16_t id)
+bool chipmounter::startLoading(int16_t id, int agv_arrivied_info)
 {   
     combined_logger->info("chipmounter, startLoading...");
     std::unique_lock <std::mutex> lock(rolling_mutex);
-    combined_logger->info("chipmounter, NotifyAGVArrived...");
+    combined_logger->info("chipmounter, NotifyAGVArrived, agv_arrivied_info: {0}", agv_arrivied_info);
 
     loading_finished = false;
-    NotifyAGVArrived(id,AGV_LOADING_ARRVIED);
+    NotifyAGVArrived(id,agv_arrivied_info);
     //wait for PLC告知转动信息
     combined_logger->info("chipmounter, wait for PLC告知转动信息...");
 

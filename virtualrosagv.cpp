@@ -7,6 +7,8 @@
 
 #define _USE_MATH_DEFINES
 #include "math.h"
+#include <float.h>
+
 
 VirtualRosAgv::VirtualRosAgv(int id,std::string name):
     VirtualAgv(id,name),

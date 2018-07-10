@@ -15,7 +15,7 @@ public:
     virtual void makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request) = 0;
 
     //群创接口//非群创不需要重写
-    virtual void makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid,std::string line_id, int agv_id);
+    virtual void makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid,std::string line_id, int agv_id, int all_floor_info);
 protected:
     TaskMaker();
 };

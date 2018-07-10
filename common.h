@@ -44,6 +44,9 @@ int stringToInt(std::string str);
 bool stringToBool(std::string str);
 
 std::vector<std::string> split(std::string src,std::string sp = " ");
+std::vector<std::string> splitMultiJson(std::string multiJson);
+bool IsValidIPAddress(const char * str);
+int HexStringToInt(std::string str);
 
 extern ThreadPool g_threadPool;
 extern CppSQLite3DB g_db;

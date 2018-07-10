@@ -1,4 +1,4 @@
-﻿#include "QingdaoTaskMaker.h"
+﻿#include "qingdaotaskmaker.h"
 #include "../taskmanager.h"
 #include "qingdaonodetingput.h"
 #include "qingdaonodetingget.h"

@@ -229,7 +229,15 @@ int Elevator::RequestTakeElevator(int from_floor, int to_floor, int elevator_id,
     std::shared_ptr<Param> resp = nullptr;
     do  {
         // 呼梯问询
-        auto p = create_param(CallEleENQ, from_floor, to_floor, elevator_id, agv_id);
+
+        std::cout << "create_param....elevator_id: "<<elevator_id << std::endl;
+
+        //auto p = create_param(CallEleENQ, from_floor, to_floor, elevator_id, agv_id);
+        //向内呼发送不需要to_floor
+        auto p = create_param(CallEleENQ, 0, from_floor, elevator_id, agv_id);
+
+        std::cout << "create_param ok...." << std::endl;
+
 
         auto resp_param = request(p, CallEleACK, timeout);
         if (resp_param == nullptr) {
@@ -241,7 +249,7 @@ int Elevator::RequestTakeElevator(int from_floor, int to_floor, int elevator_id,
 
     // 判断楼层是否相等, 是否乘梯
     // 响应消息中 目标楼层1表示电梯门开着, 0表示电梯门关闭
-    int id = (resp->src_floor == from_floor && resp->dst_floor == 1) ?
+    int id = (/*resp->src_floor == from_floor &&*/ resp->dst_floor == 1) ?
             resp->elevator_no : -1;
     combined_logger->info("[Elevator {0}] [{1}], Request Elevator Succeed, Ele ID: {2}",
                     name, (connected_ ? "Connected" : "Disconnected"),

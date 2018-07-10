@@ -16,7 +16,7 @@ void AgvManager::checkTable()
 	//检查表
 	try {
 		if (!g_db.tableExists("agv_agv")) {
-			g_db.execDML("create table agv_agv(id INTEGER primary key AUTOINCREMENT, name char(64),ip char(64),port INTEGER,lastStation INTEGER,nowStation INTEGER,nextStation INTEGER);");
+            g_db.execDML("create table agv_agv(id INTEGER primary key AUTOINCREMENT, name char(64),ip char(64),port INTEGER,lastStation INTEGER,nowStation INTEGER,nextStation INTEGER,agvType INTEGER,agvClass INTEGER, lineName char(64));");
 		}
 	}
 	catch (CppSQLite3Exception e) {
@@ -34,8 +34,8 @@ bool AgvManager::init()
 {
 	checkTable();
 	try {
-		CppSQLite3Table table_agv = g_db.getTable("select id,name,ip,port,lastStation,nowStation,nextStation from agv_agv;");
-		if (table_agv.numRows() > 0 && table_agv.numFields() != 7)return false;
+        CppSQLite3Table table_agv = g_db.getTable("select id,name,ip,port,lastStation,nowStation,nextStation,agvType,agvClass,lineName from agv_agv;");
+        if (table_agv.numRows() > 0 && table_agv.numFields() != 10)return false;
 		std::unique_lock<std::mutex> lck(mtx);
 		for (int row = 0; row < table_agv.numRows(); row++)
 		{
@@ -50,9 +50,22 @@ bool AgvManager::init()
 			int nowStation = atoi(table_agv.fieldValue(5));
 			int nextStation = atoi(table_agv.fieldValue(6));
 
+            int agvType = -1;
+            int agvClass = -1;
+            std::string lineName = "";
+
+            if(!table_agv.fieldIsNull(7))
+                agvType = atoi(table_agv.fieldValue(7));
+
+            if(!table_agv.fieldIsNull(8))
+                agvClass = atoi(table_agv.fieldValue(8));
+
+            if(!table_agv.fieldIsNull(9))
+                lineName = std::string(table_agv.fieldValue(9));
+
 			if (GLOBAL_AGV_PROJECT == AGV_PROJECT_QUNCHUANG) // 群创
 			{
-				AgvPtr agv(new rosAgv(id, name, ip, port));
+                AgvPtr agv(new rosAgv(id,name,ip,port,agvType,agvClass,lineName));
 				agv->init();
 				agv->setPosition(lastStation, nowStation, nextStation);
 				agvs.push_back(agv);
@@ -209,7 +222,8 @@ void AgvManager::interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &req
 
 		UserLogManager::getInstance()->push(conn->getUserName() + " add AGV.name:" + request["name"].asString() + " ip:" + request["ip"].asString() + intToString(request["port"].asInt()));
 		char buf[SQL_MAX_LENGTH];
-		snprintf(buf, SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port,lastStation,nowStation,nextStation) values('%s','%s',%d,%d,%d,0);", request["name"].asString().c_str(), request["ip"].asString().c_str(), request["port"].asInt(), request["station"].asInt(), request["station"].asInt());
+        string lineName = "";
+        snprintf(buf, SQL_MAX_LENGTH, "insert into agv_agv(name,ip,port,lastStation,nowStation,nextStation,agvType,agvClass,lineName) values('%s','%s',%d,%d,%d,0,%d,%d,'%s');", request["name"].asString().c_str(), request["ip"].asString().c_str(), request["port"].asInt(), request["station"].asInt(), request["station"].asInt(), -1, 0, lineName.c_str());
 		try {
 			g_db.execDML(buf);
 			int id = g_db.execScalar("select max(id) from agv_agv;");
@@ -320,9 +334,13 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 		int nowStation = request["nowStation"].asInt();
 		int nextStation = request["nextStation"].asInt();
 
+        int agvType = -1;
+        int agvClass = 0;
+        std::string lineName = "";
+
 		UserLogManager::getInstance()->push(conn->getUserName() + " modify AGV.ID:" + intToString(id) + " newname:" + name + " newip:" + ip + " newport:" + intToString(port)+ " lastStation:" + intToString(lastStation)+ " nowStation:" + intToString(nowStation) + " nextStation:" + intToString(nextStation));
 		char buf[SQL_MAX_LENGTH];
-		snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set name='%s',ip='%s',port=%d,lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", name.c_str(), ip.c_str(), port, id, lastStation, nowStation, nextStation);
+        snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set name='%s',ip='%s',port=%d,lastStation=%d,nowStation=%d,nextStation=%d,agvType=%d,agvClass=%d,lineName='%s'  where id = %d;", name.c_str(), ip.c_str(), port, lastStation, nowStation, nextStation,agvType,agvClass,lineName,id);
 
 		try {
 			g_db.execDML(buf);

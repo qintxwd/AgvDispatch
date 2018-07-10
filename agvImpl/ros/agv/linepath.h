@@ -1,7 +1,7 @@
 #ifndef LINEPATH_H
 #define LINEPATH_H
 
-#include "../../../common.h"
+#include "common.h"
 #include <iostream>
 #include <fstream>
 

@@ -145,6 +145,7 @@ bool TaskManager::init()
 									task->setPath(result);
 									pos = itr->second.erase(pos);
 
+                                    bestAgv->onTaskStart(task);
 									excuteTask(task);
 									continue;
 								}
@@ -366,6 +367,7 @@ void TaskManager::finishTask(AgvTaskPtr task)
 	//设置状态
 	AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
 	if (agv != nullptr) {
+        agv->onTaskFinished(task);
 		agv->setTask(nullptr);
 		//TODO:
 		agv->status = Agv::AGV_STATUS_IDLE;
@@ -400,8 +402,12 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 			AgvTaskNodePtr node = nodes[index];
 			int station = node->getStation();
 
-			AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
-
+#ifdef QUNCHUANG_PROJECT
+            AgvPtr agv_base = AgvManager::getInstance()->getAgvById(task->getAgv());
+            rosAgvPtr agv = std::static_pointer_cast<rosAgv>(agv_base);
+#else
+            AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+#endif
 			try {
 				if (station == NULL) {
 					for (auto thing : node->getDoThings()) {

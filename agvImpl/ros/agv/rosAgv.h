@@ -1,18 +1,21 @@
-﻿#ifndef ROSAGV_H
+#ifndef ROSAGV_H
 #define ROSAGV_H
 
-#include "../../../realagv.h"
-#include "../../../agvtask.h"
-#include "../../../qyhtcpclient.h"
-#include "../../../userlogmanager.h"
-#include "../../../msgprocess.h"
+#include "agv.h"
+#include "agvtask.h"
+#include "qyhtcpclient.h"
+#include "userlogmanager.h"
+#include "msgprocess.h"
 #include "linepath.h"
-#include "../../../device/device.h"
-#include "../../../qunchuang/chipmounter/chipmounter.h"
+#include "device/device.h"
+#include "qunchuang/chipmounter/chipmounter.h"
+#include "qunchuang/qunchuangtcsconnection.h"
+#include "realagv.h"
+
 
 using namespace std;
 
-#define SIMULATOR 1
+#define SIMULATOR 0
 
 #define NAV_CTRL_USING_TOPIC  0
 
@@ -36,6 +39,27 @@ enum nav_control{
     PAUSE
 };
 
+//3层升降货架上料status
+enum up_part_status{
+    up_part_working,  //0:正在执行;
+    up_part_nothing,  //1:上料没料;
+    up_part_fail,     //2:上料卡料;
+    up_part_success   //3:上料成功
+};
+//3层升降货架下料status
+enum down_part_status{
+    down_part_working,  //0:正在执行;
+    down_part_nothing=11,  //11:未收到料;
+    down_part_fail=12,     //12:下料卡料;
+    down_part_success=13   //13:下料成功
+};
+
+
+#define UP_PART      true  //3层升降货架上料
+#define DOWN_PART    false //3层升降货架下料
+
+
+
 #define NAV_CTRL_STATUS_ERROR      -1
 #define NAV_CTRL_STATUS_IDLING     0
 #define NAV_CTRL_STATUS_RUNNING    1
@@ -49,6 +73,11 @@ enum nav_control{
 #define AGV_SHELVES_ROLLING_FORWORD true  // 向前转， AGV方向
 #define AGV_SHELVES_ROLLING_BACKWORD false // 向后转
 
+#define AGV_ACTION_PUT   "put"    // AGV向偏贴机上料
+#define AGV_ACTION_GET "get"  // AGV从偏贴机下料
+#define AGV_ACTION_NONE       "none"       //无动作
+
+
 class rosAgv : public RealAgv
 {
 private:
@@ -61,6 +90,7 @@ private:
        std::condition_variable nav_ctrl_status_var; // nav_ctrl_status条件变量.
 
        void subTopic(const char * topic, const char * topic_type);
+       void unSubTopic(const char * topic);
        void advertiseTopic(const char * topic, const char * topic_type);
        void advertiseService(const char * service_name, const char * msg_type);
 
@@ -68,6 +98,8 @@ private:
        void parseJsondata(const char *data,int len);
        void processServiceCall(Json::Value call_service);
        void processServiceResponse(Json::Value response);
+       void processPublishMsg(Json::Value json);
+
        void sendServiceResponse(string service_name,Json::Value *value=nullptr,string id="");
        void navCtrlStatusNotify(string waypoint_name, int nav_ctrl_status);
        void changeMap(string map_name);
@@ -77,11 +109,10 @@ private:
        void startShelftUp(string action);
        void startShelftDown(string action);
        void initStation(string station_name);
-
-
+       bool isShelftSuccess(bool forward);//判断3层升降货架status, 上下料成功true, 卡料false
 
 public:
-    rosAgv(int id,std::string name,std::string ip,int port);
+    rosAgv(int id,std::string name,std::string ip,int port,int agvType=-1, int agvClass=-1, std::string lineName="");
 
     enum { Type = Agv::Type+1 };
 
@@ -95,8 +126,6 @@ public:
     virtual void cancelTask();
     //virtual void excutePath(std::vector<AgvLinePtr> lines);
     virtual void excutePath(std::vector<int> lines);
-    void test();
-    void test2();
 
     void startTask(string station, string action);
 
@@ -105,9 +134,23 @@ public:
     bool Doing(string action, int station_id);
     bool afterDoing(string action, int station_id);
     void setChipMounter(chipmounter* device);// only for test, will be removed
+    bool secondaryLocalization(MapPoint* mapPoint);
+    bool secondaryLocalization(string station);
 
     bool isAGVInit();
+    void onTaskStart(AgvTaskPtr _task);
+    void onTaskFinished(AgvTaskPtr _task);
 
+    lynx::Msg getTcsMsg();
+
+    void setAgvType(int type){agvType=type;}
+    int getAgvType(){return agvType;}
+
+    void setAgvClass(int _agvClass){agvClass=_agvClass;}
+    int getAgvClass(){return agvClass;}
+
+    void setLineName(std::string name){lineName=name;}
+    std::string getLineName(){return lineName;}
 
 private:
     virtual void arrve(int x,int y);
@@ -128,10 +171,24 @@ private:
     chipmounter* mChipmounter; //偏贴机
 
     bool m_bInitlayer;
-    int  m_agv_type;
+
+    int agvClass; //激光叉车, 激光AGV, 磁条AGV, 二维码AGV
+    int agvType; //AGV type;
+    std::string lineName; //agv对应产线name, 没有可以忽略
 
     void InitShelfLayer();
     void ControlShelfUpDown(int layer, string height);
+
+
+
+    /*3层升降货架status
+     * 上料 up_part_status:3,3,3.  0:正在执行; 1:上料没料; 2:上料卡料; 3:上料成功
+     * 下料 down_part_status:13,13,13.  0:正在执行; 11:未收到料; 12:下料卡料; 13:下料成功
+     */
+    std::string shelf_finished_status;
+
+    std::string last_tcp_json_data; //onread函数中上次获得数据, 需要连接处理
+
 
 };
 

@@ -37,8 +37,19 @@ public:
     virtual std::string discribe()  = 0;//用于保存数据库//简单描述以下干什么的
 
 	std::vector<std::string> getParams() { return params; }
+
+    void setStationId(int station_id)//MapSpirit id
+    {
+        m_station_id = station_id;
+    }
+
+    int getStationId()
+    {
+        return m_station_id;//MapSpirit id
+    }
 protected:
     std::vector<std::string> params;
+    int m_station_id;//MapSpirit id
 };
 
 #endif // AGVTASKNODEDOTHING_H

@@ -90,11 +90,11 @@ namespace lynx {
             byte_t checksum    = begin[7];
 
             // 校验消息
-            if (checksum != 
+            /*if (checksum !=
                 check_sum(std::vector<byte_t>(begin, begin+7))) {
                 err = "check sum error";
                 return statics::null_param;
-            }
+            }*/
 
             return Param {src_floor, dst_floor, cmd, elevator_no, robot_no};
         }

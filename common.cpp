@@ -4,7 +4,8 @@
 ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
 
-const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
+//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
+const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QUNCHUANG;
 
 std::shared_ptr<spdlog::logger> combined_logger;
 
@@ -89,6 +90,14 @@ int stringToInt(std::string str)
     return i;
 }
 
+int HexStringToInt(std::string hexStr)
+{
+    int i;
+    std::string ss = "0x" + hexStr;
+    sscanf(ss.c_str(),"%X",&i);
+    return i;
+}
+
 bool stringToBool(std::string str)
 {
     if(str.length()<=0)return false;
@@ -119,6 +128,111 @@ std::vector<std::string> split(std::string src,std::string sp)
 		result.push_back(src);
     return result;
 }
+
+/*
+ * multiJson like this:
+{"topic": "/waypoint_user_sub", "msg": {"data": "charge_status:0"}, "op": "publish"}
+{"topic": "/waypoint_user_sub", "msg": {"data": "emergency_status:1,1,1"}, "op": "publish"}
+*/
+
+std::vector<std::string> splitMultiJson(std::string multiJson)
+{
+    const char * data = multiJson.c_str();
+    int left = 0;
+    int right = 0;
+
+    //combined_logger->info("splitMultiJson, data: "+ multiJson);
+
+
+    std::vector<std::string> result;
+    if (multiJson.length() == 0)
+        return result;
+
+    if(*data != '{' /*|| *(data + (multiJson.size()-1))!= '}'*/)
+        return result;
+
+    size_t pos=0;
+    while(*(data+pos) != '\0'){
+        if(*(data+pos) == '{')
+        {
+            left++;
+        }
+
+        if(*(data+pos) == '}')
+        {
+            right++;
+        }
+
+        pos++;
+
+        if(left == right && left != 0)
+        {
+            std::string json = multiJson.substr(0,pos);
+            result.push_back(json);
+
+            multiJson = multiJson.substr(pos, multiJson.length());
+            data = multiJson.c_str();
+            pos = 0;
+            left = 0;
+            right = 0;
+            continue;
+        }
+    }
+
+    if(multiJson.size() > 0)
+    {
+        //combined_logger->error("splitMultiJson, not json: "+ multiJson);
+
+        result.push_back(multiJson);
+    }
+
+    return result;
+}
+
+bool IsValidIPAddress(const char * str){
+    //先判断形式是否合法，
+
+    //检查是否只包含点和数字
+    for(int i = 0; str[i] != '\0'; i++){
+        if(!isdigit(str[i]) && str[i] != '.')
+            return false;
+    }
+
+    //检查是否形如X.X.X.X
+    int count = 0;
+    for(int i = 0; str[i+1] != '\0'; i++){
+        if(isdigit(str[i]) && str[i+1] == '.' )
+            count++;
+    }
+    if(count != 3)
+        return false;
+
+    //检查区间是否合法
+    int temp = 0;
+    int j = 0;
+    for(int i = 0; str[i] != '\0'; i++){
+        if(str[i] != '.'){
+            temp = (temp * 10  + int(str[i] - '0'));
+            j++;
+        }
+        else{
+            if(temp <= 255){
+                temp = 0;
+                j = 0;
+            }
+            else
+                return false;
+        }
+    }
+
+    //最后一个也要判断
+    if(temp > 255)
+        return false;
+
+    //通过所有测试，返回正确
+    return true;
+}
+
 
 #ifndef _WIN32
 

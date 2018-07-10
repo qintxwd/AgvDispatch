@@ -6,6 +6,11 @@
 #include <mutex>
 #include <map>
 
+//3层升降货架是否有料信息KEY
+#define ALL_FLOOR_INFO_KEY         "all_floor_info"
+//AGV完成一个Task是否需要回到等待区KEY
+#define NEED_AGV_BACK_TO_WAITING_AREA_KEY  "need_agv_back_to_waiting_area"
+
 class AgvTask;
 using AgvTaskPtr = std::shared_ptr<AgvTask>;
 
@@ -76,6 +81,9 @@ public:
     void onLeaveStation(int stationid);
     void onError(int code,std::string msg);
     void onWarning(int code, std::string msg);
+
+    virtual void onTaskStart(AgvTaskPtr _task){}
+    virtual void onTaskFinished(AgvTaskPtr _task){}
 
     virtual void goStation(int station, bool stop = false);
     virtual void stop();
