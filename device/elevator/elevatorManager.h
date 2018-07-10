@@ -27,8 +27,9 @@ public:
 
     ElevatorPtr getElevatorById(int id);
 
-protected:
     ElevatorManager();
+    ~ElevatorManager();
+
 private:
     void checkTable();
 

@@ -37,6 +37,12 @@ public:
 
     MapPath *getMapPathByStartEnd(int start,int end);
 
+    //获得站点楼层
+    int getStationFloor(int station);
+
+    //是否同一楼层站点
+    bool isSameFloorStation(int station_1, int station_2);
+
     //一个Agv占领一个站点
     void occuStation(int station, AgvPtr occuAgv);
 

@@ -110,6 +110,37 @@ void MapManager::freeStation(int station, AgvPtr occuAgv)
 	}
 }
 
+//获得站点楼层
+int MapManager::getStationFloor(int station)
+{
+    std::list<MapFloor *> floors = g_onemap.getFloors();//楼层
+    for(auto f:floors){
+        std::list<int> fps = f->getPoints();
+        for(auto fp:fps){
+            if(station == fp){
+                return f->getId();
+            }
+        }
+    }
+    return -1;
+}
+
+
+//是否同一楼层站点
+bool MapManager::isSameFloorStation(int station_1, int station_2)
+{
+    int floor_1 = getStationFloor(station_1);
+    int floor_2 = getStationFloor(station_2);
+
+    std::cout<<"是否同一楼层站点, floor_1 : " << floor_1 <<std::endl;
+    std::cout<<"是否同一楼层站点, floor_2 : " << floor_2 <<std::endl;
+
+    if(floor_1 > 0  && floor_1 == floor_2 )
+        return true;
+    else
+        return false;
+}
+
 //参数的是车正向行驶的线路，如果车辆在线路的占领表中，释放出去
 void MapManager::freeLine(int line, AgvPtr occuAgv)
 {
