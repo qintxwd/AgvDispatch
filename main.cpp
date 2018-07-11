@@ -113,7 +113,7 @@ void testAGV()
 
 }
 
-void testElevator()
+/*void testElevator()
 {
     // test elevator
     Elevator ele(1, "ele_0", "127.0.0.1", 8889);
@@ -147,7 +147,7 @@ void testElevator()
 
         return false;
     });
-}
+}*/
 
 int main(int argc, char *argv[])
 {
