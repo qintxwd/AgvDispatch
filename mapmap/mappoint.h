@@ -17,7 +17,7 @@ public:
         Map_Point_Type_ORIGIN,
     };
 
-    MapPoint(int _id, std::string _name,Map_Point_Type _type, int _x, int _y,int _realX = 0,int _realY = 0,int _labelXoffset = 0,int _labelYoffset = -40,bool _mapChange = false,bool _locked = false, std::string _ip = "", int _port = 0, int _agvType = -1, std::string _lineId = "");
+    MapPoint(int _id, std::string _name,Map_Point_Type _type, int _x, int _y,int _realX = 0,int _realY = 0,int _realA = 0,int _labelXoffset = 0,int _labelYoffset = -40,bool _mapChange = false,bool _locked = false, std::string _ip = "", int _port = 0, int _agvType = -1, std::string _lineId = "");
     virtual ~MapPoint();
     virtual MapSpirit *clone();
     MapPoint(const MapPoint &p) = delete;
@@ -28,6 +28,7 @@ public:
     int getY() const {return y;}
     int getRealX() const {return realX;}
     int getRealY() const {return realY;}
+    int getRealA() const {return realA;}
     int getLabelXoffset() const {return labelXoffset;}
     int getLabelYoffset() const {return labelYoffset;}
     bool getMapChange() const {return mapChange;}
@@ -39,6 +40,7 @@ public:
 
     void setRealX(int _realX){realX = _realX ;}
     void setRealY(int _realY){realY = _realY ;}
+    void setRealA(int _realA){realA = _realA;}
     void setLabelXoffset(int _labelXoffset){labelXoffset = _labelXoffset ;}
     void setLabelYoffset(int _labelYoffset){labelYoffset = _labelYoffset ;}
     void setX(int _x){x = _x ;}
@@ -58,6 +60,7 @@ private:
     int y;
     int realX;
     int realY;
+    int realA;
     int labelXoffset;
     int labelYoffset;
     bool mapChange;

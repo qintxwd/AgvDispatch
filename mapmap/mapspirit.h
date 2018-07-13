@@ -14,6 +14,7 @@ public:
         Map_Sprite_Type_Background,
         Map_Sprite_Type_Block,
         Map_Sprite_Type_Group,
+        Map_Sprite_Type_DyPath
     };
 
     MapSpirit(int _id,std::string _name,Map_Spirit_Type _spirit_type);

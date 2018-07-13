@@ -16,10 +16,16 @@ void MapManager::checkTable()
 	//检查表
 	try {
 		if (!g_db.tableExists("agv_station")) {
-            g_db.execDML("create table agv_station(id INTEGER,name char(64),type INTEGER, x INTEGER,y INTEGER,realX INTEGER,realY INTEGER,labelXoffset INTEGER,labelYoffset INTEGER,mapChange BOOL,locked BOOL,ip char(64),port INTEGER,agvType INTEGER,lineId char(64));");
+            g_db.execDML("create table agv_station(id INTEGER,name char(64),type INTEGER, x INTEGER,y INTEGER,realX INTEGER,realY INTEGER,realA INTEGER DEFAULT 0, labelXoffset INTEGER,labelYoffset INTEGER,mapChange BOOL,locked BOOL,ip char(64),port INTEGER,agvType INTEGER,lineId char(64));");
         }
 		if (!g_db.tableExists("agv_line")) {
 			g_db.execDML("create table agv_line(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p2x INTEGER,p2y INTEGER,length INTEGER,locked BOOL);");
+        }
+        if (!g_db.tableExists("agv_line_dy")) {
+            g_db.execDML("create table agv_line_dy(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p1a INTEGER DEFAULT 0,p1f INTEGER DEFAULT 1,p2x INTEGER,p2y INTEGER,p2a INTEGER DEFAULT 0,p2f INTEGER DEFAULT 1, speed REAL DEFAULT 0.4);");
+        }
+        if (!g_db.tableExists("agv_line_dy_1")) {
+            g_db.execDML("create table agv_line_dy_1(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p1a INTEGER DEFAULT 0,p1f INTEGER DEFAULT 1,p2x INTEGER,p2y INTEGER,p2a INTEGER DEFAULT 0,p2f INTEGER DEFAULT 1, speed REAL DEFAULT 0.4);");
 		}
 		if (!g_db.tableExists("agv_bkg")) {
 			g_db.execDML("create table agv_bkg(id INTEGER,name char(64),data blob,data_len INTEGER,x INTEGER,y INTEGER,width INTEGER,height INTEGER,filename char(512));");
@@ -47,6 +53,7 @@ void MapManager::checkTable()
 //载入地图
 bool MapManager::load()
 {
+    checkTable();
 	//载入数据
 	mapModifying = true;
 	if (!loadFromDb())
@@ -90,15 +97,20 @@ void MapManager::occuStation(int station, AgvPtr occuAgv)
 {
 	//if(station_occuagv[station] == 0){
 	station_occuagv[station] = occuAgv->getId();
+    combined_logger->info("occupy station:{0} agv:{1}", station, occuAgv->getId());
 	//}
 }
 
 //线路的反向占用,参数的是车正向行驶的线路
 void MapManager::addOccuLine(int line, AgvPtr occuAgv)
 {
+    line_occuagvs[line].push_back(occuAgv->getId());
+    combined_logger->info("occupy line:{0} agv:{1}", line, occuAgv->getId());
+
 	if (m_reverseLines[line] != 0) {
 		int reverseLine = m_reverseLines[line];
 		line_occuagvs[reverseLine].push_back(occuAgv->getId());
+        combined_logger->info("occupy reverseline:{0} agv:{1}", reverseLine, occuAgv->getId());
 	}
 }
 
@@ -107,6 +119,7 @@ void MapManager::freeStation(int station, AgvPtr occuAgv)
 {
 	if (station_occuagv[station] == occuAgv->getId()) {
 		station_occuagv[station] = 0;
+        combined_logger->info("free station:{0} agv:{1}", station, occuAgv->getId());
 	}
 }
 
@@ -144,6 +157,15 @@ bool MapManager::isSameFloorStation(int station_1, int station_2)
 //参数的是车正向行驶的线路，如果车辆在线路的占领表中，释放出去
 void MapManager::freeLine(int line, AgvPtr occuAgv)
 {
+    for (auto itr = line_occuagvs[line].begin(); itr != line_occuagvs[line].end(); ) {
+        if (*itr == occuAgv->getId()) {
+            itr = line_occuagvs[line].erase(itr);
+            combined_logger->info("free line:{0} agv:{1}", line, occuAgv->getId());
+        }
+        else {
+            ++itr;
+        }
+    }
 	if (m_reverseLines[line] != 0) {
 
 		int reverseLine = m_reverseLines[line];
@@ -151,6 +173,7 @@ void MapManager::freeLine(int line, AgvPtr occuAgv)
 		for (auto itr = line_occuagvs[reverseLine].begin(); itr != line_occuagvs[reverseLine].end(); ) {
 			if (*itr == occuAgv->getId()) {
 				itr = line_occuagvs[reverseLine].erase(itr);
+                combined_logger->info("free reverseline:{0} agv:{1}", reverseLine, occuAgv->getId());
 			}
 			else {
 				++itr;
@@ -169,6 +192,8 @@ bool MapManager::save()
 
 		g_db.execDML("delete from agv_line;");
 
+        g_db.execDML("delete from agv_line_dy_1;");
+
 		g_db.execDML("delete from agv_bkg;");
 
 		g_db.execDML("delete from agv_floor;");
@@ -186,11 +211,8 @@ bool MapManager::save()
 		for (auto spirit : spirits) {
 			if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point) {
                 MapPoint *station = static_cast<MapPoint *>(spirit);
-                bufSQL.format("insert into agv_station(id,name,type, x,y,realX,realY,labelXoffset,labelYoffset ,mapChange,locked,ip,port,agvType,lineId) values (%d, '%s',%d,%d,%d,%d,%d,%d,%d,%d,%d,'%s',%d,%d,'%s');", station->getId(), station->getName().c_str(), station->getPointType(), station->getX(), station->getY(),
-                              station->getRealX(), station->getRealY(), station->getLabelXoffset(), station->getLabelYoffset(), station->getMapChange(), station->getLocked(), station->getIp().c_str(), station->getPort(), station->getAgvType(),station->getLineId().c_str());
-
-                //std::cout<<"bufSQL : " << bufSQL <<std::endl;
-
+                bufSQL.format("insert into agv_station(id,name,type, x,y,realX,realY,realA,labelXoffset,labelYoffset ,mapChange,locked,ip,port,agvType,lineId) values (%d, '%s',%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,'%s',%d,%d,'%s');", station->getId(), station->getName().c_str(), station->getPointType(), station->getX(), station->getY(),
+                              station->getRealX(), station->getRealY(), station->getRealA(), station->getLabelXoffset(), station->getLabelYoffset(), station->getMapChange(), station->getLocked(), station->getIp().c_str(), station->getPort(), station->getAgvType(),station->getLineId().c_str());
                 g_db.execDML(bufSQL);
 			}
 			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Path) {
@@ -198,6 +220,12 @@ bool MapManager::save()
 				bufSQL.format("insert into agv_line(id ,name,type ,start ,end ,p1x ,p1y ,p2x ,p2y ,length ,locked) values (%d,'%s', %d,%d, %d, %d, %d, %d, %d, %d, %d);", path->getId(), path->getName().c_str(), path->getPathType(), path->getStart(), path->getEnd(),
 					path->getP1x(), path->getP1y(), path->getP2x(), path->getP2y(), path->getLength(), path->getLocked());
 				g_db.execDML(bufSQL);
+
+                MapPoint  *start = static_cast<MapPoint *>(MapManager::getMapSpiritById(path->getStart()));
+                MapPoint  *end = static_cast<MapPoint *>(MapManager::getMapSpiritById(path->getEnd()));
+                bufSQL.format("insert into agv_line_dy_1(id ,name,type ,start ,end ,p1x ,p1y ,p1a, p1f, p2x ,p2y, p2a, p2f) values (%d,'%s', %d,%d,%d, %d, %d, %d, %d, %d, %d, %d, %d);", -path->getId(), path->getName().c_str(), (path->getPathType()==0?1:3), path->getStart(), path->getEnd(),
+                              start->getRealX(), start->getRealY(), start->getRealA(), getFloor(start->getId()), end->getRealX(), end->getRealY(), end->getRealA(), getFloor(end->getId()));
+                g_db.execDML(bufSQL);
 			}
 			else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Background) {
 				MapBackground *bkg = static_cast<MapBackground *>(spirit);
@@ -264,8 +292,8 @@ bool MapManager::loadFromDb()
 	try {
 		checkTable();
 
-        CppSQLite3Table table_station = g_db.getTable("select id, name, x ,y ,type ,realX ,realY ,labelXoffset ,labelYoffset ,mapChange ,locked ,ip ,port ,agvType ,lineId  from agv_station;");
-        if (table_station.numRows() > 0 && table_station.numFields() != 15)
+        CppSQLite3Table table_station = g_db.getTable("select id, name, x ,y ,type ,realX ,realY ,realA, labelXoffset ,labelYoffset ,mapChange ,locked ,ip ,port ,agvType ,lineId  from agv_station;");
+        if (table_station.numRows() > 0 && table_station.numFields() != 16)
         {
             combined_logger->error("MapManager loadFromDb agv_station error!");
             return false;
@@ -281,16 +309,19 @@ bool MapManager::loadFromDb()
 			int type = atoi(table_station.fieldValue(4));
 			int realX = atoi(table_station.fieldValue(5));
 			int realY = atoi(table_station.fieldValue(6));
-			int labeXoffset = atoi(table_station.fieldValue(7));
-			int labelYoffset = atoi(table_station.fieldValue(8));
-			bool mapchange = atoi(table_station.fieldValue(9)) == 1;
-			bool locked = atoi(table_station.fieldValue(10)) == 1;
-            std::string ip = std::string(table_station.fieldValue(11));
-            int port = atoi(table_station.fieldValue(12));
-            int agvType = atoi(table_station.fieldValue(13));
-            std::string lineId = std::string(table_station.fieldValue(14));
+            int realA = atoi(table_station.fieldValue(7));
+            int labeXoffset = atoi(table_station.fieldValue(8));
+            int labelYoffset = atoi(table_station.fieldValue(9));
+            bool mapchange = atoi(table_station.fieldValue(10)) == 1;
+            bool locked = atoi(table_station.fieldValue(11)) == 1;
+            std::string ip = std::string(table_station.fieldValue(12));
+            int port = atoi(table_station.fieldValue(13));
+            int agvType = atoi(table_station.fieldValue(14));
+            std::string lineId = std::string(table_station.fieldValue(15));
 
-            MapPoint *point = new MapPoint(id, name, (MapPoint::Map_Point_Type)type, x, y, realX, realY, labeXoffset, labelYoffset, mapchange, locked, ip, port, agvType, lineId);
+
+            MapPoint *point = new MapPoint(id, name, (MapPoint::Map_Point_Type)type, x, y, realX, realY, realA, labeXoffset, labelYoffset, mapchange, locked, ip, port, agvType, lineId);
+
 			g_onemap.addSpirit(point);
 		}
 
@@ -316,6 +347,31 @@ bool MapManager::loadFromDb()
 			g_onemap.addSpirit(path);
 		}
 
+
+        CppSQLite3Table table_dy_line = g_db.getTable("select id,name,type,start,end,p1x,p1y,p1a,p1f,p2x,p2y,p2a,p2f,speed from agv_line_dy;");
+        if (table_dy_line.numRows() > 0 && table_dy_line.numFields() != 14)return false;
+        for (int row = 0; row < table_dy_line.numRows(); row++)
+        {
+            table_dy_line.setRow(row);
+
+            int id = atoi(table_dy_line.fieldValue(0));
+            std::string name = std::string(table_dy_line.fieldValue(1));
+            int type = atoi(table_dy_line.fieldValue(2));
+            int start = atoi(table_dy_line.fieldValue(3));
+            int end = atoi(table_dy_line.fieldValue(4));
+            int p1x = atoi(table_dy_line.fieldValue(5));
+            int p1y = atoi(table_dy_line.fieldValue(6));
+            int p1a = atoi(table_dy_line.fieldValue(7));
+            int p1f = atoi(table_dy_line.fieldValue(8));
+            int p2x = atoi(table_dy_line.fieldValue(9));
+            int p2y = atoi(table_dy_line.fieldValue(10));
+            int p2a = atoi(table_dy_line.fieldValue(11));
+            int p2f = atoi(table_dy_line.fieldValue(12));
+            float speed = atof(table_dy_line.fieldValue(13));
+
+            DyMapPath *path = new DyMapPath(id, name, start, end, (DyMapPath::Map_DyPath_Type)type, p1x, p1y, p1a, p1f, p2x, p2y, p2a, p2f, speed);
+            g_onemap.addSpirit(path);
+        }
 
 		CppSQLite3Table table_bkg = g_db.getTable("select id,name,data,data_len,x,y,width,height,filename from agv_bkg;");
 		if (table_bkg.numRows() > 0 && table_bkg.numFields() != 9)return false;
@@ -453,6 +509,10 @@ bool MapManager::loadFromDb()
 		g_onemap.setMaxId(max_id);
 		getReverseLines();
 		getAdj();
+        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
+        {
+            init_task_splitinfo();
+        }
 	}
 	catch (CppSQLite3Exception &e) {
 		combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
@@ -465,6 +525,46 @@ bool MapManager::loadFromDb()
 	return true;
 }
 
+std::vector<int> MapManager::getBestPathDy(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect)
+{
+    //获取路径的必经点
+    std::queue<int> chd_station;
+    int startBlock = getBlock(startStation);
+    int endBlock = getBlock(endStation);
+    if(m_chd_station.find(std::make_pair(startBlock, endBlock)) != m_chd_station.end() )
+    {
+        chd_station = m_chd_station[std::make_pair(startBlock, endBlock)];
+    }
+    //判断是否有必经点
+    if(chd_station.size())
+    {
+        chd_station.push(endStation);
+        std::vector<int> exec_path;
+        distance = 0;
+        do
+        {
+            int pos = chd_station.front();
+            int sub_dis;
+            std::vector<int> sub_path = getBestPath(agv, lastStation, startStation, pos, sub_dis, changeDirect);
+            if(!sub_path.size())
+            {
+                return sub_path;
+            }
+            else
+            {
+                distance += sub_dis;
+                exec_path.insert(exec_path.end(), sub_path.begin(), sub_path.end());
+                startStation = pos;
+                chd_station.pop();
+            }
+        }while(chd_station.size());
+        return exec_path;
+    }
+    else
+    {
+        return getBestPath(agv, lastStation, startStation, endStation, distance, changeDirect);
+    }
+}
 
 //获取最优路径
 std::vector<int> MapManager::getBestPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect)
@@ -524,6 +624,47 @@ bool MapManager::pathPassable(MapPath *line, int agvId) {
 	return true;
 }
 
+void MapManager::init_task_splitinfo()
+{
+    try {
+        if (!g_db.tableExists("agv_task_split")) {
+            g_db.execDML("create table agv_task_split(from_block INTEGER, to_block INTEGER, chdir_station TEXT) ;");
+        }
+        CppSQLite3Table table_tasksplit = g_db.getTable("select from_block, to_block, chdir_station from agv_task_split;");
+        if (table_tasksplit.numRows() > 0 && table_tasksplit.numFields() != 3)
+        {
+            combined_logger->error("DyTaskMaker loadFromDb agv_task_split error!");
+            return;
+        }
+        for (int row = 0; row < table_tasksplit.numRows(); row++)
+        {
+            table_tasksplit.setRow(row);
+
+            int from_block = atoi(table_tasksplit.fieldValue(0));
+            int to_block = atoi(table_tasksplit.fieldValue(1));
+            std::vector<std::string> chdir_pos = split(table_tasksplit.fieldValue(2), ";");
+            std::queue<int> chdir_station;
+            for(auto pos:chdir_pos)
+            {
+                chdir_station.push(stoi(pos));
+            }
+            m_chd_station[std::make_pair(from_block, to_block)] = chdir_station;
+        }
+        //        std::map< std::pair<int,int>, std::vector<std::string> >::iterator iter;
+
+        //        for(iter = m_chd_station.begin(); iter != m_chd_station.end(); iter++)
+
+        //            std::cout<<iter->first.first<<","<<iter->first.second<<' '<<iter->second.front()<<std::endl;
+    }
+    catch (CppSQLite3Exception &e) {
+        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
+        return;
+    }
+    catch (std::exception e) {
+        combined_logger->error("{0}",e.what());
+        return;
+    }
+}
 std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect)
 {
 	std::vector<int> result;
@@ -549,7 +690,8 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
 		|| endStationPtr->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)
 		return result;
 
-	//判断站点占用清空
+
+
 	if (station_occuagv[startStation] != 0 && station_occuagv[startStation] != agv)return result;
 	if (station_occuagv[endStation] != 0 && station_occuagv[endStation] != agv)return result;
 
@@ -767,6 +909,75 @@ void MapManager::clear()
 	g_onemap.clear();
 }
 
+bool MapManager::isSameFloor(int floor, int station)
+{
+    std::vector<int> stations = getStations(floor);
+    int count = std::count(stations.begin(), stations.end(), station);
+    return count > 0 ? true : false;
+}
+
+int MapManager::getFloor(int station)
+{
+    int floor = -1;
+    std::list<MapFloor *> floors = g_onemap.getFloors();
+    for(auto onefloor:floors)
+    {
+        std::list<int> pointlist = onefloor->getPoints();
+
+        if(std::find(pointlist.begin(), pointlist.end(), station) != pointlist.end())
+        {
+            floor = std::stoi(onefloor->getName().substr(6));
+            break;
+        }
+    }
+    return floor;
+}
+
+int MapManager::getBlock(int station)
+{
+    int block = -1;
+    std::list<MapBlock *> blocks = g_onemap.getBlocks();
+    for(auto oneblock:blocks)
+    {
+        std::list<int> spiritslist = oneblock->getSpirits();
+
+        if(std::find(spiritslist.begin(), spiritslist.end(), station) != spiritslist.end())
+        {
+            block = oneblock->getId();
+            break;
+        }
+    }
+    return block;
+}
+
+std::vector<int> MapManager::getStations(int floor)
+{
+    std::vector<int> allstation;
+    if(floor == 0)
+    {
+        allstation = g_onemap.getStations();
+    }
+    else
+    {
+        std::string floorname;
+        floorname.append("floor_").append(std::to_string(floor));
+        std::list<MapFloor *> floors = g_onemap.getFloors();
+        for(auto currentfloor:floors)
+        {
+            if(currentfloor->getName() == floorname)
+            {
+                std::list<int> pointlist = currentfloor->getPoints();
+                for(auto point:pointlist)
+                {
+                    allstation.push_back(point);
+                }
+                break;
+            }
+        }
+    }
+    return allstation;
+}
+
 void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
 {
 	Json::Value response;
@@ -804,6 +1015,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 				int y = station["y"].asInt();
 				int realX = station["realX"].asInt();
 				int realY = station["realY"].asInt();
+                int realA = station["realA"].asInt();
 				int labelXoffset = station["labelXoffset"].asInt();
 				int labelYoffset = station["labelYoffset"].asInt();
 				bool mapchange = station["mapchange"].asBool();
@@ -812,8 +1024,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 int port = station["port"].asInt();
                 int agvType = station["agvType"].asInt();
                 std::string lineId = station["lineId"].asString();
-
-                MapPoint *p = new MapPoint(id, name, (MapPoint::Map_Point_Type)station_type, x, y, realX, realY, labelXoffset, labelYoffset, mapchange, locked,ip,port,agvType,lineId);
+                MapPoint *p = new MapPoint(id, name, (MapPoint::Map_Point_Type)station_type, x, y, realX, realY, realA, labelXoffset, labelYoffset, mapchange, locked,ip,port,agvType,lineId);
                 g_onemap.addSpirit(p);
 			}
 
@@ -1009,6 +1220,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 				pv["y"] = p->getY();
 				pv["realX"] = p->getRealX();
 				pv["realY"] = p->getRealY();
+                pv["realA"] = p->getRealA();
 				pv["labelXoffset"] = p->getLabelXoffset();
 				pv["labelYoffset"] = p->getLabelYoffset();
 				pv["mapChange"] = p->getMapChange();

@@ -28,6 +28,8 @@ public:
 
     AgvPtr getAgvById(int id);
 
+    AgvPtr getAgvByIP(std::string ip);
+
     void addAgv(AgvPtr agv);
 
     void updateAgv(int id,std::string name,std::string ip,int port,int lastStation, int nowStation, int nextStation);
@@ -40,6 +42,9 @@ public:
 
     void getPositionJson(Json::Value &json);
 
+    void setServerAccepterID(qyhnetwork::AccepterID serverID);
+
+    qyhnetwork::AccepterID getServerAccepterID(){return _serverID;}
     //用户接口
     void interList(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
     void interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
@@ -52,6 +57,7 @@ private:
 
     std::mutex mtx;
     std::vector<AgvPtr> agvs;
+    qyhnetwork::AccepterID _serverID;
 };
 
 #endif // AGVMANAGER_H

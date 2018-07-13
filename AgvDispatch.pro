@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       -= gui core
+QT       -= gui
 
 TARGET = AgvDispatch
 CONFIG   += console
@@ -123,8 +123,15 @@ HEADERS += \
     qingdao/qingdaonodetingcharge.h \
     qingdao/qingdaonodetingget.h \
     qingdao/qingdaonodetingput.h \
-    qingdao/qingdaotaskmaker.h
-    qunchuang/msg.h
+    qingdao/qingdaotaskmaker.h \
+    qunchuang/msg.h \
+    Dongyao/dyforklift.h \
+    Dongyao/dyforkliftthingturn.h \
+    Dongyao/dytaskmaker.h \
+    Dongyao/dymappath.h \
+    Dongyao/dyforkliftupdwms.h \
+    Dongyao/dyforkliftthingfork.h \
+    Dongyao/charge/chargemachine.h
 
 SOURCES += \
     agv.cpp \
@@ -175,7 +182,11 @@ SOURCES += \
     qingdao/qingdaonodetingcharge.cpp \
     qingdao/qingdaonodetingget.cpp \
     qingdao/qingdaonodetingput.cpp \
-    qingdao/qingdaotaskmaker.cpp
-
-
-
+    qingdao/qingdaotaskmaker.cpp \
+    Dongyao/dyforklift.cpp \
+    Dongyao/dyforkliftthingturn.cpp \
+    Dongyao/dytaskmaker.cpp \
+    Dongyao/dymappath.cpp \
+    Dongyao/dyforkliftupdwms.cpp \
+    Dongyao/dyforkliftthingfork.cpp \
+    Dongyao/charge/chargemachine.cpp

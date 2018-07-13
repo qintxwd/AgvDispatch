@@ -9,7 +9,9 @@
 #include <jsoncpp/json/json.h>
 #endif
 #include <fstream>
-
+#include "agv.h"
+class DyForklift;
+using DyForkliftPtr = std::shared_ptr<DyForklift>;
 namespace qyhnetwork{
 
 class TcpSession: public std::enable_shared_from_this<TcpSession>
@@ -22,6 +24,7 @@ public:
     void reconnect();
     bool attatch(const TcpSocketPtr &sockptr, AccepterID aID, SessionID sID);
     void send(const Json::Value &json);
+    void send(char *data, int len);
     void close();
 
 private:
@@ -48,7 +51,9 @@ public:
     inline int getUserRole(){return user_role;}
     inline void setUserName(std::string _user_name){username = _user_name;}
     inline std::string getUserName(){return username;}
+    inline void setAGVPtr(AgvPtr agv){_agvPtr = agv;}
 private:
+    int ProtocolProcess();
     SessionOptions _options;
     EventLoopPtr _eventLoop;
     TcpSocketPtr  _sockptr;
@@ -84,6 +89,8 @@ private:
 
 	char *big_msg_buffer;//
 	int big_msg_buffer_position;
+    AgvPtr _agvPtr;
+    std::string receivedBuffer;
 };
 using TcpSessionPtr = std::shared_ptr<TcpSession>;
 

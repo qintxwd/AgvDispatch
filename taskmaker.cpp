@@ -1,6 +1,7 @@
 ﻿#include "taskmaker.h"
 #include "qunchuang/qunchuangtaskmaker.h"
 #include "qingdao/qingdaotaskmaker.h"
+#include "Dongyao/dytaskmaker.h"
 #include "common.h"
 
 TaskMaker::TaskMaker()
@@ -27,6 +28,13 @@ TaskMaker* TaskMaker::getInstance()
         static QunChuangTaskMaker *m_ins = nullptr;
         if(m_ins == nullptr){
             m_ins = new QunChuangTaskMaker();
+        }
+        return m_ins;
+    }
+    else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO){
+        static DyTaskMaker *m_ins = nullptr;
+        if(m_ins == nullptr){
+            m_ins = new DyTaskMaker("127.0.0.1", 12345);
         }
         return m_ins;
     }

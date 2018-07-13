@@ -49,6 +49,7 @@ public:
         AGV_STATUS_ERROR = 4,//故障
         AGV_STATUS_GO_CHARGING = 5,//返回充电中
         AGV_STATUS_CHARGING = 6,//正在充电
+        AGV_STATUS_NOTREADY = 7 //刚连接，尚未上报位置
     };
 
     //状态

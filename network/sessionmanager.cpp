@@ -220,7 +220,7 @@ void SessionManager::onAcceptNewClient(qyhnetwork::NetErrorCode ec, const TcpSoc
         founder->second._totalAcceptCount++;
         _lastSessionID = nextSessionID(_lastSessionID);
 
-        combined_logger->info("onAcceptNewClient Accept New Client. Accept new Sessions sID={0}. The new socket  remoteAddress={1}:{2}, Aready linked sessions = {3}",_lastSessionID,remoteIP.c_str(), remotePort,founder->second._currentLinked);
+        combined_logger->info("onAcceptNewClient Accept New Client. Accept new Sessions sID={0}. The new socket  remoteAddress={1}:{2}, Already linked sessions = {3}",_lastSessionID,remoteIP.c_str(), remotePort,founder->second._currentLinked);
 
         s->initialize(_summer);
 
@@ -399,6 +399,18 @@ void SessionManager::sendSessionData(SessionID sID, const Json::Value &response)
     }
     iter->second->send(response);
 }
+
+void SessionManager::sendSessionData(SessionID sID, const char *data, int len)
+{
+    auto iter = _mapTcpSessionPtr.find(sID);
+    if (iter == _mapTcpSessionPtr.end())
+    {
+        combined_logger->warn("sendSessionData NOT FOUND SessionID.  SessionID={0}",sID);
+        return;
+    }
+    iter->second->send(data);
+}
+
 
 void SessionManager::sendData(const Json::Value &response)
 {

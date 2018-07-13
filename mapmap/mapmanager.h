@@ -57,7 +57,13 @@ public:
 
     //获取最优路径
     std::vector<int> getBestPath(int agv,int lastStation, int startStation, int endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
+    std::vector<int> getBestPathDy(int agv,int lastStation, int startStation, int endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
 
+    std::vector<int> getStations(int floor);
+
+    bool isSameFloor(int floor, int station);
+    int getFloor(int station);
+    int getBlock(int station);
     //用户接口
     void interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
     void interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
@@ -90,8 +96,10 @@ private:
     void getAdj();
 
 	bool pathPassable(MapPath *line, int agvId);
+    void init_task_splitinfo();
 
     std::atomic_bool mapModifying;
+    std::map< std::pair<int,int>, std::queue<int> > m_chd_station;
 };
 
 #endif // MAPMANAGER_H

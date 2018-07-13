@@ -63,6 +63,16 @@ MapSpirit *OneMap::getSpiritById(int id)
     return nullptr;
 }
 
+std::vector<int> OneMap::getStations()
+{
+    std::vector<int> points;
+    for(auto s:all_element)
+    {
+        if(s->getSpiritType() == MapSpirit::Map_Sprite_Type_Point)points.push_back(s->getId());
+    }
+    return points;
+}
+
 std::list<MapFloor *> OneMap::getFloors()
 {
     std::list<MapFloor *> floors;

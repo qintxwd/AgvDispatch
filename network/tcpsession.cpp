@@ -2,6 +2,8 @@
 #include "sessionmanager.h"
 #include "../common.h"
 #include "../msgprocess.h"
+#include "agvmanager.h"
+#include "../Dongyao/dyforklift.h"
 
 using namespace qyhnetwork;
 using std::min;
@@ -112,14 +114,41 @@ namespace qyhnetwork {
 			}
 		}
 
+    if(aID == AgvManager::getInstance()->getServerAccepterID())
+    {
+        DyForkliftPtr agv = std::static_pointer_cast<DyForklift> (AgvManager::getInstance()->getAgvByIP(_remoteIP));
+
+        if(agv)
+        {
+            agv->setPosition(0, 0, 0);
+            agv->status = Agv::AGV_STATUS_NOTREADY;
+            agv->setQyhTcp(_sockptr);
+            agv->setPort(_remotePort);
+            //start report
+            agv->startReport(100);
 		if (!doRecv())
 		{
 			close();
 			return false;
 		}
-		return true;
+            setAGVPtr(agv);
 	}
+        else
+        {
+            combined_logger->warn("AGV is not in the list::ip={}.", _remoteIP);
+        }
+    }
+    else
+    {
 
+        if (!doRecv())
+        {
+            close();
+            return false;
+        }
+    }
+    return true;
+}
 	void TcpSession::onConnected(qyhnetwork::NetErrorCode ec)
 	{
 		if (ec)
@@ -190,6 +219,11 @@ namespace qyhnetwork {
 				}
 			}
 
+        if(_acceptID == AgvManager::getInstance()->getServerAccepterID())
+        {
+            //AgvManager::getInstance()->removeAgv(_agvPtr);
+        }
+
 			if (isConnectID(_sessionID) && _reconnects < _options._reconnects)
 			{
 				_status = 1;
@@ -206,6 +240,53 @@ namespace qyhnetwork {
         combined_logger->warn("TcpSession::close closing. sID={0}", _sessionID);
 	}
 
+int TcpSession::ProtocolProcess()
+{
+    int StartIndex,EndIndex;
+    std::string FrameData;
+    int start_byteFlag = receivedBuffer.find('*');
+    int end_byteFlag = receivedBuffer.find('#');
+    if((start_byteFlag ==-1)&&(end_byteFlag ==-1))
+    {
+        receivedBuffer.clear();
+        return 5;
+    }
+    else if((start_byteFlag == -1)&&(end_byteFlag != -1))
+    {
+        receivedBuffer.clear();
+        return 6;
+    }
+    else if((start_byteFlag != -1)&&(end_byteFlag == -1))
+    {
+        receivedBuffer = receivedBuffer.substr(receivedBuffer.find('*'));
+        return 7;
+    }
+    StartIndex = receivedBuffer.find('*')+1;
+    EndIndex = receivedBuffer.find('#');
+    if(EndIndex>StartIndex)
+    {
+        FrameData = receivedBuffer.substr(StartIndex,EndIndex-StartIndex);
+        if(FrameData.find('*') != -1)
+            FrameData = FrameData.substr(FrameData.find_last_of('*')+1);
+        receivedBuffer= receivedBuffer.substr(receivedBuffer.find('#')+1);
+    }
+    else
+    {
+        //remove unuse message
+        receivedBuffer= receivedBuffer.substr(receivedBuffer.find('*'));
+        return 2;
+    }
+    int FrameLength = std::stoi(FrameData.substr(6,4));
+    if(FrameLength == FrameData.length())
+    {
+        std::static_pointer_cast<DyForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
 	unsigned int TcpSession::onRecv(qyhnetwork::NetErrorCode ec, int received)
 	{
 		if (ec)
@@ -228,6 +309,9 @@ namespace qyhnetwork {
 		SessionManager::getInstance()->_statInfo[STAT_RECV_COUNT]++;
 		SessionManager::getInstance()->_statInfo[STAT_RECV_BYTES] += received;
 
+    //    combined_logger->info("{0}, msglen:{1}", _acceptID, received);
+    if(_acceptID !=  AgvManager::getInstance()->getServerAccepterID())
+    {
 		read_len += received;
 		read_position += received;
 
@@ -239,7 +323,7 @@ namespace qyhnetwork {
 					memcpy(big_msg_buffer + big_msg_buffer_position, read_buffer, received - read_len + (json_len + 5));
 					
 					std::string json_str = std::string(big_msg_buffer, json_len);
-                    combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,json_str);
+                    //                    combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,json_str);
 
 					Json::Reader reader;
 					Json::Value root;
@@ -279,7 +363,7 @@ namespace qyhnetwork {
 
 							std::string json_str = std::string(read_buffer + 5, json_len);
 
-                            combined_logger->trace("RECV! session id={0} len={1} json=\n{2}",this->_sessionID,json_len, json_str);
+                            //                            combined_logger->trace("RECV! session id={0} len={1} json=\n{2}",this->_sessionID,json_len, json_str);
 ;
 							Json::Reader reader;
 							Json::Value root;
@@ -338,6 +422,17 @@ namespace qyhnetwork {
 					break;
 			}
 		}
+        }
+    }
+    else
+    {
+        receivedBuffer.append(read_buffer, received);
+
+        int returnValue;
+        do
+        {
+            returnValue = ProtocolProcess();
+        }while(receivedBuffer.size() >12 && (returnValue == 0||returnValue == 2||returnValue == 1 ));
 	}
 # ifndef WIN32
 		return read_position;
@@ -358,7 +453,7 @@ namespace qyhnetwork {
 		std::string msg = json.toStyledString();
 		int length = msg.length();
 		
-        combined_logger->trace("SEND! session id={0}  len= {1}  json=\n{2}" ,this->_sessionID,length, msg);
+    //    combined_logger->trace("SEND! session id={0}  len= {1}  json=\n{2}" ,this->_sessionID,length, msg);
 
 		char *send_buffer = new char[length + 6];
 		memset(send_buffer, 0, length + 6);
@@ -373,6 +468,23 @@ namespace qyhnetwork {
 		delete[] send_buffer;
 	}
 
+
+void TcpSession::send(char*msg, int length)
+{
+    char headLeng[5];
+    headLeng[0] = MSG_MSG_HEAD;
+    SessionManager::getInstance()->_statInfo[STAT_SEND_COUNT]++;
+    SessionManager::getInstance()->_statInfo[STAT_SEND_PACKS]++;
+
+    //    combined_logger->trace("SEND! session id={0}  len= {1}  json=\n{2}" ,this->_sessionID,length, msg);
+
+    if(_sockptr==nullptr)return ;
+    bool sendRet = _sockptr->doSend(msg, length);
+    if (!sendRet)
+    {
+        combined_logger->warn("send error ") ;
+    }
+}
 	void TcpSession::onPulse()
 	{
 		if (_status == 3)

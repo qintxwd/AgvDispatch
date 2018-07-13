@@ -32,7 +32,7 @@ void UserLogManager::init()
             //1.存库
             try{
                 std::stringstream ss;
-                ss<<"insert into agv_log (log_time,log_msg) values ("<<log.time<<" ,"<<log.msg<<" );";
+                ss<<"insert into agv_log (log_time,log_msg) values ('"<<log.time<<"' ,'"<<log.msg<<"' );";
                 g_db.execDML(ss.str().c_str());
             }catch(CppSQLite3Exception &e){
                 std::cerr << e.errorCode() << ":" << e.errorMessage();

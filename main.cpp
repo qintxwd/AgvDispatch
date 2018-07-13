@@ -11,7 +11,7 @@
 #include "agvImpl/ros/agv/rosAgv.h"
 #include "qunchuang/chipmounter/chipmounter.h"
 #include "device/elevator/elevator.h"
-
+//#define DY_TEST
 void initLog()
 {
     //日志文件
@@ -204,7 +204,12 @@ int main(int argc, char *argv[])
     auto aID = qyhnetwork::SessionManager::getInstance()->addAccepter("0.0.0.0", 9999);
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
     qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
-
+#ifdef DY_TEST
+    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("127.0.0.1",  6789);
+    qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
+    qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
+    AgvManager::getInstance()->setServerAccepterID(aID);
+#endif
     combined_logger->info("server init OK!");
     qyhnetwork::SessionManager::getInstance()->run();
 

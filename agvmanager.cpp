@@ -6,6 +6,7 @@
 #include "agvImpl/ros/agv/rosAgv.h"
 #include "virtualrosagv.h"
 
+#include "Dongyao/dyforklift.h"
 
 AgvManager::AgvManager()
 {
@@ -29,6 +30,10 @@ void AgvManager::checkTable()
 	}
 }
 
+void AgvManager::setServerAccepterID(qyhnetwork::AccepterID serverID)
+{
+    _serverID = serverID;
+}
 
 bool AgvManager::init()
 {
@@ -70,6 +75,13 @@ bool AgvManager::init()
 				agv->setPosition(lastStation, nowStation, nextStation);
 				agvs.push_back(agv);
 			}
+            else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
+            {
+                DyForkliftPtr agv(new DyForklift(id, name, ip, port));
+                agv->status = Agv::AGV_STATUS_NOTREADY;
+                agv->setPosition(0,0,0);
+                agvs.push_back(agv);
+            }
 			else
 			{
 				AgvPtr agv(new VirtualRosAgv(id, name));
@@ -364,4 +376,16 @@ void AgvManager::interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &
 		}
 	}
 	conn->send(response);
+}
+
+
+AgvPtr AgvManager::getAgvByIP(std::string ip)
+{
+    for(auto agv:agvs){
+        //TODO TESTONLY
+        if (agv->getIp() == ip && agv->status == Agv::AGV_STATUS_NOTREADY)
+//            if (agv->getIp() == ip)
+                return agv;
+    }
+    return NULL;
 }

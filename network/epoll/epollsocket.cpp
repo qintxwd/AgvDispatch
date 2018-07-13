@@ -146,7 +146,7 @@ bool TcpSocket::doConnect(const std::string& remoteIP, unsigned short remotePort
 
 bool TcpSocket::doSend(char * buf, unsigned int len)
 {
-    combined_logger->debug("TcpSocket::doSend len={0}" , len);
+//    combined_logger->debug("TcpSocket::doSend len={0}" , len);
     if (_eventData._linkstat != LS_ESTABLISHED)
     {
         combined_logger->warn("TcpSocket::doSend _linkstat error!");
@@ -179,7 +179,7 @@ bool TcpSocket::doSend(char * buf, unsigned int len)
     }
     else
     {
-        combined_logger->debug("TcpSocket::doSend direct sent={0}" , ret);
+//        combined_logger->debug("TcpSocket::doSend direct sent={0}" , ret);
     }
     return true;
 }
