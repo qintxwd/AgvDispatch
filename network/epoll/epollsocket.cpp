@@ -33,10 +33,10 @@ std::string TcpSocket::logSection()
 {
     std::stringstream os;
     os << ";; Status: summer.user_count()=" << _summer.use_count() << ", remoteIP=" << _remoteIP << ", remotePort=" << _remotePort
-        << ", _onConnectHandler = " << (bool)_onConnectHandler
-        << ", _onRecvHandler = " << (bool)_onRecvHandler << ", _recvBuf=" << (void*)_recvBuf << ", _recvLen=" << _recvLen
-        << ", _sendBuf=" << (void*)_sendBuf << ", _sendLen=" << _sendLen
-        << "; _eventData=" << _eventData;
+       << ", _onConnectHandler = " << (bool)_onConnectHandler
+       << ", _onRecvHandler = " << (bool)_onRecvHandler << ", _recvBuf=" << (void*)_recvBuf << ", _recvLen=" << _recvLen
+       << ", _sendBuf=" << (void*)_sendBuf << ", _sendLen=" << _sendLen
+       << "; _eventData=" << _eventData;
     return os.str();
 }
 

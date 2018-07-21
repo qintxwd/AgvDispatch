@@ -32,11 +32,11 @@ void TaskManager::checkTable()
         }
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
+        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
         return;
     }
     catch (std::exception e) {
-        combined_logger->error("{0}", e.what());
+        combined_logger->error("{0}",e.what());
         return;
     }
 }
@@ -60,17 +60,17 @@ bool TaskManager::init()
         thing_id = g_db.execScalar("select max(id) from agv_task_node_thing;");
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
+        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
     }
     catch (std::exception e) {
-        combined_logger->error("{0}", e.what());
+        combined_logger->error("{0}",e.what());
     }
 
     //启动一个分配任务的线程
     g_threadPool.enqueue([&] {
         while (true) {
             toDisMtx.lock();
-
+            //            combined_logger->info("1.toDisMtx.lock()");
             /*if(toDistributeTasks.size() > 0)
                 combined_logger->info(" 未分配任务数量: " + intToString(toDistributeTasks.size()));
                 */
@@ -106,31 +106,32 @@ bool TaskManager::init()
                         AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
                         if (agv != nullptr && aimStation == 0 && agv->getTask() == task) {
                             //拿去执行//从未分配队列中拿出去agv
-
+                            combined_logger->info("1.excuteTask={0}",task->getId());
                             pos = itr->second.erase(pos);
                             excuteTask(task);
                             continue;
                         }
                         else {
                             if (agv == nullptr) {
-                                //未分配AGV
+                                //                                combined_logger->info(" 未分配AGV ");
                                 AgvPtr bestAgv = nullptr;
                                 int minDis = DISTANCE_INFINITY;
                                 std::vector<int> result;
                                 //遍历所有的agv
 
+
                                 AgvManager::getInstance()->foreachAgv(
-                                            [&](AgvPtr tempagv) {
+                                            [&](AgvPtr tempagv ) {
                                     if (tempagv->status != Agv::AGV_STATUS_IDLE)
                                     {
-                                        combined_logger->error(" tempagv->status != Agv::AGV_STATUS_IDLE return... ");
+//                                        combined_logger->error(" tempagv->status != Agv::AGV_STATUS_IDLE return... ");
                                         return;
                                     }
                                     if (tempagv->getNowStation() != 0) {
                                         int tempDis;
 
                                         std::vector<int> result_temp;
-                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO){
+                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
                                             result_temp = MapManager::getInstance()->getBestPathDy(tempagv->getId(), tempagv->getLastStation(), tempagv->getNowStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
                                         }
                                         else
@@ -148,7 +149,7 @@ bool TaskManager::init()
                                         int tempDis;
 
                                         std::vector<int> result_temp;
-                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO){
+                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
                                             result_temp = MapManager::getInstance()->getBestPathDy(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
                                         }
                                         else
@@ -156,7 +157,7 @@ bool TaskManager::init()
                                             result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
                                         }
 
-
+                                        //										std::vector<int> result_temp = MapManager::getInstance()->getBestPath(agv->getId(), agv->lastStation, agv->nextStation, aimStation, tempDis, CAN_CHANGE_DIRECTION);
                                         if (result_temp.size() > 0 && tempDis < minDis) {
                                             minDis = tempDis;
                                             bestAgv = tempagv;
@@ -189,13 +190,16 @@ bool TaskManager::init()
                                 if (agv->getTask() != task) {
                                     if (agv->status != Agv::AGV_STATUS_IDLE)
                                     {
+                                        combined_logger->info(" 指定车辆不空闲 ");
+                                        std::this_thread::sleep_for(duration_millisecond(200));
                                         continue;
                                     }
                                 }
                                 int distance;
+                                combined_logger->info("before best path {0} {1} {2}", agv->getLastStation(), agv->getNowStation(), aimStation);
 
                                 std::vector<int> result;
-                                if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
+                                if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
                                 {
                                     result = MapManager::getInstance()->getBestPathDy(agv->getId(), agv->getLastStation(), agv->getNowStation(), aimStation, distance, CAN_CHANGE_DIRECTION);
                                 }
@@ -205,9 +209,15 @@ bool TaskManager::init()
                                 }
                                 if (distance != DISTANCE_INFINITY && result.size() > 0) {
                                     //拿去执行//从未分配队列中拿出去
+                                    combined_logger->info(" 从未分配队列中拿出去 ");
+
                                     agv->setTask(task);
                                     task->setPath(result);
+                                    combined_logger->info("path={0}",task->getPath().at(0));
                                     pos = itr->second.erase(pos);
+                                    combined_logger->info("3.excuteTask={0}",task->getId());
+
+                                    //TODO ?????
                                     //占用线路和站点
                                     MapManager::getInstance()->occuStation(aimStation, agv);
                                     for (auto tline : result) {
@@ -216,7 +226,6 @@ bool TaskManager::init()
                                     excuteTask(task);
                                     continue;
                                 }
-
                             }
                         }
                     }
@@ -331,11 +340,11 @@ bool TaskManager::saveTask(AgvTaskPtr task)
         g_db.execDML("commit transaction;");
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
+        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
         return false;
     }
     catch (std::exception e) {
-        combined_logger->error("{0}", e.what());
+        combined_logger->error("{0}",e.what());
         return false;
     }
     return true;
@@ -412,7 +421,7 @@ void TaskManager::finishTask(AgvTaskPtr task)
         //TODO:
         agv->status = Agv::AGV_STATUS_IDLE;
     }
-    //
+    //update wms
     doneTaskMtx.lock();
     doneTask.push_back(task);
     doneTaskMtx.unlock();
@@ -437,29 +446,22 @@ void TaskManager::excuteTask(AgvTaskPtr task)
             doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
             doingTaskMtx.unlock();
             finishTask(task);
+            combined_logger->info("task->finish");
+
         }
         else {
             AgvTaskNodePtr node = nodes[index];
             int station = node->getStation();
-
-#ifdef QUNCHUANG_PROJECT
             AgvPtr agv_base = AgvManager::getInstance()->getAgvById(task->getAgv());
-            rosAgvPtr agv = std::static_pointer_cast<rosAgv>(agv_base);
-#else
-            AgvPtr agv;
-            if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
-            {
-                AgvPtr agv_base = AgvManager::getInstance()->getAgvById(task->getAgv());
-                agv = std::static_pointer_cast<DyForklift>(agv_base);
-            }
-            else
-            {
-                agv = AgvManager::getInstance()->getAgvById(task->getAgv());
-            }
-#endif
+            //AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+            DyForkliftPtr agv = std::static_pointer_cast<DyForklift>(agv_base);
+
+            //            combined_logger->error("5.agv.usecount:{0} ", agv.use_count());
+
             try {
                 if (station == NULL) {
                     for (auto thing : node->getDoThings()) {
+                        combined_logger->info("station==null for dothings");
                         if (task->getIsCancel())break;
                         thing->beforeDoing(agv);
                         thing->doing(agv);
@@ -469,10 +471,13 @@ void TaskManager::excuteTask(AgvTaskPtr task)
                 }
                 else {
                     //去往这个点位
-                    agv->excutePath(task->getPath());
+                    combined_logger->info("task->pathsize={0}",task->getPath().size());
+                    combined_logger->info("agv->id={0}",agv->getId());
 
+                    agv->excutePath(task->getPath());
                     //执行任务
                     for (auto thing : node->getDoThings()) {
+                        combined_logger->info("for dothings nodesize={0}", node->getDoThings().size());
                         if (task->getIsCancel())break;
                         thing->beforeDoing(agv);
                         thing->doing(agv);
@@ -485,6 +490,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
                 if (!task->getIsCancel()) {
                     doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
                     addTask(task);
+                    combined_logger->info("addtask={0}-{1}",task->getId(), task->getDoingIndex());
                 }
             }
             catch (std::exception e) {
@@ -497,6 +503,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 
 std::vector<AgvTaskPtr> TaskManager::getCurrentTasks()
 {
+
     std::vector<AgvTaskPtr> tasks;
     toDisMtx.lock();
     for (auto d : toDistributeTasks) {
@@ -658,7 +665,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json:
         std::stringstream ss;
         ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
         response["error_info"] = ss.str();
-        combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
+        combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
     }
     catch (std::exception e) {
         response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -666,7 +673,7 @@ void TaskManager::interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json:
         std::stringstream ss;
         ss << "info:" << e.what();
         response["error_info"] = ss.str();
-        combined_logger->error("sqlerr code:{0}", e.what());
+        combined_logger->error("sqlerr code:{0}",e.what());
     }
 
     conn->send(response);
@@ -715,7 +722,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Va
             std::stringstream ss;
             ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
             response["error_info"] = ss.str();
-            combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
+            combined_logger->error("sqlerr code:{0} msg:{1}",e.errorCode(),e.errorMessage());
         }
         catch (std::exception e) {
             response["result"] = RETURN_MSG_RESULT_FAIL;
@@ -723,7 +730,7 @@ void TaskManager::interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Va
             std::stringstream ss;
             ss << "info:" << e.what();
             response["error_info"] = ss.str();
-            combined_logger->error("sqlerr code:{0}", e.what());
+            combined_logger->error("sqlerr code:{0}",e.what());
         }
     }
     conn->send(response);

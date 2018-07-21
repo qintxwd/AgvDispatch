@@ -68,7 +68,7 @@ private:
 
     void publisher_task();
 
-    MsgProcess();
+        MsgProcess();
 
     std::mutex psMtx;
     std::list<int> agvPositionSubers;

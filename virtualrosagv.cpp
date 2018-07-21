@@ -44,7 +44,7 @@ void VirtualRosAgv::excutePath(std::vector<int> lines)
     stationMtx.unlock();
 
     int next = 0;//下一个要去的位置
-    for(int i=0;i<excutestations.size();++i)
+    for(unsigned int i=0;i<excutestations.size();++i)
     {
         if(currentTask!=nullptr && currentTask->getIsCancel())break;//任务取消
         if(status == AGV_STATUS_HANDING)break;//手动控制

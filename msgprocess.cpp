@@ -167,14 +167,14 @@ void MsgProcess::publisher_agv_position()
 		std::chrono::milliseconds interval = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - beginTime);
 		if (interval.count() >= position_pub_interval) {
 			beginTime = endTime;
-			//获取位置信息
+			//std::list<MSG_Response> msgs;//TODO
 			Json::Value aps;
             aps["type"] = MSG_TYPE_PUBLISH;
             aps["todo"] = MSG_TODO_PUB_AGV_POSITION;
             aps["queuenumber"] = 0;
 
-            AgvManager::getInstance()->getPositionJson(aps);
-
+//            AgvManager::getInstance()->getPositionJson(aps);
+			//= AgvManager::getInstance()->getPositions();
 			if (agvPositionSubers.empty())continue;
             AgvManager::getInstance()->getPositionJson(aps);
             if(aps["agvs"].isNull())continue;
@@ -249,7 +249,8 @@ void MsgProcess::publisher_task()
 				v_task["errorInfo"] = task->getErrorInfo();
 				v_task["errorTime"] = task->getErrorTime();
 				v_task["isCancel"] = task->getIsCancel();
-				
+                v_task["describe"] = task->getDescribe();
+			//TODO
 				Json::Value v_extraParams;
 				auto params = task->getExtraParams();
 				for (auto param : params) {
@@ -286,7 +287,7 @@ void MsgProcess::publisher_task()
 					v_node["things"] = v_things;
 					v_nodes.append(v_node);
 				}
-				v_task["nodes"] = v_nodes;				
+                v_task["nodes"] = v_nodes;
 				v_tasks.append(v_task);
 			}
 			response["tasks"] = v_tasks;

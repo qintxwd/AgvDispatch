@@ -85,6 +85,10 @@ public:
     void setErrorInfo(std::string _errorInfo){errorInfo = _errorInfo;}
     void setErrorCode(int code){error_code = code;}
 
+    std::string getDescribe(){return describe;}
+    void setDescribe(std::string _describe){describe=_describe;}
+
+
     int getStatus(){return status;}
     void setStatus(int _status){status=_status;}
 
@@ -101,6 +105,7 @@ private:
     std::string cancelTime;//取消时间
     std::string errorTime;//发生错误时间
     std::string errorInfo;//发生错误的信息
+    std::string describe;//任务描述
     int error_code;//发生错误的代码
     int excuteAgv;
 

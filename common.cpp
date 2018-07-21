@@ -1,12 +1,11 @@
 ﻿#include "common.h"
 #include <iomanip>
+#include <QString>
 
 ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
 
-//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
-//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_DONGYAO;
-const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QUNCHUANG;
+const int GLOBAL_AGV_PROJECT = AGV_PROJECT_ANTING;
 
 std::shared_ptr<spdlog::logger> combined_logger;
 
@@ -243,4 +242,22 @@ void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, 
 }
 
 #endif
+
+double func_dis(int x1, int y1, int x2, int y2)
+{
+    return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
+}
+
+QByteArray transToFullMsg(QByteArray body)
+{
+    QByteArray full_msg;
+    full_msg.append("*");
+    time_t   TimeStamp = clock();
+    //save last 6 char as timestamp
+    full_msg.append(QString::number(TimeStamp).rightJustified(6, '0').right(6));
+    full_msg.append(QString::number(body.length()+10).rightJustified(4, '0'));
+    full_msg.append(body);
+    full_msg.append("#");
+    return full_msg;
+}
 

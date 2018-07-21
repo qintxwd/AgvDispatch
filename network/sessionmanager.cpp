@@ -321,15 +321,15 @@ void SessionManager::kickConnect(SessionID cID)
 
 void SessionManager::removeSession(TcpSessionPtr session)
 {
-	
-	//通知订阅信息，取消该session的所有订阅
+
+    //通知订阅信息，取消该session的所有订阅
     MsgProcess::getInstance()->removeSubSession(session->getSessionID());
-	
-	//设置登录状态
-	MsgProcess::getInstance()->sessionLogout(session->getUserId());
+
+    //设置登录状态
+    MsgProcess::getInstance()->sessionLogout(session->getUserId());
     
-	//删除session
-	_mapTcpSessionPtr.erase(session->getSessionID());
+    //删除session
+    _mapTcpSessionPtr.erase(session->getSessionID());
     if (session->getAcceptID() != InvalidAccepterID)
     {
         _mapAccepterOptions[session->getAcceptID()]._currentLinked--;

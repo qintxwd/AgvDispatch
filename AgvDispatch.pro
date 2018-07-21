@@ -5,13 +5,16 @@
 #-------------------------------------------------
 
 QT       -= gui
+QT += core network
+#QT       -= core
 
 TARGET = AgvDispatch
 CONFIG   += console
 CONFIG   -= app_bundle
 CONFIG += c++11
 TEMPLATE = app
-
+QMAKE_CXXFLAGS += -std=c++11 -std=gnu++0x
+QMAKE_CXXFLAGS += -Wno-unused-parameter
 
 unix{
 LIBS += -lsqlite3
@@ -131,7 +134,10 @@ HEADERS += \
     Dongyao/dymappath.h \
     Dongyao/dyforkliftupdwms.h \
     Dongyao/dyforkliftthingfork.h \
-    Dongyao/charge/chargemachine.h
+    Dongyao/charge/chargemachine.h \
+    Anting/attaskmaker.h \
+    Anting/atforklift.h \
+    Anting/atforkliftthingfork.h
 
 SOURCES += \
     agv.cpp \
@@ -189,4 +195,7 @@ SOURCES += \
     Dongyao/dymappath.cpp \
     Dongyao/dyforkliftupdwms.cpp \
     Dongyao/dyforkliftthingfork.cpp \
-    Dongyao/charge/chargemachine.cpp
+    Dongyao/charge/chargemachine.cpp \
+    Anting/attaskmaker.cpp \
+    Anting/atforkliftthingfork.cpp \
+    Anting/atforklift.cpp

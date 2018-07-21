@@ -11,7 +11,11 @@
 #include "agvImpl/ros/agv/rosAgv.h"
 #include "qunchuang/chipmounter/chipmounter.h"
 #include "device/elevator/elevator.h"
-//#define DY_TEST
+
+#include "Dongyao/dyforklift.h"
+#include "Dongyao/dytaskmaker.h"
+
+#define DY_TEST
 void initLog()
 {
     //日志文件
@@ -113,7 +117,7 @@ void testAGV()
 
 }
 
-/*void testElevator()
+void testElevator()
 {
     // test elevator
     Elevator ele(1, "ele_0", "127.0.0.1", 8889);
@@ -147,7 +151,7 @@ void testAGV()
 
         return false;
     });
-}*/
+}
 
 int main(int argc, char *argv[])
 {
@@ -194,27 +198,32 @@ int main(int argc, char *argv[])
     //7.初始化日志发布
     UserLogManager::getInstance()->init();
 
-    //testAGV();//test ROS AGV, this only for test
+    // test ros agv
+    //rosAgvPtr agv(new rosAgv(1,"robot_0","127.0.0.1",7070));
+    //agv->init();
 
     //8.初始化任务生成
     TaskMaker::getInstance()->init();
 
+
     //8.初始化tcp/ip 接口
+
+
+    //tcpip服务
+
     qyhnetwork::SessionManager::getInstance()->start();
     auto aID = qyhnetwork::SessionManager::getInstance()->addAccepter("0.0.0.0", 9999);
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
     qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
 #ifdef DY_TEST
     aID = qyhnetwork::SessionManager::getInstance()->addAccepter("127.0.0.1",  6789);
+    //    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("192.168.0.184",  6789);
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
     qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
     AgvManager::getInstance()->setServerAccepterID(aID);
 #endif
     combined_logger->info("server init OK!");
     qyhnetwork::SessionManager::getInstance()->run();
-
     spdlog::drop_all();
 
-
-    return 0;
 }

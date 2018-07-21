@@ -29,6 +29,11 @@ public:
     {
         aimStation = station;
     }
+    std::string getParams(){return params;}
+    void setParams(std::string _params)
+    {
+        params = _params;
+    }
     void setTaskType(int _type)
     {
         type = (int)_type;
@@ -42,6 +47,7 @@ public:
 private:
     int aimStation;
     int type;
+    std::string params;
     std::vector<AgvTaskNodeDoThingPtr> doThings;
 };
 

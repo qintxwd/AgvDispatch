@@ -6,9 +6,6 @@
 #include "device/device.h"
 #include "elevator_protocol.h"
 
-class Elevator;
-using ElevatorPtr = std::shared_ptr<Elevator>;
-
 class ElevatorPositon
 {
 private:
@@ -71,7 +68,7 @@ class Elevator : public Device
 public:
     using EleParam = lynx::elevator::Param;
 
-    Elevator(int id,std::string name,std::string ip,int port, bool leftEnabled, bool rightEnabled, bool elevatorEnabled,std::string _waitingPoints);
+    Elevator(int id,std::string name,std::string ip,int port);
     virtual ~Elevator();
 
     static int POSITION_NO_AGV;
@@ -241,12 +238,6 @@ private:
     // request contex
     struct ElevatorCtx;
     std::unique_ptr<ElevatorCtx> ctx_;
-
-    bool left_pos_enabled;  //启用电梯左侧位置
-    bool right_pos_enabled; //启用电梯右侧位置
-    bool elevator_enabled;  //启用电梯
-    std::vector<int> waitingPoints; //电梯旁边等待区point
-
 };
 
 

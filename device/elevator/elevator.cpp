@@ -11,6 +11,7 @@ int Elevator::POSITION_NO_AGV = -1;
 std::string Elevator::POSITION_LEFT = "left";
 std::string Elevator::POSITION_RIGHT = "right";
 std::string Elevator::POSITION_MIDDLE = "middle";
+int Elevator::MAX_AGV_NUM=1; //AGV 乘坐电梯最大数
 
 struct Elevator::ElevatorCtx {
     std::mutex              mtx;
@@ -22,47 +23,30 @@ struct Elevator::ElevatorCtx {
     std::atomic_bool        is_handled;
 };
 
-Elevator::Elevator(int _id, std::string _name, std::string _ip, int _port, bool _leftEnabled, bool _rightEnabled, bool _elevatorEnabled,std::string _waitingPoints)
+Elevator::Elevator(int _id, std::string _name, std::string _ip, int _port)
     : Device(_id, _name, _ip,  _port)
     , ctx_(new Elevator::ElevatorCtx)
     , connected_(false)
 {
     agv_num = 0;
 
-    left_pos_enabled = _leftEnabled;  //启用电梯左侧位置
-    right_pos_enabled = _rightEnabled; //启用电梯右侧位置
-    elevator_enabled = _elevatorEnabled;  //启用电梯
-
-    combined_logger->info("[Elevator id: {0}] [ip: {1}], [waitingPoints: {2}]",
-                          _id,
-                          _ip,
-                          _waitingPoints);
-
-    ElevatorPositon* p_middle = new ElevatorPositon(POSITION_MIDDLE, POSITION_NO_AGV, false, false);
-    ElevatorPositon* p_left = new ElevatorPositon(POSITION_LEFT, POSITION_NO_AGV, false, false);
-    ElevatorPositon* p_right = new ElevatorPositon(POSITION_RIGHT, POSITION_NO_AGV, false, false);
-
-    //默认启用电梯中间位置
-    if(elevator_enabled == true && left_pos_enabled == false && right_pos_enabled == false)
+    if(MAX_AGV_NUM == 1)
     {
-        p_middle->setEnabled(true);
+        ElevatorPositon* p = new ElevatorPositon(POSITION_MIDDLE, POSITION_NO_AGV, false, true);
+        position_list_[POSITION_MIDDLE] = p;
+
+        position_list_[POSITION_LEFT] = nullptr;
+        position_list_[POSITION_RIGHT] = nullptr;
     }
-    else if(elevator_enabled == true)
+    else if(MAX_AGV_NUM == 2)
     {
-        p_left->setEnabled(left_pos_enabled);
-        p_right->setEnabled(right_pos_enabled);
-    }
+        ElevatorPositon* p_left = new ElevatorPositon(POSITION_LEFT, POSITION_NO_AGV, false, true);
+        position_list_[POSITION_LEFT] = p_left;
 
-    std::vector<std::string> pvs = split(_waitingPoints, ";");
-    for (auto p : pvs) {
-        int intp;
-        std::stringstream ss;
-        ss << p;
-        ss >> intp;
+        ElevatorPositon* p_right = new ElevatorPositon(POSITION_RIGHT, POSITION_NO_AGV, false, true);
+        position_list_[POSITION_RIGHT] = p_right;
 
-        std::cout<< " intp : " << intp << std::endl;
-
-        waitingPoints.push_back(intp);
+        position_list_[POSITION_MIDDLE] = nullptr;
     }
 }
 

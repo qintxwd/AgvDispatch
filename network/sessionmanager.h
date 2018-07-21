@@ -73,7 +73,7 @@ public:
 
     //send data.
     void sendSessionData(SessionID sID, const Json::Value &response);
-    //send data to all session
+    //send data
     void sendSessionData(SessionID sID, const char *data, int len);
     //send data to all session
     void sendData(const Json::Value &response);
