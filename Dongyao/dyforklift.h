@@ -6,6 +6,7 @@
 #include "../network/sessionmanager.h"
 
 #define PRECISION 20
+#define START_RANGE 300
 #define PRECMD_RANGE 500
 #define MAX_WAITTIMES 10
 class DyForklift;

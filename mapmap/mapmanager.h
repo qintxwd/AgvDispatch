@@ -11,6 +11,7 @@
 #include "../common.h"
 #include "../utils/noncopyable.h"
 #include "../network/tcpsession.h"
+#include "Anting/station_pos.h"
 
 
 class MapManager;
@@ -97,7 +98,6 @@ private:
 
 	bool pathPassable(MapPath *line, int agvId);
     void init_task_splitinfo();
-
     std::atomic_bool mapModifying;
     std::map< std::pair<int,int>, std::queue<int> > m_chd_station;
 };

@@ -137,7 +137,8 @@ HEADERS += \
     Dongyao/charge/chargemachine.h \
     Anting/attaskmaker.h \
     Anting/atforklift.h \
-    Anting/atforkliftthingfork.h
+    Anting/atforkliftthingfork.h \
+    Anting/station_pos.h
 
 SOURCES += \
     agv.cpp \

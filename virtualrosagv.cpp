@@ -152,14 +152,14 @@ void VirtualRosAgv::goStation(int station, bool stop)
     double path_length = 0;
     if(path->getPathType() == MapPath::Map_Path_Type_Line){
         path_length = sqrt((endPoint->getY()-startPoint->getY())*(endPoint->getY()-startPoint->getY())+(endPoint->getX()-startPoint->getX())*(endPoint->getX()-startPoint->getX()));
-		double minDistance = DBL_MAX;
-		for (double tt = 0.0; tt <= 1.0; tt += 0.01) {
-			double distance = getDistance(PointF(startPoint->getX()+(endPoint->getX()-startPoint->getX())*tt,startPoint->getY()+(endPoint->getY()-startPoint->getY())*tt), PointF(x, y));
-			if (distance<minDistance) {
-				minDistance = distance;
-				currentT = tt;
-			}
-		}
+        double minDistance = DBL_MAX;
+        for (double tt = 0.0; tt <= 1.0; tt += 0.01) {
+            double distance = getDistance(PointF(startPoint->getX()+(endPoint->getX()-startPoint->getX())*tt,startPoint->getY()+(endPoint->getY()-startPoint->getY())*tt), PointF(x, y));
+            if (distance<minDistance) {
+                minDistance = distance;
+                currentT = tt;
+            }
+        }
     }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
         path_length = BezierArc::BezierArcLength(a,b,d);
         //获取当前位置在曲线上的位置
@@ -193,7 +193,7 @@ void VirtualRosAgv::goStation(int station, bool stop)
         if(isStop)break;
         //1.向目标前进100ms的距离 假设每次前进10 //3.重新计算当前位置
         if(path->getPathType() == MapPath::Map_Path_Type_Line){
-			currentT += 10.0 / path_length;
+            currentT += 10.0 / path_length;
             //前移10
             x = startPoint->getX()+(endPoint->getX()-startPoint->getX()) * currentT;
             y = startPoint->getY() + (endPoint->getY() - startPoint->getY()) * currentT;
@@ -245,4 +245,11 @@ void VirtualRosAgv::callMapChange(int station)
 {
     //模拟电梯运行，这里只做等待即可
     Sleep(15000);
+}
+void VirtualRosAgv::onTaskStart(AgvTaskPtr _task)
+{
+    if(_task != nullptr)
+    {
+        status = Agv::AGV_STATUS_TASKING;
+    }
 }

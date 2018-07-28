@@ -4,7 +4,7 @@
 #include "../msgprocess.h"
 #include "agvmanager.h"
 #include "../Dongyao/dyforklift.h"
-
+#include "../Anting/atforklift.h"
 using namespace qyhnetwork;
 using std::min;
 using std::max;
@@ -116,27 +116,55 @@ bool TcpSession::attatch(const TcpSocketPtr &sockptr, AccepterID aID, SessionID 
 
     if(aID == AgvManager::getInstance()->getServerAccepterID())
     {
-        DyForkliftPtr agv = std::static_pointer_cast<DyForklift> (AgvManager::getInstance()->getAgvByIP(_remoteIP));
+        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
+        {
+            DyForkliftPtr agv = std::static_pointer_cast<DyForklift> (AgvManager::getInstance()->getAgvByIP(_remoteIP));
 
-        if(agv)
-        {
-            agv->setPosition(0, 0, 0);
-            agv->status = Agv::AGV_STATUS_NOTREADY;
-            agv->setQyhTcp(_sockptr);
-            agv->setPort(_remotePort);
-            //start report
-            agv->startReport(100);
-            if (!doRecv())
+            if(agv)
             {
-                close();
-                return false;
+                agv->setPosition(0, 0, 0);
+                agv->status = Agv::AGV_STATUS_NOTREADY;
+                agv->setQyhTcp(_sockptr);
+                agv->setPort(_remotePort);
+                //start report
+                agv->startReport(100);
+                if (!doRecv())
+                {
+                    close();
+                    return false;
+                }
+                setAGVPtr(agv);
             }
-            setAGVPtr(agv);
+            else
+            {
+                combined_logger->warn("AGV is not in the list::ip={}.", _remoteIP);
+            }
         }
-        else
+        else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
         {
-            combined_logger->warn("AGV is not in the list::ip={}.", _remoteIP);
+            AtForkliftPtr agv = std::static_pointer_cast<AtForklift> (AgvManager::getInstance()->getAgvByIP(_remoteIP));
+
+            if(agv)
+            {
+                agv->setPosition(0, 0, 0);
+                agv->status = Agv::AGV_STATUS_NOTREADY;
+                agv->setQyhTcp(_sockptr);
+                agv->setPort(_remotePort);
+                //start report
+                agv->startReport(100);
+                if (!doRecv())
+                {
+                    close();
+                    return false;
+                }
+                setAGVPtr(agv);
+            }
+            else
+            {
+                combined_logger->warn("AGV is not in the list::ip={}.", _remoteIP);
+            }
         }
+
     }
     else
     {
@@ -266,7 +294,7 @@ int TcpSession::ProtocolProcess()
     if(EndIndex>StartIndex)
     {
         FrameData = receivedBuffer.substr(StartIndex,EndIndex-StartIndex);
-        if(FrameData.find('*') != -1)
+        if(FrameData.find('*') != std::string::npos)
             FrameData = FrameData.substr(FrameData.find_last_of('*')+1);
         receivedBuffer= receivedBuffer.substr(receivedBuffer.find('#')+1);
     }
@@ -276,10 +304,17 @@ int TcpSession::ProtocolProcess()
         receivedBuffer= receivedBuffer.substr(receivedBuffer.find('*'));
         return 2;
     }
-    int FrameLength = std::stoi(FrameData.substr(6,4));
+    unsigned int FrameLength = std::stoi(FrameData.substr(6,4));
     if(FrameLength == FrameData.length())
     {
-        std::static_pointer_cast<DyForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
+        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
+        {
+            std::static_pointer_cast<AtForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
+        }
+        else
+        {
+            std::static_pointer_cast<DyForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
+        }
         return 0;
     }
     else
@@ -471,8 +506,8 @@ void TcpSession::send(const Json::Value &json)
 
 void TcpSession::send(char*msg, int length)
 {
-    char headLeng[5];
-    headLeng[0] = MSG_MSG_HEAD;
+//    char headLeng[5];
+//    headLeng[0] = MSG_MSG_HEAD;
     SessionManager::getInstance()->_statInfo[STAT_SEND_COUNT]++;
     SessionManager::getInstance()->_statInfo[STAT_SEND_PACKS]++;
 

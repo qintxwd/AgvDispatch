@@ -6,7 +6,7 @@
 //#define RESEND
 //#define HEART
 #define TEST
-
+//TODO 移动后的laststation更新
 AtForklift::AtForklift(int id, std::string name, std::string ip, int port):
     Agv(id,name,ip,port)
 {
@@ -27,20 +27,21 @@ void AtForklift::init(){
                 for(iter = this->m_unRecvSend.begin(); iter != this->m_unRecvSend.end(); iter++)
                 {
                     iter->second.waitTime++;
-                    combined_logger->info("lastsend:{0}, waitTime:{1}", iter->first, iter->second.waitTime);
                     //TODO waitTime>n resend
                     if(iter->second.waitTime > MAX_WAITTIMES)
                     {
                         char* temp = new char[iter->second.msg.length()+1];
                         strcpy(temp, iter->second.msg.data());
-                        this->m_qTcp->doSend(temp, iter->second.msg.length());
+                        bool ret = this->m_qTcp->doSend(temp, iter->second.msg.length());
+                        combined_logger->info("resend:{0}, waitTime:{1}, result:{2}", iter->first, iter->second.waitTime, ret?"success":"fail");
+
                         delete temp;
                         iter->second.waitTime = 0;
                     }
                 }
                 msgMtx.unlock();
             }
-            sleep(6);
+            usleep(500000);
 
         }
     });
@@ -260,10 +261,10 @@ void AtForklift::arrve(int x, int y) {
                     if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
 
                     MapPoint *point = static_cast<MapPoint *>(spirit);
-                    if(func_dis(x, y, point->getRealX(), point->getRealY())>PRECMD_RANGE){
+                    if(func_dis(x, y, point->getRealX(), point->getRealY())>AT_START_RANGE){
                         startLift = true;
                         //                    m_lift = true;
-                        fork(MOVE_HEIGHT);
+                        fork(AT_MOVE_HEIGHT);
                     }
                 }
 #endif
@@ -281,55 +282,57 @@ void AtForklift::arrve(int x, int y) {
 
             MapPoint *point = static_cast<MapPoint *>(spirit);
 
-            if(func_dis(x, y, point->getRealX(), point->getRealY())<PRECISION && station != this->nowStation){
+            if(func_dis(x, y, point->getRealX(), point->getRealY())<AT_PRECISION && station != this->nowStation){
                 combined_logger->info("agv{0} arrive station:{1}", id, point->getName());
                 onArriveStation(station);
                 this->lastStation = this->nowStation;
                 this->nowStation = station;
             }
-
-            //pick
-#ifdef TEST
-            if((TASK_PICK == task_type || TASK_PUT == task_type) && !actionFlag)
-            {
-                //std::vector<int> stations = MapManager::getInstance()->getStations(m_currentPos.m_floor);
-                //int samefloor = std::count(stations.begin(), stations.end(), actionpoint);
-                //if(samefloor)
-                bool sameFloor = MapManager::getInstance()->isSameFloor(m_currentPos.m_floor, actionpoint);
-                if(sameFloor)
-                {
-                    MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(actionpoint);
-                    if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
-
-                    MapPoint *point = static_cast<MapPoint *>(spirit);
-                    if(func_dis(x, y, point->getRealX(),point->getRealY())<PRECMD_RANGE){
-                        actionFlag = true;
-                        startLift = true;
-                        AgvTaskPtr currentTask =this->getTask();
-                        AgvTaskNodePtr currentTaskNode = currentTask->getTaskNodes().at(currentTask->getDoingIndex());
-                        fork(stoi(split(currentTaskNode->getParams(),",").at(0)));
-//                        fork(m_lift_height);
-                        //                        m_lift = false;
-                        return;
-                    }
-                }
-            }
-            //startlift
-            if(!startLift)
-            {
-                MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(startpoint);
-                if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
-
-                MapPoint *point = static_cast<MapPoint *>(spirit);
-                if(func_dis(x, y, point->getRealX(), point->getRealY())>PRECMD_RANGE){
-                    startLift = true;
-                    //                    m_lift = true;
-                    fork(MOVE_HEIGHT);
-                }
-            }
-#endif
         }
     }
+    //pick
+#ifdef TEST
+    if((TASK_PICK == task_type || TASK_PUT == task_type) && !actionFlag)
+    {
+        //std::vector<int> stations = MapManager::getInstance()->getStations(m_currentPos.m_floor);
+        //int samefloor = std::count(stations.begin(), stations.end(), actionpoint);
+        //if(samefloor)
+        bool sameFloor = MapManager::getInstance()->isSameFloor(m_currentPos.m_floor, actionpoint);
+        if(sameFloor)
+        {
+            MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(actionpoint);
+            if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)return;
+
+            MapPoint *point = static_cast<MapPoint *>(spirit);
+
+            MapSpirit *start_spirit = MapManager::getInstance()->getMapSpiritById(startpoint);
+            MapPoint * start = static_cast<MapPoint *>(start_spirit);
+            if(func_dis(x, y, point->getRealX(),point->getRealY())<AT_PRECISION && func_dis(x, y, start->getRealX(),start->getRealY())>200){
+                actionFlag = true;
+                startLift = true;
+                AgvTaskPtr currentTask =this->getTask();
+                AgvTaskNodePtr currentTaskNode = currentTask->getTaskNodes().at(currentTask->getDoingIndex());
+                fork(stoi(split(currentTaskNode->getParams(),",").at(0)));
+                //                        fork(m_lift_height);
+                //                        m_lift = false;
+                return;
+            }
+        }
+    }
+    //startlift
+    if(!startLift)
+    {
+        MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(startpoint);
+        if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)return;
+
+        MapPoint *point = static_cast<MapPoint *>(spirit);
+        if(func_dis(x, y, point->getRealX(), point->getRealY())>AT_START_RANGE){
+            startLift = true;
+            //                    m_lift = true;
+            fork(AT_MOVE_HEIGHT);
+        }
+    }
+#endif
 }
 //进电梯时用
 bool AtForklift::move(float speed, float distance)
@@ -342,7 +345,7 @@ bool AtForklift::move(float speed, float distance)
 //执行路径规划结果
 void AtForklift::excutePath(std::vector<int> lines)
 {
-    combined_logger->info("dyForklift{0} excutePath", id);
+    combined_logger->info("{0} excutePath", id);
     for(auto line:lines)
     {
         std::cout<<line<<" ";
@@ -350,6 +353,8 @@ void AtForklift::excutePath(std::vector<int> lines)
     std::cout<<std::endl;
     stationMtx.lock();
     excutestations.clear();
+    m_unFinishCmd.clear();
+    m_unRecvSend.clear();
     excutestations.push_back(nowStation);
     for (auto line : lines) {
         MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(line);
@@ -362,7 +367,7 @@ void AtForklift::excutePath(std::vector<int> lines)
     }
     stationMtx.unlock();
 
-    actionpoint = NULL;
+    actionpoint = 0;
     MapPoint *startstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.front()));
     MapPoint *endstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.back()));
     startpoint = startstation->getId();
@@ -389,11 +394,34 @@ void AtForklift::excutePath(std::vector<int> lines)
         //TODO
         //多层楼需要修改
 
-        if(func_dis(startstation->getX(), startstation->getY(), endstation->getX(), endstation->getY()) < PRECMD_RANGE*2)
+        if(func_dis(startstation->getX(), startstation->getY(), endstation->getX(), endstation->getY()) < AT_START_RANGE*2)
         {
             startLift = true;
         }
-        actionpoint = endstation->getId();
+        actionpoint = startstation->getId();
+
+        double dis = 0;
+        for (int i = lines.size()-1; i >= 0; i--) {
+            MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(-lines.at(i));
+            if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_DyPath)continue;
+
+            DyMapPath *path = static_cast<DyMapPath *>(spirit);
+            dis += func_dis(path->getP2x(), path->getP2y(), path->getP1x(), path->getP1y());
+            if(dis < AT_PRECMD_RANGE)
+            {
+                actionpoint = path->getEnd();
+            }
+            else
+            {
+                if(func_dis(path->getP2x(), path->getP2y(), startstation->getRealX(), startstation->getRealY()) > 200)
+                {
+                    actionpoint = path->getEnd();
+                }
+                break;
+            }
+        }
+        combined_logger->info("action station:{0}", actionpoint);
+
         actionFlag = false;
         break;
     }
@@ -430,7 +458,7 @@ void AtForklift::excutePath(std::vector<int> lines)
                 }
                 else if(speed * dypath->getSpeed() < 0)
                 {
-                    goStation(exelines, true);
+                    goStation(exelines, false);
                     exelines.clear();
                     speed = dypath->getSpeed();
                     exelines.push_back(line);
@@ -469,7 +497,7 @@ void AtForklift::goStation(std::vector<int> lines,  bool stop)
     //    std::vector<Pose2D> agv_path;
     //    string goal;
 
-    combined_logger->info("dyForklift goStation");
+    combined_logger->info("atForklift goStation");
     std::stringstream body;
 
     int endId;
@@ -504,9 +532,9 @@ void AtForklift::goStation(std::vector<int> lines,  bool stop)
         end->getName();
         end->getRealY();
 
-        //        combined_logger->info("dyForklift goStation start: " + start->getName());
-        //        combined_logger->info("dyForklift goStation end: " + end->getName());
-        combined_logger->info("dyForklift goStation {0} -> {1}: ({2},{3},{4})->({5},{6},{7})", start->getName(), end->getName(), dy_path->getP1x(),dy_path->getP1y(), dy_path->getP1a(), dy_path->getP2x(), dy_path->getP2y(), dy_path->getP2a());
+        //        combined_logger->info("atForklift goStation start: " + start->getName());
+        //        combined_logger->info("atForklift goStation end: " + end->getName());
+        combined_logger->info("atForklift goStation {0} -> {1}: ({2},{3},{4})->({5},{6},{7})", start->getName(), end->getName(), dy_path->getP1x(),dy_path->getP1y(), dy_path->getP1a(), dy_path->getP2x(), dy_path->getP2y(), dy_path->getP2a());
         //        goal = end->getName();
 
         float speed = dy_path->getSpeed();
@@ -525,10 +553,19 @@ void AtForklift::goStation(std::vector<int> lines,  bool stop)
 
     do
     {
-
-    }while(this->nowStation != endId || !isFinish());
+        //wait for move finish
+        usleep(50000);
+    }while(this->nowStation != endId || !isFinish(ATFORKLIFT_MOVE));
     combined_logger->info("nowStation = {0}, endId = {1}", this->nowStation, endId);
 
+    if(stop)
+    {
+        while(!isFinish())
+        {
+            //wait for all finish
+            usleep(50000);
+        }
+    }
 }
 void AtForklift::setQyhTcp(qyhnetwork::TcpSocketPtr _qyhTcp)
 {

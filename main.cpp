@@ -216,8 +216,9 @@ int main(int argc, char *argv[])
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
     qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
 #ifdef DY_TEST
-    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("127.0.0.1",  6789);
-    //    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("192.168.0.184",  6789);
+//        aID = qyhnetwork::SessionManager::getInstance()->addAccepter("127.0.0.1",  6789);
+    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("192.168.0.185",  6789);
+//    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("192.168.0.185",  9527);
     qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
     qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
     AgvManager::getInstance()->setServerAccepterID(aID);

@@ -271,7 +271,7 @@ void DyForklift::arrve(int x, int y) {
                     if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
 
                     MapPoint *point = static_cast<MapPoint *>(spirit);
-                    if(func_dis(x, y, point->getRealX(), point->getRealY())>PRECMD_RANGE){
+                    if(func_dis(x, y, point->getRealX(), point->getRealY())>START_RANGE){
                         startLift = true;
                         //                    m_lift = true;
                         fork(FORKLIFT_UP);
@@ -297,43 +297,42 @@ void DyForklift::arrve(int x, int y) {
                 this->lastStation = this->nowStation;
                 this->nowStation = station;
             }
+        }
+    }
+    //pick
+    if(TASK_PICK == task_type && !actionFlag)
+    {
+        //std::vector<int> stations = MapManager::getInstance()->getStations(m_currentPos.m_floor);
+        //int samefloor = std::count(stations.begin(), stations.end(), actionpoint);
+        //if(samefloor)
+        bool sameFloor = MapManager::getInstance()->isSameFloor(m_currentPos.m_floor, actionpoint);
+        if(sameFloor)
+        {
+            MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(actionpoint);
+            if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)return;
 
-            //pick
-            if(TASK_PICK == task_type && !actionFlag)
-            {
-                //std::vector<int> stations = MapManager::getInstance()->getStations(m_currentPos.m_floor);
-                //int samefloor = std::count(stations.begin(), stations.end(), actionpoint);
-                //if(samefloor)
-                bool sameFloor = MapManager::getInstance()->isSameFloor(m_currentPos.m_floor, actionpoint);
-                if(sameFloor)
-                {
-                    MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(actionpoint);
-                    if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
-
-                    MapPoint *point = static_cast<MapPoint *>(spirit);
-                    if(func_dis(x, y, point->getRealX(),point->getRealY())<PRECMD_RANGE){
-                        actionFlag = true;
-                        startLift = true;
-                        fork(FORKLIFT_DOWN);
-                        //                        m_lift = false;
-                        return;
-                    }
-                }
+            MapPoint *point = static_cast<MapPoint *>(spirit);
+            if(func_dis(x, y, point->getRealX(),point->getRealY())<PRECISION){
+                actionFlag = true;
+                startLift = true;
+                fork(FORKLIFT_DOWN);
+                //                        m_lift = false;
+                return;
             }
+        }
+    }
 
-            //startlift
-            if(!startLift)
-            {
-                MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(startpoint);
-                if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
+    //startlift
+    if(!startLift)
+    {
+        MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(startpoint);
+        if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)return;
 
-                MapPoint *point = static_cast<MapPoint *>(spirit);
-                if(func_dis(x, y, point->getRealX(), point->getRealY())>PRECMD_RANGE){
-                    startLift = true;
-                    //                    m_lift = true;
-                    fork(FORKLIFT_UP);
-                }
-            }
+        MapPoint *point = static_cast<MapPoint *>(spirit);
+        if(func_dis(x, y, point->getRealX(), point->getRealY())>START_RANGE){
+            startLift = true;
+            //                    m_lift = true;
+            fork(FORKLIFT_UP);
         }
     }
 }
@@ -368,7 +367,7 @@ void DyForklift::excutePath(std::vector<int> lines)
     }
     stationMtx.unlock();
 
-    actionpoint = NULL;
+    actionpoint = 0;
     MapPoint *startstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.front()));
     MapPoint *endstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.back()));
     startpoint = startstation->getId();
@@ -385,11 +384,34 @@ void DyForklift::excutePath(std::vector<int> lines)
         //TODO
         //多层楼需要修改
 
-        if(func_dis(startstation->getX(), startstation->getY(), endstation->getX(), endstation->getY()) < PRECMD_RANGE*2)
+        if(func_dis(startstation->getX(), startstation->getY(), endstation->getX(), endstation->getY()) < START_RANGE*2)
         {
             startLift = true;
         }
-        actionpoint = endstation->getId();
+        actionpoint = startstation->getId();
+
+        double dis = 0;
+        for (int i = lines.size()-1; i >= 0; i--) {
+            MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(-lines.at(i));
+            if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_DyPath)continue;
+
+            DyMapPath *path = static_cast<DyMapPath *>(spirit);
+            dis += func_dis(path->getP2x(), path->getP2y(), path->getP1x(), path->getP1y());
+            if(dis < PRECMD_RANGE)
+            {
+                actionpoint = path->getEnd();
+            }
+            else
+            {
+                if(func_dis(path->getP2x(), path->getP2y(), startstation->getRealX(), startstation->getRealY()) > START_RANGE)
+                {
+                    actionpoint = path->getEnd();
+                }
+                break;
+            }
+        }
+        combined_logger->info("action station:{0}", actionpoint);
+
         actionFlag = false;
         break;
     }
@@ -620,6 +642,10 @@ bool DyForklift::send(const char *data, int len)
     char * temp = new char[len+13];
     strcpy(temp, sendContent.data());
     bool res = m_qTcp->doSend(temp, len+12);
+    if(!res)
+    {
+        combined_logger->info("send failed");
+    }
     DyMsg msg;
     msg.msg = std::string(temp);
     msg.waitTime = 0;

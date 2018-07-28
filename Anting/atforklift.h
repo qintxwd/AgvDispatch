@@ -5,10 +5,11 @@
 #include "../agvtask.h"
 #include "../network/sessionmanager.h"
 
-#define PRECISION 60
-#define MOVE_HEIGHT 100
-//距离起点PRECMD_RANGE开始抬升至MOVE_HEIGHT高度　距离终点PRECMD_RANGE时调整至最后动作附近高度
-#define PRECMD_RANGE 500
+#define AT_PRECISION 60
+#define AT_MOVE_HEIGHT 300
+//距离起点AT_PRECMD_RANGE开始抬升至MOVE_HEIGHT高度　距离终点AT_PRECMD_RANGE时调整至最后动作附近高度
+#define AT_PRECMD_RANGE 800
+#define AT_START_RANGE 200
 #define MAX_WAITTIMES 10
 class AtForklift;
 using AtForkliftPtr = std::shared_ptr<AtForklift>;

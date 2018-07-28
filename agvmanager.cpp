@@ -77,17 +77,37 @@ bool AgvManager::init()
             }
             else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
             {
-                DyForkliftPtr agv(new DyForklift(id, name, ip, port));
-                agv->status = Agv::AGV_STATUS_NOTREADY;
-                agv->setPosition(0,0,0);
-                agvs.push_back(agv);
+                if(1 == agvType)
+                {
+                    AgvPtr agv(new VirtualRosAgv(id, name));
+                    agv->init();
+                    agv->setPosition(lastStation, nowStation, nextStation);
+                    agvs.push_back(agv);
+                }
+                else
+                {
+                    DyForkliftPtr agv(new DyForklift(id, name, ip, port));
+                    agv->status = Agv::AGV_STATUS_NOTREADY;
+                    agv->setPosition(0,0,0);
+                    agvs.push_back(agv);
+                }
             }
             else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
             {
-                AtForkliftPtr agv(new AtForklift(id, name, ip, port));
-                agv->status = Agv::AGV_STATUS_NOTREADY;
-                agv->setPosition(0,0,0);
-                agvs.push_back(agv);
+                if(1 == agvType)
+                {
+                    AgvPtr agv(new VirtualRosAgv(id, name));
+                    agv->init();
+                    agv->setPosition(lastStation, nowStation, nextStation);
+                    agvs.push_back(agv);
+                }
+                else
+                {
+                    AtForkliftPtr agv(new AtForklift(id, name, ip, port));
+                    agv->status = Agv::AGV_STATUS_NOTREADY;
+                    agv->setPosition(0,0,0);
+                    agvs.push_back(agv);
+                }
             }
             else
             {
