@@ -21,9 +21,9 @@ DyTaskMaker::DyTaskMaker(std::string _ip, int _port):
 void DyTaskMaker::init()
 {
     //接收wms发过来的任务
-    TcpClient::QyhClientReadCallback onread = std::bind(&DyTaskMaker::onRead, this, std::placeholders::_1, std::placeholders::_2);
-    TcpClient::QyhClientConnectCallback onconnect = std::bind(&DyTaskMaker::onConnect, this);
-    TcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&DyTaskMaker::onDisconnect, this);
+    TcpClient::ClientReadCallback onread = std::bind(&DyTaskMaker::onRead, this, std::placeholders::_1, std::placeholders::_2);
+    TcpClient::ClientConnectCallback onconnect = std::bind(&DyTaskMaker::onConnect, this);
+    TcpClient::ClientDisconnectCallback ondisconnect = std::bind(&DyTaskMaker::onDisconnect, this);
 
     m_wms_tcpClient = new TcpClient(m_ip, m_port, onread, onconnect, ondisconnect);
 

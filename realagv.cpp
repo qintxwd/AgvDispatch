@@ -14,9 +14,9 @@ RealAgv::~RealAgv(){
 
 void RealAgv::init()
 {
-    TcpClient::QyhClientReadCallback onread = std::bind(&RealAgv::onRead, this, std::placeholders::_1, std::placeholders::_2);
-    TcpClient::QyhClientConnectCallback onconnect = std::bind(&RealAgv::onConnect, this);
-    TcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&RealAgv::onDisconnect, this);
+    TcpClient::ClientReadCallback onread = std::bind(&RealAgv::onRead, this, std::placeholders::_1, std::placeholders::_2);
+    TcpClient::ClientConnectCallback onconnect = std::bind(&RealAgv::onConnect, this);
+    TcpClient::ClientDisconnectCallback ondisconnect = std::bind(&RealAgv::onDisconnect, this);
     tcpClient = new TcpClient(ip, port, onread, onconnect, ondisconnect);
 }
 

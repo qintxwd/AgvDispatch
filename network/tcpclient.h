@@ -18,11 +18,11 @@ public:
         QYH_TCP_CLIENT_RECV_BUF_LEN = 1500,
     };
 
-    typedef std::function<void (const char *data,int len)> QyhClientReadCallback;
-    typedef std::function<void ()> QyhClientConnectCallback;
-    typedef std::function<void ()> QyhClientDisconnectCallback;
+    typedef std::function<void (const char *data,int len)> ClientReadCallback;
+    typedef std::function<void ()> ClientConnectCallback;
+    typedef std::function<void ()> ClientDisconnectCallback;
 
-    TcpClient(std::string _ip,int _port, QyhClientReadCallback _readcallback, QyhClientConnectCallback _connectcallback, QyhClientDisconnectCallback _disconnectcallback);
+    TcpClient(std::string _ip,int _port, ClientReadCallback _readcallback, ClientConnectCallback _connectcallback, ClientDisconnectCallback _disconnectcallback);
 
     ~TcpClient();
 
@@ -44,11 +44,11 @@ private:
 
     int port;
 
-    QyhClientReadCallback readcallback;
+    ClientReadCallback readcallback;
 
-    QyhClientConnectCallback connectcallback;
+    ClientConnectCallback connectcallback;
 
-    QyhClientDisconnectCallback disconnectcallback;
+    ClientDisconnectCallback disconnectcallback;
 
     bool quit;
 

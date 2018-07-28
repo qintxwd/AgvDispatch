@@ -54,6 +54,33 @@ std::vector<std::string> splitMultiJson(std::string multiJson);
 bool IsValidIPAddress(const char * str);
 int HexStringToInt(std::string str);
 
+//东药名匠公用
+double func_dis(int x1, int y1, int x2, int y2);
+char* transToFullMsg(const char *data);
+class Pose4D
+{
+public:
+    Pose4D(){}
+    Pose4D(double x, double y, double theta, int floor)
+    {
+        m_x = x;
+        m_y = y;
+        m_theta = theta;
+        m_floor = floor;
+    }
+    double m_x;
+    double m_y;
+    double m_theta;
+    int m_floor;
+
+};
+
+class DyMsg
+{
+public:
+    std::string msg;
+    int waitTime;
+};
 extern ThreadPool g_threadPool;
 extern CppSQLite3DB g_db;
 
@@ -70,10 +97,10 @@ enum{
     AGV_PROJECT_QUNCHUANG = 0,
     AGV_PROJECT_DONGYAO,
     AGV_PROJECT_QINGDAO,
+    AGV_PROJECT_ANTING
     //...
 };
 
-#define QUNCHUANG_PROJECT
 extern const int GLOBAL_AGV_PROJECT;
 
 

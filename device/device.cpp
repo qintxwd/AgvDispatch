@@ -18,9 +18,9 @@ Device::~Device()
 
 bool Device::init()
 {
-    TcpClient::QyhClientReadCallback onread = std::bind(&Device::onRead, this, std::placeholders::_1, std::placeholders::_2);
-    TcpClient::QyhClientConnectCallback onconnect = std::bind(&Device::onConnect, this);
-    TcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&Device::onDisconnect, this);
+    TcpClient::ClientReadCallback onread = std::bind(&Device::onRead, this, std::placeholders::_1, std::placeholders::_2);
+    TcpClient::ClientConnectCallback onconnect = std::bind(&Device::onConnect, this);
+    TcpClient::ClientDisconnectCallback ondisconnect = std::bind(&Device::onDisconnect, this);
     tcpClient = new TcpClient(ip, port, onread, onconnect, ondisconnect);
     return tcpClient != nullptr ? true : false;
 }

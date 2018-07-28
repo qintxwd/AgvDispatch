@@ -25,6 +25,9 @@
     <ClInclude Include="..\..\agvmanager.h" />
     <ClInclude Include="..\..\agvtasknode.h" />
     <ClInclude Include="..\..\agvtasknodedothing.h" />
+    <ClInclude Include="..\..\Anting\atforklift.h" />
+    <ClInclude Include="..\..\Anting\atforkliftthingfork.h" />
+    <ClInclude Include="..\..\Anting\attaskmaker.h" />
     <ClInclude Include="..\..\base64.h" />
     <ClInclude Include="..\..\bezierarc.h" />
     <ClInclude Include="..\..\common.h" />
@@ -83,6 +86,9 @@
     <ClCompile Include="..\..\agv.cpp" />
     <ClCompile Include="..\..\agvImpl\ros\agv\rosAgv.cpp" />
     <ClCompile Include="..\..\agvmanager.cpp" />
+    <ClCompile Include="..\..\Anting\atforklift.cpp" />
+    <ClCompile Include="..\..\Anting\atforkliftthingfork.cpp" />
+    <ClCompile Include="..\..\Anting\attaskmaker.cpp" />
     <ClCompile Include="..\..\base64.cpp" />
     <ClCompile Include="..\..\bezierarc.cpp" />
     <ClCompile Include="..\..\common.cpp" />
@@ -135,9 +141,6 @@
     <ClCompile Include="..\..\usermanager.cpp" />
     <ClCompile Include="..\..\virtualagv.cpp" />
     <ClCompile Include="..\..\virtualrosagv.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\log-conf.conf" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -198,7 +201,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>D:\thirdparty\sqlite\include;D:\thirdparty\jsoncpp\include;D:\thirdparty\boost\src\boost_1_67_0;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\thirdparty\sqlite\lib\Debug;D:\thirdparty\jsoncpp\lib\Debug;D:\thirdparty\boost\install\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>D:\thirdparty\sqlite\lib\Debug;D:\thirdparty\jsoncpp\lib\x64\Debug;D:\thirdparty\boost\install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -234,7 +237,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>sqlite3.lib;jsoncpp_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sqlite3.lib;jsoncpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

@@ -7,10 +7,7 @@
 //#include <QString>
 //#define RESEND
 //#define HEART
-double func_dis(int x1, int y1, int x2, int y2)
-{
-    return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
-}
+
 DyForklift::DyForklift(int id, std::string name, std::string ip, int port):
     Agv(id,name,ip,port)
 {
@@ -242,7 +239,7 @@ void DyForklift::onRead(const char *data,int len)
         if(1 == std::stoi(body.substr(2)))
         {
             //command finish
-            std::map<int, Msg>::iterator iter = m_unFinishCmd.find(std::stoi(body.substr(0,2)));
+            std::map<int, DyMsg>::iterator iter = m_unFinishCmd.find(std::stoi(body.substr(0,2)));
             if(iter != m_unFinishCmd.end())
             {
                 m_unFinishCmd.erase(iter);
@@ -257,7 +254,7 @@ void DyForklift::onRead(const char *data,int len)
     {
         msgMtx.lock();
         //command response
-        std::map<int, Msg>::iterator iter = m_unRecvSend.find(std::stoi(msg.substr(0,6)));
+        std::map<int, DyMsg>::iterator iter = m_unRecvSend.find(std::stoi(msg.substr(0,6)));
         if(iter != m_unRecvSend.end())
         {
             m_unRecvSend.erase(iter);
@@ -613,13 +610,7 @@ void DyForklift::goStation(std::vector<int> lines,  bool stop)
     //    }
     //startTask(goal);
 }
-#ifndef  QYHTCP
 
-void DyForklift::setTcpThread(FortuneThread *tcpThread)
-{
-    m_tcpThread = tcpThread;
-}
-#endif
 void DyForklift::setQyhTcp(SessionPtr _qyhTcp)
 {
     m_qTcp = _qyhTcp;
@@ -627,44 +618,22 @@ void DyForklift::setQyhTcp(SessionPtr _qyhTcp)
 //发送消息给小车
 bool DyForklift::send(const char *data, int len)
 {
-	char *sendContent = new char[len + 13];
-	memset(sendContent, 0, len + 13);
-
-	time_t   TimeStamp = clock();
-
-//	sendContent[0] = '*';
-
-	
-//	////save last 6 char as timestamp
-//	//full_msg.append(QString::number(TimeStamp).rightJustified(6, '0').right(6));
-//	//full_msg.append(QString::number(body.length() + 10).rightJustified(4, '0'));
-
-//	memcpy_s(sendContent + 11, len, data, len);
-//	sendContent[len + 12] = '#';
-
-    std::string body(data,len);
-
-    snprintf(sendContent,len+13,"*%06d%04d%s#",TimeStamp,body.length()+10,body);
-
-
-
-
-    /*QByteArray sendBody(data);
-    if(sendBody.size() != len)
+    if(strlen(data) != len)
     {
         combined_logger->error("send length error");
         return false;
     }
-    QByteArray sendContent = transToFullMsg(sendBody);
-    if(FORKLIFT_HEART != sendContent.mid(11,2).toInt())
+    char *sendContent = transToFullMsg(data);
+
+    if(FORKLIFT_HEART != stringToInt(std::string(sendContent+11,2)))
     {
-        combined_logger->info("send to agv{0}:{1}", id, sendContent.data());
-    }*/
-#ifdef QYHTCP
+        combined_logger->info("send to agv{0}:{1}", id, sendContent);
+    }
+
     char * temp = new char[len+13];
     strcpy(temp, sendContent);
     bool res = m_qTcp->doSend(temp, len+12);
-    Msg msg;
+    DyMsg msg;
     msg.msg = std::string(temp);
     msg.waitTime = 0;
     m_unRecvSend[stoi(msg.msg.substr(1,6))] = msg;
@@ -676,10 +645,7 @@ bool DyForklift::send(const char *data, int len)
     delete[] temp;
 	delete[] sendContent;
     return res;
-#else
-	delete[] sendContent;
-    return m_tcpThread->WriteToSendBuf(sendContent);
-#endif
+
 }
 
 //开始上报
@@ -712,7 +678,7 @@ bool DyForklift::isFinish()
 
 bool DyForklift::isFinish(int cmd_type)
 {
-    std::map<int, Msg>::iterator iter = m_unFinishCmd.find(cmd_type);
+    std::map<int, DyMsg>::iterator iter = m_unFinishCmd.find(cmd_type);
     if(iter != m_unFinishCmd.end())
     {
         return false;

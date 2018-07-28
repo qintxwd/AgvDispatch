@@ -101,7 +101,7 @@ void MapManager::occuStation(int station, AgvPtr occuAgv)
     //}
 }
 
-//线路的反向占用,参数的是车正向行驶的线路
+//线路的反向占用//这辆车行驶方向和线路方向相反
 void MapManager::addOccuLine(int line, AgvPtr occuAgv)
 {
     line_occuagvs[line].push_back(occuAgv->getId());
@@ -142,6 +142,7 @@ void MapManager::freeStation(int station, AgvPtr occuAgv)
 }
 
 //获得站点楼层
+
 int MapManager::getStationFloor(int station)
 {
     std::list<MapFloor *> floors = g_onemap.getFloors();//楼层
@@ -155,7 +156,7 @@ int MapManager::getStationFloor(int station)
     }
     return -1;
 }
-
+//是否同一楼层站点
 
 //是否同一楼层站点
 bool MapManager::isSameFloorStation(int station_1, int station_2)
@@ -578,6 +579,8 @@ std::vector<int> MapManager::getBestPathDy(int agv, int lastStation, int startSt
     {
         chd_station.push(endStation);
         std::vector<int> exec_path;
+        exec_path.clear();
+        std::vector<int> ().swap(exec_path);
         distance = 0;
         do
         {
@@ -739,7 +742,7 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
         return result;
 
 
-
+    //判断站点占用清空
     if (station_occuagv[startStation] != 0 && station_occuagv[startStation] != agv)return result;
     if (station_occuagv[endStation] != 0 && station_occuagv[endStation] != agv)return result;
 

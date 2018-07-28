@@ -244,3 +244,17 @@ void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, 
 
 #endif
 
+double func_dis(int x1, int y1, int x2, int y2)
+{
+    return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
+}
+
+char *transToFullMsg(const char *data)
+{
+    int data_length = strlen(data);
+    char *full_msg = new char[data_length+13];
+    time_t   TimeStamp = clock();
+    snprintf(full_msg,strlen(data)+13, "*06d04d%s#",TimeStamp,data_length+10,data);
+    return full_msg;
+}
+

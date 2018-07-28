@@ -133,7 +133,10 @@ HEADERS += \
     network/websocketsession.h \
     network/acceptor.h \
     network/websocketacceptor.h \
-    network/tcpsession.h
+    network/tcpsession.h \
+    Anting/atforklift.h \
+    Anting/atforkliftthingfork.h \
+    Anting/attaskmaker.h
 
 SOURCES += \
     agv.cpp \
@@ -189,4 +192,7 @@ SOURCES += \
     network/websocketsession.cpp \
     network/acceptor.cpp \
     network/websocketacceptor.cpp \
-    network/tcpsession.cpp
+    network/tcpsession.cpp \
+    Anting/atforklift.cpp \
+    Anting/atforkliftthingfork.cpp \
+    Anting/attaskmaker.cpp

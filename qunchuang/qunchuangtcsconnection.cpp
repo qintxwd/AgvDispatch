@@ -49,9 +49,9 @@ QunChuangTcsConnection::~QunChuangTcsConnection(){
 }
 
 void QunChuangTcsConnection::init() {
-    TcpClient::QyhClientReadCallback onread = std::bind(&QunChuangTcsConnection::onRead, this, std::placeholders::_1, std::placeholders::_2);
-    TcpClient::QyhClientConnectCallback onconnect = std::bind(&QunChuangTcsConnection::onConnect, this);
-    TcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&QunChuangTcsConnection::onDisconnect, this);
+    TcpClient::ClientReadCallback onread = std::bind(&QunChuangTcsConnection::onRead, this, std::placeholders::_1, std::placeholders::_2);
+    TcpClient::ClientConnectCallback onconnect = std::bind(&QunChuangTcsConnection::onConnect, this);
+    TcpClient::ClientDisconnectCallback ondisconnect = std::bind(&QunChuangTcsConnection::onDisconnect, this);
     tcpClient = new TcpClient(ip, port, onread, onconnect, ondisconnect);
 }
 

@@ -5,40 +5,11 @@
 #include "../agvtask.h"
 #include "../network/sessionmanager.h"
 
-#define QYHTCP
-#ifndef QYHTCP
-#include "Communication/fortunethread.h"
-#endif
 #define PRECISION 20
 #define PRECMD_RANGE 500
 #define MAX_WAITTIMES 10
 class DyForklift;
 using DyForkliftPtr = std::shared_ptr<DyForklift>;
-
-class Pose4D
-{
-public:
-    Pose4D(){}
-    Pose4D(double x, double y, double theta, int floor)
-    {
-        m_x = x;
-        m_y = y;
-        m_theta = theta;
-        m_floor = floor;
-    }
-    double m_x;
-    double m_y;
-    double m_theta;
-    int m_floor;
-
-};
-
-class Msg
-{
-public:
-    std::string msg;
-    int waitTime;
-};
 
 enum FORKLIFT_COMM
 {
@@ -75,10 +46,6 @@ public:
     void excutePath(std::vector<int> lines);
     void goStation(std::vector<int> lines,  bool stop);
     bool goElevator(int startStation,  int endStation, int from, int to, int eleID);
-
-#ifndef  QYHTCP
-    void setTcpThread(FortuneThread* tcpThread);
-#endif
     void setQyhTcp(SessionPtr _qyhTcp);
 
     bool startReport(int interval);
@@ -109,13 +76,10 @@ private:
     bool turnResult;
 
     Pose4D m_currentPos;
-#ifndef  QYHTCP
-    FortuneThread* m_tcpThread;
-#endif
     int m_power;
     bool m_lift = false;
-    std::map<int,  Msg> m_unRecvSend;
-    std::map<int,  Msg> m_unFinishCmd;
+    std::map<int,  DyMsg> m_unRecvSend;
+    std::map<int,  DyMsg> m_unFinishCmd;
     std::mutex msgMtx;
 
     int actionpoint, startpoint;

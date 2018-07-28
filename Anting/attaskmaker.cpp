@@ -6,7 +6,7 @@
 #include "atforklift.h"
 #include "../userlogmanager.h"
 #include "../agvtask.h"
-#include "qyhtcpclient.h"
+#include "../network/tcpclient.h"
 
 AtTaskMaker::AtTaskMaker(std::string _ip, int _port):
     m_ip(_ip),
@@ -19,11 +19,11 @@ AtTaskMaker::AtTaskMaker(std::string _ip, int _port):
 void AtTaskMaker::init()
 {
     //接收wms发过来的任务
-    QyhTcpClient::QyhClientReadCallback onread = std::bind(&AtTaskMaker::onRead, this, std::placeholders::_1, std::placeholders::_2);
-    QyhTcpClient::QyhClientConnectCallback onconnect = std::bind(&AtTaskMaker::onConnect, this);
-    QyhTcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&AtTaskMaker::onDisconnect, this);
+    TcpClient::ClientReadCallback onread = std::bind(&AtTaskMaker::onRead, this, std::placeholders::_1, std::placeholders::_2);
+    TcpClient::ClientConnectCallback onconnect = std::bind(&AtTaskMaker::onConnect, this);
+    TcpClient::ClientDisconnectCallback ondisconnect = std::bind(&AtTaskMaker::onDisconnect, this);
 
-    m_wms_tcpClient = new QyhTcpClient(m_ip, m_port, onread, onconnect, ondisconnect);
+    m_wms_tcpClient = new TcpClient(m_ip, m_port, onread, onconnect, ondisconnect);
 
     combined_logger->info(typeid(TaskMaker::getInstance()).name());
 }
@@ -49,7 +49,7 @@ void AtTaskMaker::onDisconnect()
 }
 
 
-void AtTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 {
     AgvTaskPtr task(new AgvTask());
 

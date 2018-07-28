@@ -1,7 +1,7 @@
 #include "tcpclient.h"
 #include <iostream>
 
-TcpClient::TcpClient(std::string _ip, int _port, QyhClientReadCallback _readcallback, QyhClientConnectCallback _connectcallback, QyhClientDisconnectCallback _disconnectcallback):
+TcpClient::TcpClient(std::string _ip, int _port, ClientReadCallback _readcallback, ClientConnectCallback _connectcallback, ClientDisconnectCallback _disconnectcallback):
     ip(_ip),
     port(_port),
     need_reconnect(true),

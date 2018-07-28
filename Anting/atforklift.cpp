@@ -1,8 +1,8 @@
 ﻿#include "atforklift.h"
 #include "../common.h"
 #include "../mapmap/mappoint.h"
-#include <QByteArray>
-#include <QString>
+//#include <QByteArray>
+//#include <QString>
 //#define RESEND
 //#define HEART
 #define TEST
@@ -308,7 +308,7 @@ void AtForklift::arrve(int x, int y) {
                         AgvTaskPtr currentTask =this->getTask();
                         AgvTaskNodePtr currentTaskNode = currentTask->getTaskNodes().at(currentTask->getDoingIndex());
                         fork(stoi(split(currentTaskNode->getParams(),",").at(0)));
-//                        fork(m_lift_height);
+                        //                        fork(m_lift_height);
                         //                        m_lift = false;
                         return;
                     }
@@ -530,26 +530,26 @@ void AtForklift::goStation(std::vector<int> lines,  bool stop)
     combined_logger->info("nowStation = {0}, endId = {1}", this->nowStation, endId);
 
 }
-void AtForklift::setQyhTcp(qyhnetwork::TcpSocketPtr _qyhTcp)
+void AtForklift::setQyhTcp(SessionPtr _qyhTcp)
 {
     m_qTcp = _qyhTcp;
 }
 //发送消息给小车
 bool AtForklift::send(const char *data, int len)
 {
-    QByteArray sendBody(data);
-    if(sendBody.size() != len)
+    if(strlen(data) != len)
     {
         combined_logger->error("send length error");
         return false;
     }
-    QByteArray sendContent = transToFullMsg(sendBody);
-    if(ATFORKLIFT_HEART != sendContent.mid(11,2).toInt())
+    char *sendContent = transToFullMsg(data);
+
+    if(ATFORKLIFT_HEART != stringToInt(std::string(sendContent+11,2)))
     {
-        combined_logger->info("send to agv{0}:{1}", id, sendContent.data());
+        combined_logger->info("send to agv{0}:{1}", id, sendContent);
     }
     char * temp = new char[len+13];
-    strcpy(temp, sendContent.data());
+    strcpy(temp, sendContent);
     bool res = m_qTcp->doSend(temp, len+12);
     DyMsg msg;
     msg.msg = std::string(temp);
@@ -560,7 +560,8 @@ bool AtForklift::send(const char *data, int len)
     {
         m_unFinishCmd[msgType]= msg;
     }
-    delete temp;
+    delete []temp;
+    delete []sendContent;
     return res;
 }
 

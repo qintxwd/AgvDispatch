@@ -57,7 +57,7 @@ public:
     void excutePath(std::vector<int> lines);
     void goStation(std::vector<int> lines,  bool stop);
 
-    void setQyhTcp(qyhnetwork::TcpSocketPtr _qyhTcp);
+    void setQyhTcp(SessionPtr _qyhTcp);
 
     bool startReport(int interval);
     bool endReport();
@@ -100,7 +100,7 @@ private:
     bool startLift = false;
     int task_type;
 
-    qyhnetwork::TcpSocketPtr m_qTcp;
+    SessionPtr m_qTcp;
 };
 
 #endif // ATFORKLIFT_H

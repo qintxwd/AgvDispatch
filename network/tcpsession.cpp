@@ -4,6 +4,12 @@
 #include "../msgprocess.h"
 #include "sessionmanager.h"
 
+#ifdef WIN32
+#include <json/json.h>
+#else
+#include <jsoncpp/json/json.h>
+#endif
+
 TcpSession::TcpSession(tcp::socket socket, int sessionId):
     Session(sessionId),
     socket_(std::move(socket)),
@@ -125,8 +131,6 @@ void TcpSession::packageProcess(const char *data,int len)
             }else if(json_len>0){
                 if(json_len <= buffer.length()-1-sizeof(int32_t))
                 {
-                    //包完整
-                    //处理包数据
                     Json::Reader reader(Json::Features::strictMode());
                     Json::Value root;
                     std::string sss = std::string(buffer.data(1+sizeof(int32_t)),json_len);
