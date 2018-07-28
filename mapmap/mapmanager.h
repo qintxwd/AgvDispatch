@@ -10,7 +10,7 @@
 #include "../agv.h"
 #include "../common.h"
 #include "../utils/noncopyable.h"
-#include "../network/tcpsession.h"
+#include "../network/session.h"
 
 
 class MapManager;
@@ -31,13 +31,13 @@ public:
     //保存地图
     bool save();
 
-    MapSpirit *getMapSpiritById(int id);
+	MapSpirit *getMapSpiritById(int id);
 
     MapSpirit *getMapSpiritByName(std::string name);
 
     MapPath *getMapPathByStartEnd(int start,int end);
 
-    //一个Agv占领一个站点
+    //获得站点楼层
     int getStationFloor(int station);
 
     //是否同一楼层站点
@@ -63,15 +63,15 @@ public:
 
     bool isSameFloor(int floor, int station);
     int getFloor(int station);
-    int getBlock(int spiritID);
+    int getBlock(int station);
     //用户接口
-    void interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interSetMap(SessionPtr conn, const Json::Value &request);
+    void interGetMap(SessionPtr conn, const Json::Value &request);
 
-    void interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interTrafficControlStation(SessionPtr conn, const Json::Value &request);
+    void interTrafficControlLine(SessionPtr conn, const Json::Value &request);
+    void interTrafficReleaseStation(SessionPtr conn, const Json::Value &request);
+    void interTrafficReleaseLine(SessionPtr conn, const Json::Value &request);
 private:
     MapManager();
 
@@ -87,7 +87,7 @@ private:
 
     std::map<int,std::vector<int> > line_occuagvs;//一条线路 及其上面的agv
     std::map<int,int> station_occuagv;//一个站点，及当前占用改站点的agv
-    std::map<int,std::pair<int, std::queue<int> > > block_occuagv;//一个区块，及当前区块占用agv
+    std::map<int,int> block_occuagv;//一个区块，及当前区块占用agv
 
     std::vector<int> getPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect);
     void checkTable();

@@ -99,7 +99,7 @@ protected:
     std::string ip;
     int port;
 
-
+    //位置信息//直接显示要显示的位置
     double x;
     double y;
     double theta;

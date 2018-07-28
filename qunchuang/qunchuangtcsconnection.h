@@ -5,7 +5,7 @@
 #include <memory>
 #include <tuple>
 #include "msg.h"
-class QyhTcpClient;
+class TcpClient;
 
 class QunChuangTcsConnection
 {
@@ -34,7 +34,7 @@ private:
     struct RequestContext;
     std::unique_ptr<RequestContext> requestContext; 
 
-    QyhTcpClient *tcpClient;
+    TcpClient *tcpClient;
     std::string ip;
     int port;
 

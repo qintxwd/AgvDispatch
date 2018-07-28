@@ -14,7 +14,7 @@ public:
         Map_Path_Type_Between_Floor,//楼层间线路
     };
 
-    MapPath(int _id, std::string _name, int _start, int _end, Map_Path_Type _type, int _length, int _p1x = 0, int _p1y = 0, int _p2x=0, int _p2y = 0, bool _locked = false/*, int _direction = 0*/);
+    MapPath(int _id, std::string _name, int _start, int _end, Map_Path_Type _type, int _length, int _p1x = 0, int _p1y = 0, int _p2x=0, int _p2y = 0, bool _locked = false, double _speed = 0.2);
     virtual ~MapPath();
     virtual MapSpirit *clone();
     MapPath(const MapPath &p) = delete;
@@ -28,7 +28,7 @@ public:
 	void setP2y(int _p2y) { p2y = _p2y; }
 	void setLength(int _length) { length = _length; }
 	void setLocked(bool _locked) { locked = _locked; }
-    //void setDirection(int _direction) { direction = _direction; }
+    void setSpeed(double _speed) { speed = _speed; }
 
     int getStart() const {return start;}
     int getEnd() const {return end;}
@@ -38,7 +38,8 @@ public:
     int getP2y() const {return p2y;}
     int getLength() const {return length;}
     bool getLocked() const {return locked;}
-    //int getDirection() const {return direction;}// 0 (双向)  1(start-->end)  2(end-->start)
+    double getSpeed() const {return speed;}
+
 	Map_Path_Type getPathType() const { return path_type; }
 private:
     Map_Path_Type path_type;
@@ -50,7 +51,7 @@ private:
     int p2y;
     int length;
     bool locked;
-    //int direction;// 0 (双向)  1(start-->end)  2(end-->start)
+    double speed;
 };
 
 #endif // MAPPATH_H

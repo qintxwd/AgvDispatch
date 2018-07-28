@@ -6,7 +6,7 @@
 #include <mutex>
 #include "utils/noncopyable.h"
 #include "protocol.h"
-#include "network/tcpsession.h"
+#include "network/session.h"
 
 class Agv;
 using AgvPtr = std::shared_ptr<Agv>;
@@ -42,14 +42,14 @@ public:
 
     void getPositionJson(Json::Value &json);
 
-    void setServerAccepterID(qyhnetwork::AccepterID serverID);
+    void setServerAccepterID(int serverID);
 
-    qyhnetwork::AccepterID getServerAccepterID(){return _serverID;}
+    int getServerAccepterID(){return _serverID;}
     //用户接口
-    void interList(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interAdd(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interDelete(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interModify(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interList(SessionPtr conn, const Json::Value &request);
+    void interAdd(SessionPtr conn, const Json::Value &request);
+    void interDelete(SessionPtr conn, const Json::Value &request);
+    void interModify(SessionPtr conn, const Json::Value &request);
 protected:
     AgvManager();
 private:
@@ -57,7 +57,7 @@ private:
 
     std::mutex mtx;
     std::vector<AgvPtr> agvs;
-    qyhnetwork::AccepterID _serverID;
+    int _serverID;
 };
 
 #endif // AGVMANAGER_H

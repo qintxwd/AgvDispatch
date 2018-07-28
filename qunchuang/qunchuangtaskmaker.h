@@ -10,7 +10,7 @@ public:
     QunChuangTaskMaker();
     ~QunChuangTaskMaker();
     virtual void init();
-    virtual void makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    virtual void makeTask(SessionPtr conn, const Json::Value &request);
 
     //all_floor_info: 为3层升降货架是否有料信息
     /* info 为3层升降货架每一层是否有料信息

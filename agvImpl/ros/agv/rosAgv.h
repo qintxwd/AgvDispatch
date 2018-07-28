@@ -1,16 +1,16 @@
 #ifndef ROSAGV_H
 #define ROSAGV_H
 
-#include "agv.h"
-#include "agvtask.h"
-#include "qyhtcpclient.h"
-#include "userlogmanager.h"
-#include "msgprocess.h"
+#include "../../../agv.h"
+#include "../../../agvtask.h"
+#include "../../../network/tcpclient.h"
+#include "../../../userlogmanager.h"
+#include "../../../msgprocess.h"
 #include "linepath.h"
-#include "device/device.h"
-#include "qunchuang/chipmounter/chipmounter.h"
-#include "qunchuang/qunchuangtcsconnection.h"
-#include "realagv.h"
+#include "../../../device/device.h"
+#include "../../../qunchuang/chipmounter/chipmounter.h"
+#include "../../../qunchuang/qunchuangtcsconnection.h"
+#include "../../../realagv.h"
 
 
 using namespace std;

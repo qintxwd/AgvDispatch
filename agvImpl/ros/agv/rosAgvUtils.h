@@ -67,9 +67,9 @@ void rosAgv::processServiceResponse(Json::Value response)
                 {
                     bool success = response["values"]["success"].asBool();
                     if(success)
-                        combined_logger->info("rosAgv, 发送任务成功");
+                        combined_logger->info("rosAgv,send task success");
                     else
-                        combined_logger->error("rosAgv, 发送任务失败");
+                        combined_logger->error("rosAgv,send task fail");
                 }
                 else if(service_name.find("set_planner_path") != string::npos)
                 {

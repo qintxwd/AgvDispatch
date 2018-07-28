@@ -5,8 +5,8 @@
 #include <memory>
 #include <mutex>
 #include <map>
-#include "qyhtcpclient.h"
-#include "userlogmanager.h"
+#include "../network/tcpclient.h"
+#include "../userlogmanager.h"
 
 
 using namespace std;
@@ -44,7 +44,7 @@ protected:
     int port;
     bool connected;
 
-    QyhTcpClient *tcpClient;
+    TcpClient *tcpClient;
 };
 
 #endif // DEVICE_H

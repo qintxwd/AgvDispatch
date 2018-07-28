@@ -3,8 +3,7 @@
 #include "common.h"
 #include "protocol.h"
 #include "utils/noncopyable.h"
-#include "network/tcpsession.h"
-using qyhnetwork::TcpSessionPtr;
+#include "network/session.h"
 
 class UserManager;
 using UserManagerPtr = std::shared_ptr<UserManager>;
@@ -20,19 +19,19 @@ public:
 
     void init();
 
-    void interLogin(TcpSessionPtr conn, const Json::Value &request);
+    void interLogin(SessionPtr conn, const Json::Value &request);
 
-    void interLogout(TcpSessionPtr conn, const Json::Value &request);
+    void interLogout(SessionPtr conn, const Json::Value &request);
 
-    void interChangePassword(TcpSessionPtr conn, const Json::Value &request);
+    void interChangePassword(SessionPtr conn, const Json::Value &request);
 
-    void interList(TcpSessionPtr conn, const Json::Value &request);
+    void interList(SessionPtr conn, const Json::Value &request);
 
-    void interRemove(TcpSessionPtr conn, const Json::Value &request);
+    void interRemove(SessionPtr conn, const Json::Value &request);
 
-    void interAdd(TcpSessionPtr conn, const Json::Value &request);
+    void interAdd(SessionPtr conn, const Json::Value &request);
 
-    void interModify(TcpSessionPtr conn, const Json::Value &request);
+    void interModify(SessionPtr conn, const Json::Value &request);
 
 	virtual ~UserManager();
 private:

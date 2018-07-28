@@ -18,13 +18,15 @@ void UserLogManager::init()
 {
     checkTable();
 
-    g_threadPool.enqueue([&]{
+    g_threadPool.enqueue([this]{
         while(true){
+			mtx.lock();
 			if (logQueue.empty()) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(20));
+				mtx.unlock();
 				continue;
-			}                
-            mtx.lock();
+			}
+			
             USER_LOG log = logQueue.front();
             logQueue.pop();
             mtx.unlock();
@@ -55,7 +57,7 @@ void UserLogManager::push(const std::string &s)
     mtx.unlock();
 }
 
-void UserLogManager::interLogDuring(qyhnetwork::TcpSessionPtr conn,const Json::Value &request)
+void UserLogManager::interLogDuring(SessionPtr conn,const Json::Value &request)
 {
 	Json::Value response;
 	response["type"] = MSG_TYPE_RESPONSE;

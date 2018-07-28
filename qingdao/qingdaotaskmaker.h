@@ -6,6 +6,6 @@ public:
 	QingdaoTaskMaker();
 	virtual ~QingdaoTaskMaker();
 	virtual void init();
-	virtual void makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+	virtual void makeTask(SessionPtr conn, const Json::Value &request);
 };
 

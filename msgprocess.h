@@ -1,8 +1,12 @@
 ﻿#ifndef MSGPROCESS_H
 #define MSGPROCESS_H
+
+#include <memory>
+#include <list>
+#include <mutex>
 #include "utils/noncopyable.h"
 #include "protocol.h"
-#include "network/networkconfig.h"
+#include "network/session.h"
 
 class MsgProcess;
 
@@ -30,7 +34,7 @@ public:
 	void sessionLogout(int user_id);
 
     //进来一个消息,分配给一个线程去处理它
-    void processOneMsg(const Json::Value &request,qyhnetwork::TcpSessionPtr session);
+    void processOneMsg(const Json::Value &request,SessionPtr session);
 
     //发布一个日志消息
     void publishOneLog(USER_LOG log);
@@ -42,14 +46,16 @@ public:
     void errorOccur(int code,std::string msg,bool needConfirm);
 
     //用户接口
-    void interAddSubAgvPosition(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interAddSubAgvStatus(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interAddSubTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interAddSubLog(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interRemoveSubAgvPosition(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interRemoveSubAgvStatus(qyhnetwork::TcpSessionPtr conn,const Json::Value &request);
-    void interRemoveSubTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interRemoveSubLog(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interAddSubAgvPosition(SessionPtr conn, const Json::Value &request);
+    void interAddSubAgvStatus(SessionPtr conn, const Json::Value &request);
+    void interAddSubTask(SessionPtr conn, const Json::Value &request);
+    void interAddSubLog(SessionPtr conn, const Json::Value &request);
+    void interRemoveSubAgvPosition(SessionPtr conn, const Json::Value &request);
+    void interRemoveSubAgvStatus(SessionPtr conn,const Json::Value &request);
+    void interRemoveSubTask(SessionPtr conn, const Json::Value &request);
+    void interRemoveSubLog(SessionPtr conn, const Json::Value &request);
+
+    void onSessionClosed(int id);
 
     void addSubAgvPosition(int id);
     void addSubAgvStatus(int id);
@@ -68,7 +74,7 @@ private:
 
     void publisher_task();
 
-        MsgProcess();
+    MsgProcess();
 
     std::mutex psMtx;
     std::list<int> agvPositionSubers;

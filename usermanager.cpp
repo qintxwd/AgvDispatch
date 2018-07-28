@@ -2,8 +2,6 @@
 #include "sqlite3/CppSQLite3.h"
 #include "network/sessionmanager.h"
 #include "userlogmanager.h"
-using namespace qyhnetwork;
-
 
 UserManager::UserManager()
 {
@@ -38,7 +36,7 @@ void UserManager::init()
 }
 
 
-void UserManager::interLogin(TcpSessionPtr conn, const Json::Value &request)
+void UserManager::interLogin(SessionPtr conn, const Json::Value &request)
 {
 	Json::Value response;
 	response["type"] = MSG_TYPE_RESPONSE;
@@ -114,7 +112,7 @@ void UserManager::interLogin(TcpSessionPtr conn, const Json::Value &request)
 	conn->send(response);
 }
 
-void UserManager::interLogout(TcpSessionPtr conn, const Json::Value &request)
+void UserManager::interLogout(SessionPtr conn, const Json::Value &request)
 {
 	Json::Value response;
 	response["type"] = MSG_TYPE_RESPONSE;
@@ -155,7 +153,7 @@ void UserManager::interLogout(TcpSessionPtr conn, const Json::Value &request)
 	SessionManager::getInstance()->kickSession(conn->getSessionID());
 }
 
-void UserManager::interChangePassword(TcpSessionPtr conn, const Json::Value &request)
+void UserManager::interChangePassword(SessionPtr conn, const Json::Value &request)
 {
 	Json::Value response;
 	response["type"] = MSG_TYPE_RESPONSE;
@@ -200,7 +198,7 @@ void UserManager::interChangePassword(TcpSessionPtr conn, const Json::Value &req
 	SessionManager::getInstance()->kickSession(conn->getSessionID());
 }
 
-void UserManager::interList(TcpSessionPtr conn, const Json::Value &request)
+void UserManager::interList(SessionPtr conn, const Json::Value &request)
 {
 	Json::Value response;
 	response["type"] = MSG_TYPE_RESPONSE;
@@ -255,7 +253,7 @@ void UserManager::interList(TcpSessionPtr conn, const Json::Value &request)
 	conn->send(response);
 }
 
-void UserManager::interRemove(TcpSessionPtr conn, const Json::Value &request)
+void UserManager::interRemove(SessionPtr conn, const Json::Value &request)
 {
 	int deleteid = 0;
 
@@ -330,7 +328,7 @@ void UserManager::interRemove(TcpSessionPtr conn, const Json::Value &request)
 	}
 }
 
-void UserManager::interAdd(TcpSessionPtr conn, const Json::Value &request)
+void UserManager::interAdd(SessionPtr conn, const Json::Value &request)
 {
 	Json::Value response;
 	response["type"] = MSG_TYPE_RESPONSE;
@@ -393,7 +391,7 @@ void UserManager::interAdd(TcpSessionPtr conn, const Json::Value &request)
 	conn->send(response);
 }
 
-void UserManager::interModify(TcpSessionPtr conn, const Json::Value &request)
+void UserManager::interModify(SessionPtr conn, const Json::Value &request)
 {
 	Json::Value response;
 	response["type"] = MSG_TYPE_RESPONSE;

@@ -19,7 +19,7 @@ void MapManager::checkTable()
             g_db.execDML("create table agv_station(id INTEGER,name char(64),type INTEGER, x INTEGER,y INTEGER,realX INTEGER,realY INTEGER,realA INTEGER DEFAULT 0, labelXoffset INTEGER,labelYoffset INTEGER,mapChange BOOL,locked BOOL,ip char(64),port INTEGER,agvType INTEGER,lineId char(64));");
         }
         if (!g_db.tableExists("agv_line")) {
-            g_db.execDML("create table agv_line(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p2x INTEGER,p2y INTEGER,length INTEGER,locked BOOL);");
+            g_db.execDML("create table agv_line(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p2x INTEGER,p2y INTEGER,length INTEGER,locked BOOL,speed DOUBLE);");
         }
         if (!g_db.tableExists("agv_line_dy")) {
             g_db.execDML("create table agv_line_dy(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p1a INTEGER DEFAULT 0,p1f INTEGER DEFAULT 1,p2x INTEGER,p2y INTEGER,p2a INTEGER DEFAULT 0,p2f INTEGER DEFAULT 1, speed REAL DEFAULT 0.4);");
@@ -74,8 +74,8 @@ MapSpirit *MapManager::getMapSpiritById(int id)
 MapSpirit *MapManager::getMapSpiritByName(std::string name)
 {
     auto ae = g_onemap.getAllElement();
-    for(auto e:ae){
-        if(e->getName() == name)return e;
+    for (auto e : ae) {
+        if (e->getName() == name)return e;
     }
     return nullptr;
 }
@@ -101,7 +101,7 @@ void MapManager::occuStation(int station, AgvPtr occuAgv)
     //}
 }
 
-//线路的反向占用//这辆车行驶方向和线路方向相反
+//线路的反向占用,参数的是车正向行驶的线路
 void MapManager::addOccuLine(int line, AgvPtr occuAgv)
 {
     line_occuagvs[line].push_back(occuAgv->getId());
@@ -135,13 +135,13 @@ void MapManager::addOccuLine(int line, AgvPtr occuAgv)
 //如果车辆占领该站点，释放
 void MapManager::freeStation(int station, AgvPtr occuAgv)
 {
-    if(station_occuagv[station] == occuAgv->getId()){
+    if (station_occuagv[station] == occuAgv->getId()) {
         station_occuagv[station] = 0;
         combined_logger->info("free station:{0} agv:{1}", station, occuAgv->getId());
     }
 }
-//获得站点楼层
 
+//获得站点楼层
 int MapManager::getStationFloor(int station)
 {
     std::list<MapFloor *> floors = g_onemap.getFloors();//楼层
@@ -155,7 +155,7 @@ int MapManager::getStationFloor(int station)
     }
     return -1;
 }
-//是否同一楼层站点
+
 
 //是否同一楼层站点
 bool MapManager::isSameFloorStation(int station_1, int station_2)
@@ -254,8 +254,8 @@ bool MapManager::save()
             }
             else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Path) {
                 MapPath *path = static_cast<MapPath *>(spirit);
-                bufSQL.format("insert into agv_line(id ,name,type ,start ,end ,p1x ,p1y ,p2x ,p2y ,length ,locked) values (%d,'%s', %d, %d, %d, %d, %d, %d, %d, %d, %d);", path->getId(), path->getName().c_str(), path->getPathType(), path->getStart(), path->getEnd(),
-                              path->getP1x(), path->getP1y(), path->getP2x(), path->getP2y(), path->getLength(), path->getLocked());
+                bufSQL.format("insert into agv_line(id ,name,type ,start ,end ,p1x ,p1y ,p2x ,p2y ,length ,locked,speed) values (%d,'%s', %d,%d, %d, %d, %d, %d, %d, %d, %d,%.2f);", path->getId(), path->getName().c_str(), path->getPathType(), path->getStart(), path->getEnd(),
+                              path->getP1x(), path->getP1y(), path->getP2x(), path->getP2y(), path->getLength(), path->getLocked(),path->getSpeed());
                 g_db.execDML(bufSQL);
 
                 MapPoint  *start = static_cast<MapPoint *>(MapManager::getMapSpiritById(path->getStart()));
@@ -283,7 +283,7 @@ bool MapManager::save()
                 for (auto pa : pas) {
                     pathstr << pa << ";";
                 }
-                bufSQL.format("insert into agv_floor(id ,name,point,path,bkg,originX,originY,rate) values (%d,'%s', '%s','%s',%d,%d,%d,%lf);", floor->getId(), floor->getName().c_str(), pointstr.str().c_str(), pathstr.str().c_str(), floor->getBkg(),floor->getOriginX(),floor->getOriginY(),floor->getRate());
+                bufSQL.format("insert into agv_floor(id ,name,point,path,bkg,originX,originY,rate) values (%d,'%s', '%s','%s',%d,%d,%d,%lf);", floor->getId(), floor->getName().c_str(), pointstr.str().c_str(), pathstr.str().c_str(), floor->getBkg(), floor->getOriginX(), floor->getOriginY(), floor->getRate());
                 g_db.execDML(bufSQL);
             }
             else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Block) {
@@ -362,8 +362,8 @@ bool MapManager::loadFromDb()
             g_onemap.addSpirit(point);
         }
 
-        CppSQLite3Table table_line = g_db.getTable("select id,name,type,start,end,p1x,p1y,p2x,p2y,length,locked from agv_line;");
-        if (table_line.numRows() > 0 && table_line.numFields() != 11)return false;
+        CppSQLite3Table table_line = g_db.getTable("select id,name,type,start,end,p1x,p1y,p2x,p2y,length,locked,speed from agv_line;");
+        if (table_line.numRows() > 0 && table_line.numFields() != 12)return false;
         for (int row = 0; row < table_line.numRows(); row++)
         {
             table_line.setRow(row);
@@ -379,8 +379,9 @@ bool MapManager::loadFromDb()
             int p2y = atoi(table_line.fieldValue(8));
             int length = atoi(table_line.fieldValue(9));
             bool locked = atoi(table_line.fieldValue(10)) == 1;
+            double speed = atof(table_line.fieldValue(11));
 
-            MapPath *path = new MapPath(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked);
+            MapPath *path = new MapPath(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked,speed);
             g_onemap.addSpirit(path);
         }
 
@@ -404,7 +405,7 @@ bool MapManager::loadFromDb()
             int p2y = atoi(table_dy_line.fieldValue(10));
             int p2a = atoi(table_dy_line.fieldValue(11));
             int p2f = atoi(table_dy_line.fieldValue(12));
-            float speed = atof(table_dy_line.fieldValue(13));
+            double speed = atof(table_dy_line.fieldValue(13));
 
             DyMapPath *path = new DyMapPath(id, name, start, end, (DyMapPath::Map_DyPath_Type)type, p1x, p1y, p1a, p1f, p2x, p2y, p2a, p2f, speed);
             g_onemap.addSpirit(path);
@@ -577,8 +578,6 @@ std::vector<int> MapManager::getBestPathDy(int agv, int lastStation, int startSt
     {
         chd_station.push(endStation);
         std::vector<int> exec_path;
-        exec_path.clear();
-        std::vector<int> ().swap(exec_path);
         distance = 0;
         do
         {
@@ -740,7 +739,7 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
         return result;
 
 
-    //判断站点占用清空
+
     if (station_occuagv[startStation] != 0 && station_occuagv[startStation] != agv)return result;
     if (station_occuagv[endStation] != 0 && station_occuagv[endStation] != agv)return result;
 
@@ -1027,7 +1026,7 @@ std::vector<int> MapManager::getStations(int floor)
     return allstation;
 }
 
-void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void MapManager::interSetMap(SessionPtr conn, const Json::Value &request)
 {
     Json::Value response;
     response["type"] = MSG_TYPE_RESPONSE;
@@ -1092,7 +1091,8 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 int p2y = line["p2y"].asInt();
                 int length = line["length"].asInt();
                 bool locked = line["locked"].asBool();
-                MapPath *p = new MapPath(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked);
+                double speed = line["speed"].asDouble();
+                MapPath *p = new MapPath(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked,speed);
                 g_onemap.addSpirit(p);
             }
 
@@ -1234,7 +1234,7 @@ void MapManager::interSetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
     conn->send(response);
 }
 
-void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void MapManager::interGetMap(SessionPtr conn, const Json::Value &request)
 {
     Json::Value response;
     response["type"] = MSG_TYPE_RESPONSE;
@@ -1294,6 +1294,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 pv["p2y"] = p->getP2y();
                 pv["length"] = p->getLength();
                 pv["locked"] = p->getLocked();
+                pv["speed"] = p->getSpeed();
                 v_paths.append(pv);
             }
             else if (spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Background) {
@@ -1329,7 +1330,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 for (auto p : points) {
                     ppv[kk++] = p;
                 }
-                if (!ppv.isNull()>0)
+                if (!ppv.isNull() > 0)
                     pv["points"] = ppv;
 
                 Json::Value ppv2;
@@ -1338,7 +1339,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 for (auto p : paths) {
                     ppv2[kk2++] = p;
                 }
-                if (!ppv2.isNull()>0)
+                if (!ppv2.isNull() > 0)
                     pv["paths"] = ppv2;
 
                 v_floors.append(pv);
@@ -1355,7 +1356,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
                 for (auto p : ps) {
                     ppv[kk++] = p;
                 }
-                if(!ppv.isNull())
+                if (!ppv.isNull())
                     pv["spirits"] = ppv;
 
                 v_blocks.append(pv);
@@ -1402,7 +1403,7 @@ void MapManager::interGetMap(qyhnetwork::TcpSessionPtr conn, const Json::Value &
     conn->send(response);
 }
 
-void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void MapManager::interTrafficControlStation(SessionPtr conn, const Json::Value &request)
 {
     Json::Value response;
     response["type"] = MSG_TYPE_RESPONSE;
@@ -1457,7 +1458,7 @@ void MapManager::interTrafficControlStation(qyhnetwork::TcpSessionPtr conn, cons
     conn->send(response);
 }
 
-void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void MapManager::interTrafficReleaseLine(SessionPtr conn, const Json::Value &request)
 {
     Json::Value response;
     response["type"] = MSG_TYPE_RESPONSE;
@@ -1514,7 +1515,7 @@ void MapManager::interTrafficReleaseLine(qyhnetwork::TcpSessionPtr conn, const J
 }
 
 
-void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void MapManager::interTrafficReleaseStation(SessionPtr conn, const Json::Value &request)
 {
     Json::Value response;
     response["type"] = MSG_TYPE_RESPONSE;
@@ -1569,7 +1570,7 @@ void MapManager::interTrafficReleaseStation(qyhnetwork::TcpSessionPtr conn, cons
     conn->send(response);
 }
 
-void MapManager::interTrafficControlLine(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void MapManager::interTrafficControlLine(SessionPtr conn, const Json::Value &request)
 {
     Json::Value response;
     response["type"] = MSG_TYPE_RESPONSE;

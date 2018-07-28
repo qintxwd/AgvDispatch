@@ -12,10 +12,9 @@
 #include "qunchuang/chipmounter/chipmounter.h"
 #include "device/elevator/elevator.h"
 
-#include "Dongyao/dyforklift.h"
-#include "Dongyao/dytaskmaker.h"
+#include "network/tcpclient.h"
 
-#define DY_TEST
+//#define DY_TEST
 void initLog()
 {
     //日志文件
@@ -117,7 +116,7 @@ void testAGV()
 
 }
 
-void testElevator()
+/*void testElevator()
 {
     // test elevator
     Elevator ele(1, "ele_0", "127.0.0.1", 8889);
@@ -151,7 +150,7 @@ void testElevator()
 
         return false;
     });
-}
+}*/
 
 int main(int argc, char *argv[])
 {
@@ -198,32 +197,30 @@ int main(int argc, char *argv[])
     //7.初始化日志发布
     UserLogManager::getInstance()->init();
 
-    // test ros agv
-    //rosAgvPtr agv(new rosAgv(1,"robot_0","127.0.0.1",7070));
-    //agv->init();
+    //testAGV();//test ROS AGV, this only for test
 
     //8.初始化任务生成
     TaskMaker::getInstance()->init();
 
-
     //8.初始化tcp/ip 接口
+    auto aID = SessionManager::getInstance()->addTcpAccepter(9999);
+    SessionManager::getInstance()->openTcpAccepter(aID);
 
-
-    //tcpip服务
-
-    qyhnetwork::SessionManager::getInstance()->start();
-    auto aID = qyhnetwork::SessionManager::getInstance()->addAccepter("0.0.0.0", 9999);
-    qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
-    qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
+    //9.初始化websocket接口
+    aID = SessionManager::getInstance()->addWebSocketAccepter(9998);
+    SessionManager::getInstance()->openWebSocketAccepter(aID);
 #ifdef DY_TEST
-    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("127.0.0.1",  6789);
-    //    aID = qyhnetwork::SessionManager::getInstance()->addAccepter("192.168.0.184",  6789);
-    qyhnetwork::SessionManager::getInstance()->getAccepterOptions(aID)._setReuse = true;
-    qyhnetwork::SessionManager::getInstance()->openAccepter(aID);
-    AgvManager::getInstance()->setServerAccepterID(aID);
+    aID = SessionManager::getInstance()->addAccepter(6789);
+    SessionManager::getInstance()->openAccepter(aID);
 #endif
     combined_logger->info("server init OK!");
-    qyhnetwork::SessionManager::getInstance()->run();
+
+    while (true) {
+        sleep(1);
+    }
+
     spdlog::drop_all();
 
+
+    return 0;
 }

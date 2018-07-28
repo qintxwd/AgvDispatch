@@ -4,7 +4,7 @@
 #include "agv.h"
 #include "mapmap/mapmanager.h"
 #include "agvtask.h"
-#include "qyhtcpclient.h"
+#include "network/tcpclient.h"
 #include "userlogmanager.h"
 #include "msgprocess.h"
 #include "mapmap/mapmanager.h"
@@ -37,10 +37,10 @@ void Agv::setPosition(int _lastStation, int _nowStation, int _nextStation) {
 	lastStation = _lastStation;
 	nowStation = _nowStation;
 	nextStation = _nextStation;
-    //TODO
+
 	if (nowStation > 0) {
 		onArriveStation(nowStation);
-}
+	}
 };
 
 //到达后是否停下，如果不停下，就是不减速。
@@ -58,12 +58,12 @@ void Agv::onArriveStation(int station)
     MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
 
     if(spirit->getSpiritType()!=MapSpirit::Map_Sprite_Type_Point)return ;
-    //    for(auto station:excutestations){
+
     MapPoint *point = static_cast<MapPoint *>(spirit);
-    //        if(sqrt(pow(x-station->getX(),2)+pow(x-station->getX(),2))<20){
+
     x = point->getX();
     y = point->getY();
-    //            onArriveStation(station);
+
     if(station>0){
         if(nowStation>0){
             lastStation = nowStation;
@@ -115,7 +115,7 @@ void Agv::onArriveStation(int station)
 	snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
 	try {
 		g_db.execDML(buf);
-    }
+	}
 	catch (CppSQLite3Exception e) {
 		combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
 	}
@@ -127,8 +127,8 @@ void Agv::onArriveStation(int station)
 
 void Agv::onLeaveStation(int stationid)
 {
-        nowStation = 0;
-        lastStation = stationid;
+	nowStation = 0;
+    lastStation = stationid;
     //释放这个站点的占用
     MapManager::getInstance()->freeStation(stationid,shared_from_this());
 

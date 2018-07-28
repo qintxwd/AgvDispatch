@@ -3,7 +3,7 @@
 
 #include "agv.h"
 
-class QyhTcpClient;
+class TcpClient;
 
 //继承 realAgv 需要 自己实现的虚函数包括:
 /////////////////必须实现的
@@ -39,7 +39,7 @@ public:
     virtual void reconnect();
     virtual bool send(const char *data, int len);
 protected:
-     QyhTcpClient *tcpClient;
+     TcpClient *tcpClient;
 };
 
 #endif // REALAGV_H

@@ -26,7 +26,18 @@
     <ClInclude Include="..\..\agvtasknode.h" />
     <ClInclude Include="..\..\agvtasknodedothing.h" />
     <ClInclude Include="..\..\base64.h" />
+    <ClInclude Include="..\..\bezierarc.h" />
     <ClInclude Include="..\..\common.h" />
+    <ClInclude Include="..\..\device\device.h" />
+    <ClInclude Include="..\..\device\elevator\elevator.h" />
+    <ClInclude Include="..\..\device\elevator\elevator_protocol.h" />
+    <ClInclude Include="..\..\Dongyao\charge\chargemachine.h" />
+    <ClInclude Include="..\..\Dongyao\dyforklift.h" />
+    <ClInclude Include="..\..\Dongyao\dyforkliftthingfork.h" />
+    <ClInclude Include="..\..\Dongyao\dyforkliftthingturn.h" />
+    <ClInclude Include="..\..\Dongyao\dyforkliftupdwms.h" />
+    <ClInclude Include="..\..\Dongyao\dymappath.h" />
+    <ClInclude Include="..\..\Dongyao\dytaskmaker.h" />
     <ClInclude Include="..\..\mapmap\mapbackground.h" />
     <ClInclude Include="..\..\mapmap\mapblock.h" />
     <ClInclude Include="..\..\mapmap\mapfloor.h" />
@@ -37,40 +48,54 @@
     <ClInclude Include="..\..\mapmap\mapspirit.h" />
     <ClInclude Include="..\..\mapmap\onemap.h" />
     <ClInclude Include="..\..\msgprocess.h" />
-    <ClInclude Include="..\..\network\common\networkcommon.h" />
-    <ClInclude Include="..\..\network\epoll\epoll.h" />
-    <ClInclude Include="..\..\network\epoll\epollaccept.h" />
-    <ClInclude Include="..\..\network\epoll\epollsocket.h" />
-    <ClInclude Include="..\..\network\epoll\epoll_common.h" />
-    <ClInclude Include="..\..\network\iocp\iocp.h" />
-    <ClInclude Include="..\..\network\iocp\iocpaccept.h" />
-    <ClInclude Include="..\..\network\iocp\iocpsocket.h" />
-    <ClInclude Include="..\..\network\iocp\iocp_common.h" />
-    <ClInclude Include="..\..\network\networkconfig.h" />
+    <ClInclude Include="..\..\network\acceptor.h" />
+    <ClInclude Include="..\..\network\session.h" />
     <ClInclude Include="..\..\network\sessionmanager.h" />
+    <ClInclude Include="..\..\network\tcpacceptor.h" />
+    <ClInclude Include="..\..\network\tcpclient.h" />
     <ClInclude Include="..\..\network\tcpsession.h" />
-    <ClInclude Include="..\..\network\timer\timer.h" />
+    <ClInclude Include="..\..\network\websocketacceptor.h" />
+    <ClInclude Include="..\..\network\websocketsession.h" />
     <ClInclude Include="..\..\protocol.h" />
+    <ClInclude Include="..\..\qingdao\qingdaonodetingcharge.h" />
+    <ClInclude Include="..\..\qingdao\qingdaonodetingget.h" />
+    <ClInclude Include="..\..\qingdao\qingdaonodetingput.h" />
+    <ClInclude Include="..\..\qingdao\qingdaotaskmaker.h" />
+    <ClInclude Include="..\..\qunchuang\chipmounter\chipmounter.h" />
+    <ClInclude Include="..\..\qunchuang\msg.h" />
     <ClInclude Include="..\..\qunchuang\qunchuangnodethingget.h" />
     <ClInclude Include="..\..\qunchuang\qunchuangnodetingput.h" />
     <ClInclude Include="..\..\qunchuang\qunchuangtaskmaker.h" />
     <ClInclude Include="..\..\qunchuang\qunchuangtcsconnection.h" />
+    <ClInclude Include="..\..\qyhbuffer.h" />
     <ClInclude Include="..\..\qyhtcpclient.h" />
+    <ClInclude Include="..\..\realagv.h" />
     <ClInclude Include="..\..\sqlite3\CppSQLite3.h" />
     <ClInclude Include="..\..\taskmanager.h" />
     <ClInclude Include="..\..\userlogmanager.h" />
     <ClInclude Include="..\..\usermanager.h" />
-    <ClInclude Include="..\..\utils\Log\easylogging.h" />
     <ClInclude Include="..\..\utils\noncopyable.h" />
     <ClInclude Include="..\..\utils\threadpool.h" />
+    <ClInclude Include="..\..\virtualagv.h" />
+    <ClInclude Include="..\..\virtualrosagv.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp" />
     <ClCompile Include="..\..\agvImpl\ros\agv\rosAgv.cpp" />
     <ClCompile Include="..\..\agvmanager.cpp" />
     <ClCompile Include="..\..\base64.cpp" />
+    <ClCompile Include="..\..\bezierarc.cpp" />
     <ClCompile Include="..\..\common.cpp" />
-    <ClCompile Include="..\..\Jacking\jacktaskmaker.cpp" />
+    <ClCompile Include="..\..\device\device.cpp" />
+    <ClCompile Include="..\..\device\elevator\elevator.cpp" />
+    <ClCompile Include="..\..\device\elevator\elevator_protocol.cpp" />
+    <ClCompile Include="..\..\Dongyao\charge\chargemachine.cpp" />
+    <ClCompile Include="..\..\Dongyao\dyforklift.cpp" />
+    <ClCompile Include="..\..\Dongyao\dyforkliftthingfork.cpp" />
+    <ClCompile Include="..\..\Dongyao\dyforkliftthingturn.cpp" />
+    <ClCompile Include="..\..\Dongyao\dyforkliftupdwms.cpp" />
+    <ClCompile Include="..\..\Dongyao\dymappath.cpp" />
+    <ClCompile Include="..\..\Dongyao\dytaskmaker.cpp" />
     <ClCompile Include="..\..\main.cpp" />
     <ClCompile Include="..\..\mapmap\mapbackground.cpp" />
     <ClCompile Include="..\..\mapmap\mapblock.cpp" />
@@ -82,26 +107,34 @@
     <ClCompile Include="..\..\mapmap\mapspirit.cpp" />
     <ClCompile Include="..\..\mapmap\onemap.cpp" />
     <ClCompile Include="..\..\msgprocess.cpp" />
-    <ClCompile Include="..\..\network\common\networkcommon.cpp" />
-    <ClCompile Include="..\..\network\epoll\epoll.cpp" />
-    <ClCompile Include="..\..\network\epoll\epollaccept.cpp" />
-    <ClCompile Include="..\..\network\epoll\epollsocket.cpp" />
-    <ClCompile Include="..\..\network\iocp\iocp.cpp" />
-    <ClCompile Include="..\..\network\iocp\iocpaccept.cpp" />
-    <ClCompile Include="..\..\network\iocp\iocpsocket.cpp" />
+    <ClCompile Include="..\..\network\acceptor.cpp" />
+    <ClCompile Include="..\..\network\session.cpp" />
     <ClCompile Include="..\..\network\sessionmanager.cpp" />
+    <ClCompile Include="..\..\network\tcpacceptor.cpp" />
+    <ClCompile Include="..\..\network\tcpclient.cpp" />
     <ClCompile Include="..\..\network\tcpsession.cpp" />
-    <ClCompile Include="..\..\network\timer\timer.cpp" />
+    <ClCompile Include="..\..\network\websocketacceptor.cpp" />
+    <ClCompile Include="..\..\network\websocketsession.cpp" />
+    <ClCompile Include="..\..\qingdao\qingdaonodetingcharge.cpp" />
+    <ClCompile Include="..\..\qingdao\qingdaonodetingget.cpp" />
+    <ClCompile Include="..\..\qingdao\qingdaonodetingput.cpp" />
+    <ClCompile Include="..\..\qingdao\qingdaotaskmaker.cpp" />
+    <ClCompile Include="..\..\qunchuang\chipmounter\chipmounter.cpp" />
+    <ClCompile Include="..\..\qunchuang\msg.cpp" />
     <ClCompile Include="..\..\qunchuang\qunchuangnodethingget.cpp" />
     <ClCompile Include="..\..\qunchuang\qunchuangnodetingput.cpp" />
     <ClCompile Include="..\..\qunchuang\qunchuangtaskmaker.cpp" />
     <ClCompile Include="..\..\qunchuang\qunchuangtcsconnection.cpp" />
+    <ClCompile Include="..\..\qyhbuffer.cpp" />
     <ClCompile Include="..\..\qyhtcpclient.cpp" />
+    <ClCompile Include="..\..\realagv.cpp" />
     <ClCompile Include="..\..\sqlite3\CppSQLite3.cpp" />
     <ClCompile Include="..\..\taskmaker.cpp" />
     <ClCompile Include="..\..\taskmanager.cpp" />
     <ClCompile Include="..\..\userlogmanager.cpp" />
     <ClCompile Include="..\..\usermanager.cpp" />
+    <ClCompile Include="..\..\virtualagv.cpp" />
+    <ClCompile Include="..\..\virtualrosagv.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\log-conf.conf" />
@@ -111,7 +144,7 @@
     <ProjectGuid>{C1D23BC7-3181-43AA-974E-D98E7626D45D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>AgvDispatch</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -164,8 +197,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\thirdparty\sqlite\include;D:\thirdparty\jsoncpp\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\thirdparty\sqlite\lib\Debug;D:\thirdparty\jsoncpp\lib\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\thirdparty\sqlite\include;D:\thirdparty\jsoncpp\include;D:\thirdparty\boost\src\boost_1_67_0;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\thirdparty\sqlite\lib\Debug;D:\thirdparty\jsoncpp\lib\Debug;D:\thirdparty\boost\install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>

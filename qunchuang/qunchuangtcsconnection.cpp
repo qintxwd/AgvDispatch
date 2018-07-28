@@ -1,5 +1,5 @@
 ﻿#include "qunchuangtcsconnection.h"
-#include "../qyhtcpclient.h"
+#include "../network/tcpclient.h"
 #include "../taskmaker.h"
 #include "../common.h"
 #include <string.h>
@@ -49,10 +49,10 @@ QunChuangTcsConnection::~QunChuangTcsConnection(){
 }
 
 void QunChuangTcsConnection::init() {
-    QyhTcpClient::QyhClientReadCallback onread = std::bind(&QunChuangTcsConnection::onRead, this, std::placeholders::_1, std::placeholders::_2);
-    QyhTcpClient::QyhClientConnectCallback onconnect = std::bind(&QunChuangTcsConnection::onConnect, this);
-    QyhTcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&QunChuangTcsConnection::onDisconnect, this);
-    tcpClient = new QyhTcpClient(ip, port, onread, onconnect, ondisconnect);
+    TcpClient::QyhClientReadCallback onread = std::bind(&QunChuangTcsConnection::onRead, this, std::placeholders::_1, std::placeholders::_2);
+    TcpClient::QyhClientConnectCallback onconnect = std::bind(&QunChuangTcsConnection::onConnect, this);
+    TcpClient::QyhClientDisconnectCallback ondisconnect = std::bind(&QunChuangTcsConnection::onDisconnect, this);
+    tcpClient = new TcpClient(ip, port, onread, onconnect, ondisconnect);
 }
 
 bool QunChuangTcsConnection::send(const char *data,int len)

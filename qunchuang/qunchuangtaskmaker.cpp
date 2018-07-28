@@ -28,7 +28,7 @@ void QunChuangTaskMaker::init()
     tcsConnection->init();
 }
 
-void QunChuangTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void QunChuangTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 {
     //群创不由客户端创建任务
     return ;

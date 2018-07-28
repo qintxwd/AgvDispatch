@@ -7,7 +7,7 @@
 #include "agvtask.h"
 #include "utils/noncopyable.h"
 
-#include "network/tcpsession.h"
+#include "network/session.h"
 
 class TaskManager;
 
@@ -51,13 +51,13 @@ public:
 	std::vector<AgvTaskPtr> getCurrentTasks();
 
     //用户接口
-    void interCreate(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interQueryStatus(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interCancel(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interListUndo(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interListDoing(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interListDoneToday(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
-    void interListDuring(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interCreate(SessionPtr conn, const Json::Value &request);
+    void interQueryStatus(SessionPtr conn, const Json::Value &request);
+    void interCancel(SessionPtr conn, const Json::Value &request);
+    void interListUndo(SessionPtr conn, const Json::Value &request);
+    void interListDoing(SessionPtr conn, const Json::Value &request);
+    void interListDoneToday(SessionPtr conn, const Json::Value &request);
+    void interListDuring(SessionPtr conn, const Json::Value &request);
 protected:
     TaskManager();
 private:

@@ -18,7 +18,7 @@ void QingdaoTaskMaker::init()
 	//nothing to do
 }
 
-void QingdaoTaskMaker::makeTask(qyhnetwork::TcpSessionPtr conn, const Json::Value &request)
+void QingdaoTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 {
 	AgvTaskPtr task(new AgvTask());
 

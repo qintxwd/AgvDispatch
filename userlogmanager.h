@@ -4,7 +4,7 @@
 #include "common.h"
 #include "utils/noncopyable.h"
 #include "protocol.h"
-#include "network/tcpsession.h"
+#include "network/session.h"
 
 class UserLogManager;
 using UserLogManagerPtr = std::shared_ptr<UserLogManager>;
@@ -26,7 +26,7 @@ public:
 
     void push(const std::string &s);
 
-    void interLogDuring(qyhnetwork::TcpSessionPtr conn, const Json::Value &request);
+    void interLogDuring(SessionPtr conn, const Json::Value &request);
 
 private:
     UserLogManager();
