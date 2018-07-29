@@ -2,7 +2,8 @@
 #include "msgprocess.h"
 
 
-UserLogManager::UserLogManager()
+UserLogManager::UserLogManager():
+    logQueue(64)
 {
 
 }
@@ -20,16 +21,15 @@ void UserLogManager::init()
 
     g_threadPool.enqueue([this]{
         while(true){
-			mtx.lock();
-			if (logQueue.empty()) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(20));
-				mtx.unlock();
-				continue;
-			}
-			
-            USER_LOG log = logQueue.front();
-            logQueue.pop();
-            mtx.unlock();
+
+            if (logQueue.empty()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+                continue;
+            }
+
+            USER_LOG log;
+            logQueue.pop(log);
 
             //1.存库
             try{
@@ -39,7 +39,7 @@ void UserLogManager::init()
             }catch(CppSQLite3Exception &e){
                 std::cerr << e.errorCode() << ":" << e.errorMessage();
             }catch(std::exception e){
-				std::cerr << e.what();
+                std::cerr << e.what();
             }
             //2.发布
             MsgProcess::getInstance()->publishOneLog(log);
@@ -50,29 +50,27 @@ void UserLogManager::init()
 void UserLogManager::push(const std::string &s)
 {
     USER_LOG log;
-    log.time = getTimeStrNow();
-    log.msg = s;
-    mtx.lock();
+    snprintf(log.time,LOG_TIME_LENGTH,"%s",getTimeStrNow().c_str());
+    snprintf(log.msg,LOG_MSG_LENGTH,"%s",s.c_str());
     logQueue.push(log);
-    mtx.unlock();
 }
 
 void UserLogManager::interLogDuring(SessionPtr conn,const Json::Value &request)
 {
-	Json::Value response;
-	response["type"] = MSG_TYPE_RESPONSE;
-	response["todo"] = request["todo"];
-	response["queuenumber"] = request["queuenumber"];
-	response["result"] = RETURN_MSG_RESULT_SUCCESS;
-	if (request["startTime"].isNull() ||
-		request["endTime"].isNull()) {
-		response["result"] = RETURN_MSG_RESULT_FAIL;
-		response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
-	}else{
+    Json::Value response;
+    response["type"] = MSG_TYPE_RESPONSE;
+    response["todo"] = request["todo"];
+    response["queuenumber"] = request["queuenumber"];
+    response["result"] = RETURN_MSG_RESULT_SUCCESS;
+    if (request["startTime"].isNull() ||
+            request["endTime"].isNull()) {
+        response["result"] = RETURN_MSG_RESULT_FAIL;
+        response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
+    }else{
         std::string startTime = request["startTime"].asString();
         std::string endTime = request["endTime"].asString();
         push(conn->getUserName()+"query history log，time from"+startTime+" to"+endTime);
-		Json::Value agv_logs;
+        Json::Value agv_logs;
         try{
             std::stringstream ss;
             ss<<"select log_time,log_msg from agv_log where log_time >= \'"<<startTime<<"\' and log_time<=\'"<<endTime<<"\' ;";
@@ -80,30 +78,30 @@ void UserLogManager::interLogDuring(SessionPtr conn,const Json::Value &request)
             if(table.numRows()>0 && table.numFields() == 2 ){
                 for(int i=0;i<table.numRows();++i){
                     table.setRow(i);
-					Json::Value agv_log;
-					agv_log["time"] = std::string(table.fieldValue(0));
-					agv_log["msg"] = std::string(table.fieldValue(1));
-					agv_logs.append(agv_log);
+                    Json::Value agv_log;
+                    agv_log["time"] = std::string(table.fieldValue(0));
+                    agv_log["msg"] = std::string(table.fieldValue(1));
+                    agv_logs.append(agv_log);
                 }
             }
-			response["logs"] = agv_logs;
+            response["logs"] = agv_logs;
         }
-		catch (CppSQLite3Exception e) {
-			response["result"] = RETURN_MSG_RESULT_FAIL;
-			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-			std::stringstream ss;
-			ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
-			response["error_info"] = ss.str();
+        catch (CppSQLite3Exception e) {
+            response["result"] = RETURN_MSG_RESULT_FAIL;
+            response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+            std::stringstream ss;
+            ss << "code:" << e.errorCode() << " msg:" << e.errorMessage();
+            response["error_info"] = ss.str();
             combined_logger->error( "sqlerr code:{0} msg:{1}" , e.errorCode(), e.errorMessage()) ;
-		}
-		catch (std::exception e) {
-			response["result"] = RETURN_MSG_RESULT_FAIL;
-			response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
-			std::stringstream ss;
-			ss << "info:" << e.what();
-			response["error_info"] = ss.str();
+        }
+        catch (std::exception e) {
+            response["result"] = RETURN_MSG_RESULT_FAIL;
+            response["error_code"] = RETURN_MSG_ERROR_CODE_QUERY_SQL_FAIL;
+            std::stringstream ss;
+            ss << "info:" << e.what();
+            response["error_info"] = ss.str();
             combined_logger->error("sqlerr code:{0}" ,e.what()) ;
-		}
+        }
     }
 
     conn->send(response);

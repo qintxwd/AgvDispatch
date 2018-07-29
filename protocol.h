@@ -40,6 +40,9 @@
 
 #define SQL_MAX_LENGTH                  (2048)
 
+#define LOG_TIME_LENGTH          (32)
+#define LOG_MSG_LENGTH          (1024)
+
 //result位的定义
 enum
 {
@@ -208,7 +211,7 @@ enum{
 
 //用户日志，显示给用户的日志。
 typedef struct _USER_Log {
-    std::string time;//yyyy-MM-dd hh:mm:ss.fff
-    std::string msg;//日志内容
+    char time[LOG_TIME_LENGTH];
+    char msg[LOG_MSG_LENGTH];
 }USER_LOG;
 

@@ -1,6 +1,7 @@
 ﻿#ifndef USERLOGMANAGER_H
 #define USERLOGMANAGER_H
 
+#include <boost/lockfree/queue.hpp>
 #include "common.h"
 #include "utils/noncopyable.h"
 #include "protocol.h"
@@ -33,8 +34,7 @@ private:
 
     void checkTable();
 
-    std::mutex mtx;
-    std::queue<USER_LOG> logQueue;
+    boost::lockfree::queue<USER_LOG> logQueue;
 };
 
 #endif // USERLOGMANAGER_H

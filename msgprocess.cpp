@@ -6,6 +6,7 @@
 #include "agvmanager.h"
 #include "userlogmanager.h"
 #include "taskmanager.h"
+#include "common.h"
 
 MsgProcess::MsgProcess()
 {
@@ -351,6 +352,9 @@ void MsgProcess::processOneMsg(const Json::Value &request, SessionPtr session)
     //request需要copy一个到线程中。
     g_threadPool.enqueue([&, request,session] {
 
+        TimeUsed t;
+        t.start();
+
         combined_logger->info("RECV! session id={0}  len= {1}  json=\n{2}", session->getSessionID(), request.toStyledString().length(), request.toStyledString());
 
         //处理消息，如果有返回值，发送返回值
@@ -419,6 +423,9 @@ void MsgProcess::processOneMsg(const Json::Value &request, SessionPtr session)
         { MSG_TODO_TRAFFIC_RELEASE_LINE,std::bind(&MapManager::interTrafficReleaseLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
     };
         table[request["todo"].asInt()].f(session, request);
+
+        t.end();
+        combined_logger->debug("msg process time used:{0} ms",t.getUsed()*1000.0);
     });
 }
 

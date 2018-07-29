@@ -202,7 +202,7 @@ void TcpSession::packageProcess()
                     if (reader.parse(sss, root))
                     {
                         if (!root["type"].isNull() && !root["queuenumber"].isNull() && !root["todo"].isNull()) {
-                            combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,sss);
+                            //combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,sss);
                             MsgProcess::getInstance()->processOneMsg(root, shared_from_this());
                         }
                     }

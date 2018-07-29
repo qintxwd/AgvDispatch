@@ -81,6 +81,27 @@ public:
     std::string msg;
     int waitTime;
 };
+
+class TimeUsed{
+public:
+    void start()
+    {
+        s = std::chrono::steady_clock::now();
+    }
+    void end()
+    {
+        e = std::chrono::steady_clock::now();
+    }
+    double getUsed()
+    {
+        std::chrono::duration<double> time_used = std::chrono::duration_cast<std::chrono::duration<double>>(e - s);
+        return time_used.count();
+    }
+private:
+    std::chrono::steady_clock::time_point s;
+    std::chrono::steady_clock::time_point e;
+};
+
 extern ThreadPool g_threadPool;
 extern CppSQLite3DB g_db;
 
