@@ -2,7 +2,7 @@
 #define ATTASKMAKER_H
 
 #include "../taskmaker.h"
-
+#include "station_pos.h"
 class TcpClient;
 
 class AtTaskMaker : public TaskMaker
@@ -20,11 +20,13 @@ private:
     void onConnect();
     void onDisconnect();
     void receiveTask(std::string str_task);
+    void init_station_pos();
 
     TcpClient *m_wms_tcpClient;
     std::string m_ip;
     int m_port;
     bool m_connectState;
+    std::map< std::pair<int,int>, StationPos > m_station_pos;
 
 };
 

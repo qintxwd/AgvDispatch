@@ -12,9 +12,10 @@
 #include "qunchuang/chipmounter/chipmounter.h"
 #include "device/elevator/elevator.h"
 
-#include "network/tcpclient.h"
+#include "Dongyao/dyforklift.h"
+#include "Dongyao/dytaskmaker.h"
 
-//#define DY_TEST
+#define DY_TEST
 void initLog()
 {
     //日志文件
@@ -197,30 +198,32 @@ int main(int argc, char *argv[])
     //7.初始化日志发布
     UserLogManager::getInstance()->init();
 
-    //testAGV();//test ROS AGV, this only for test
+    // test ros agv
+    //rosAgvPtr agv(new rosAgv(1,"robot_0","127.0.0.1",7070));
+    //agv->init();
 
     //8.初始化任务生成
     TaskMaker::getInstance()->init();
 
+
     //8.初始化tcp/ip 接口
+
+
+    //tcpip服务
     auto aID = SessionManager::getInstance()->addTcpAccepter(9999);
     SessionManager::getInstance()->openTcpAccepter(aID);
-
-    //9.初始化websocket接口
-    aID = SessionManager::getInstance()->addWebSocketAccepter(9998);
-    SessionManager::getInstance()->openWebSocketAccepter(aID);
 #ifdef DY_TEST
-    aID = SessionManager::getInstance()->addAccepter(6789);
-    SessionManager::getInstance()->openAccepter(aID);
+    aID = SessionManager::getInstance()->addTcpAccepter(6789);
+    SessionManager::getInstance()->openTcpAccepter(aID);
+    AgvManager::getInstance()->setServerAccepterID(aID);
 #endif
     combined_logger->info("server init OK!");
 
-    while (true) {
+    while(true){
         sleep(1);
     }
 
     spdlog::drop_all();
-
 
     return 0;
 }

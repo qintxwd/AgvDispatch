@@ -3,12 +3,11 @@
 #include "../common.h"
 #include "../msgprocess.h"
 #include "sessionmanager.h"
-
-#ifdef WIN32
-#include <json/json.h>
-#else
-#include <jsoncpp/json/json.h>
-#endif
+#include "agvmanager.h"
+#include "../Dongyao/dyforklift.h"
+#include "../Anting/atforklift.h"
+using std::min;
+using std::max;
 
 TcpSession::TcpSession(tcp::socket socket, int sessionId):
     Session(sessionId),
@@ -102,15 +101,81 @@ void TcpSession::start()
                 combined_logger->info("session error!session id:{0},error:{1}",getSessionID(),error.message());
                 break;
             }
-            packageProcess(read_buffer,length);
+            buffer.append(read_buffer,length);
+
+            if(_acceptID !=  AgvManager::getInstance()->getServerAccepterID())
+            {
+                packageProcess();
+            }else{
+                int returnValue;
+                do
+                {
+                    returnValue = ProtocolProcess();
+                }while(buffer.size() >12 && (returnValue == 0||returnValue == 2||returnValue == 1 ));
+            }
+
         }
         SessionManager::getInstance()->removeSession(shared_from_this());
     }).detach();
 }
 
-void TcpSession::packageProcess(const char *data,int len)
+int TcpSession::ProtocolProcess()
 {
-    buffer.append(data,len);
+    int StartIndex,EndIndex;
+    std::string FrameData;
+    int start_byteFlag = buffer.find('*');
+    int end_byteFlag = buffer.find('#');
+    if((start_byteFlag ==-1)&&(end_byteFlag ==-1))
+    {
+        buffer.clear();
+        return 5;
+    }
+    else if((start_byteFlag == -1)&&(end_byteFlag != -1))
+    {
+        buffer.clear();
+        return 6;
+    }
+    else if((start_byteFlag != -1)&&(end_byteFlag == -1))
+    {
+        buffer.removeFront(start_byteFlag);
+        return 7;
+    }
+    StartIndex = buffer.find('*')+1;
+    EndIndex = buffer.find('#');
+    if(EndIndex>StartIndex)
+    {
+        FrameData = buffer.substr(StartIndex,EndIndex-StartIndex);
+        if(FrameData.find('*') != std::string::npos)
+            FrameData = FrameData.substr(FrameData.find_last_of('*')+1);
+        buffer.removeFront(buffer.find('#')+1);
+    }
+    else
+    {
+        //remove unuse message
+        buffer.removeFront(buffer.find('*'));
+        return 2;
+    }
+    unsigned int FrameLength = std::stoi(FrameData.substr(6,4));
+    if(FrameLength == FrameData.length())
+    {
+        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
+        {
+            std::static_pointer_cast<AtForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
+        }
+        else
+        {
+            std::static_pointer_cast<DyForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
+        }
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+void TcpSession::packageProcess()
+{
     if(buffer.size()<=json_len){
         return ;
     }

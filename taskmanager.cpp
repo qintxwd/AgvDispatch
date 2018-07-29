@@ -373,6 +373,7 @@ int TaskManager::cancelTask(int taskId)
         for (auto t : doingTask) {
             if (t->getId() == taskId) {
                 task = t;
+                //TODO 释放占有的路径等
                 doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
                 alreadyCancel = true;
                 break;

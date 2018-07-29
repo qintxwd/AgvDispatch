@@ -61,7 +61,6 @@ bool MapManager::load()
         mapModifying = false;
         return false;
     }
-
     mapModifying = false;
     return true;
 }
@@ -104,12 +103,15 @@ void MapManager::occuStation(int station, AgvPtr occuAgv)
 //线路的反向占用//这辆车行驶方向和线路方向相反
 void MapManager::addOccuLine(int line, AgvPtr occuAgv)
 {
-    line_occuagvs[line].push_back(occuAgv->getId());
+    if(std::find(line_occuagvs[line].begin(), line_occuagvs[line].end(), occuAgv->getId()) == line_occuagvs[line].end())
+    {    line_occuagvs[line].push_back(occuAgv->getId());
+    }
     combined_logger->info("occupy line:{0} agv:{1}", line, occuAgv->getId());
 
     if (m_reverseLines[line] != 0) {
         int reverseLine = m_reverseLines[line];
-        line_occuagvs[reverseLine].push_back(occuAgv->getId());
+        if(std::find(line_occuagvs[reverseLine].begin(), line_occuagvs[reverseLine].end(), occuAgv->getId()) == line_occuagvs[reverseLine].end())
+            line_occuagvs[reverseLine].push_back(occuAgv->getId());
         combined_logger->info("occupy reverseline:{0} agv:{1}", reverseLine, occuAgv->getId());
     }
 
@@ -579,8 +581,6 @@ std::vector<int> MapManager::getBestPathDy(int agv, int lastStation, int startSt
     {
         chd_station.push(endStation);
         std::vector<int> exec_path;
-        exec_path.clear();
-        std::vector<int> ().swap(exec_path);
         distance = 0;
         do
         {
@@ -674,7 +674,6 @@ bool MapManager::pathPassable(MapPath *line, int agvId) {
 
     return true;
 }
-
 void MapManager::init_task_splitinfo()
 {
     try {
@@ -684,7 +683,7 @@ void MapManager::init_task_splitinfo()
         CppSQLite3Table table_tasksplit = g_db.getTable("select from_block, to_block, chdir_station from agv_task_split;");
         if (table_tasksplit.numRows() > 0 && table_tasksplit.numFields() != 3)
         {
-            combined_logger->error("DyTaskMaker loadFromDb agv_task_split error!");
+            combined_logger->error("loadFromDb agv_task_split error!");
             return;
         }
         for (int row = 0; row < table_tasksplit.numRows(); row++)
@@ -820,7 +819,8 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
     }
     else {
         for (auto line : paths) {
-            if (line->getStart() == startStation && line->getEnd() != lastStation) {
+            if (line->getStart() == startStation) {
+                //            if (line->getStart() == startStation && line->getEnd() != lastStation) {
                 if (pathPassable(line, agv)) {
                     if (lineDistanceColors[line->getId()].color == AGV_LINE_COLOR_BLACK)continue;
                     lineDistanceColors[line->getId()].distance = line->getLength();

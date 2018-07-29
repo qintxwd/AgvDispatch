@@ -152,14 +152,14 @@ void VirtualRosAgv::goStation(int station, bool stop)
     double path_length = 0;
     if(path->getPathType() == MapPath::Map_Path_Type_Line){
         path_length = sqrt((endPoint->getY()-startPoint->getY())*(endPoint->getY()-startPoint->getY())+(endPoint->getX()-startPoint->getX())*(endPoint->getX()-startPoint->getX()));
-		double minDistance = DBL_MAX;
-		for (double tt = 0.0; tt <= 1.0; tt += 0.01) {
-			double distance = getDistance(PointF(startPoint->getX()+(endPoint->getX()-startPoint->getX())*tt,startPoint->getY()+(endPoint->getY()-startPoint->getY())*tt), PointF(x, y));
-			if (distance<minDistance) {
-				minDistance = distance;
-				currentT = tt;
-			}
-		}
+        double minDistance = DBL_MAX;
+        for (double tt = 0.0; tt <= 1.0; tt += 0.01) {
+            double distance = getDistance(PointF(startPoint->getX()+(endPoint->getX()-startPoint->getX())*tt,startPoint->getY()+(endPoint->getY()-startPoint->getY())*tt), PointF(x, y));
+            if (distance<minDistance) {
+                minDistance = distance;
+                currentT = tt;
+            }
+        }
     }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
         path_length = BezierArc::BezierArcLength(a,b,d);
         //获取当前位置在曲线上的位置
@@ -191,36 +191,32 @@ void VirtualRosAgv::goStation(int station, bool stop)
     bool firstMove = true;
     while(true){
         if(isStop)break;
-        double asbSpeed = abs(path->getSpeed());
-        if(asbSpeed==0 || asbSpeed>1.0)asbSpeed = 1.0;
-        double negative = path->getSpeed()>0?0:-1*180;
         //1.向目标前进100ms的距离 假设每次前进10 //3.重新计算当前位置
         if(path->getPathType() == MapPath::Map_Path_Type_Line){
-            currentT += asbSpeed * 10.0 / path_length;
+            currentT += 10.0 / path_length;
             //前移10
             x = startPoint->getX()+(endPoint->getX()-startPoint->getX()) * currentT;
             y = startPoint->getY() + (endPoint->getY() - startPoint->getY()) * currentT;
-            theta = negative + atan2(endPoint->getY()-startPoint->getY(),endPoint->getX()-startPoint->getX())*180/M_PI;
+            theta = atan2(endPoint->getY()-y,endPoint->getX()-x)*180/M_PI;
         }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
             //前移10
-            currentT += asbSpeed * 10.0/path_length;
+            currentT += 10.0/path_length;
             if(currentT<0)currentT = 0.;
             if(currentT>1)currentT = 1.;
             BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,d,currentT);
             x = pp.pos.x();
             y = pp.pos.y();
-            theta = negative + pp.angle;
+            theta = pp.angle;
         }else if(path->getPathType() == MapPath::Map_Path_Type_Cubic_Bezier){
             //前移10
-            currentT += asbSpeed * 10.0/path_length;
+            currentT += 10.0/path_length;
             if(currentT<0)currentT = 0.;
             if(currentT>1)currentT = 1.;
             BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,d,currentT);
             x = pp.pos.x();
             y = pp.pos.y();
-            theta = negative + pp.angle;
+            theta = pp.angle;
         }
-        //combined_logger->info("theta = {0}",theta);
         //2.初次移动，调用离开上一站
         if(firstMove){
             if(nowStation>0){
@@ -249,4 +245,11 @@ void VirtualRosAgv::callMapChange(int station)
 {
     //模拟电梯运行，这里只做等待即可
     Sleep(15000);
+}
+void VirtualRosAgv::onTaskStart(AgvTaskPtr _task)
+{
+    if(_task != nullptr)
+    {
+        status = Agv::AGV_STATUS_TASKING;
+    }
 }

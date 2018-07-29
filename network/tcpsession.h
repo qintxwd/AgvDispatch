@@ -27,7 +27,8 @@ public:
     inline void setAGVPtr(AgvPtr agv){_agvPtr = agv;}
     inline AgvPtr getAgvPtr(){return _agvPtr;}
 private:
-    void packageProcess(const char *data,int len);
+    void packageProcess();
+    int ProtocolProcess();
     tcp::socket socket_;
     QyhBuffer buffer;
     char read_buffer[MSG_READ_BUFFER_LENGTH];

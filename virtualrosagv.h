@@ -28,6 +28,7 @@ public:
 
     virtual void callMapChange(int station);
 
+    virtual void onTaskStart(AgvTaskPtr _task);
 private:
     bool isStop;
     int lastStationOdometer;

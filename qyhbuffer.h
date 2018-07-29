@@ -21,6 +21,8 @@ public:
 
     int find(char key,int start = 0);
 
+    std::string substr(int start = 0,int len = -1);
+
     //如果不够一个int，返回一个-1
     int getInt32(int start = 0) const;
 

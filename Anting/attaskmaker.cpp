@@ -6,14 +6,46 @@
 #include "atforklift.h"
 #include "../userlogmanager.h"
 #include "../agvtask.h"
-#include "../network/tcpclient.h"
+#include "network/tcpclient.h"
 
+#define USETABLE
 AtTaskMaker::AtTaskMaker(std::string _ip, int _port):
     m_ip(_ip),
     m_port(_port),
     m_connectState(false)
 {
+    init_station_pos();
+}
 
+void AtTaskMaker::init_station_pos()
+{
+    try {
+        if (!g_db.tableExists("agv_station_pos")) {
+            g_db.execDML("CREATE TABLE agv_station_pos (id	INTEGER, posLevel INTEGER,pickPos1	INTEGER, pickPos2 INTEGER, putPos1	INTEGER, putPos2	INTEGER, PRIMARY KEY(id,posLevel))");
+        }
+        CppSQLite3Table table_station_pos = g_db.getTable("select id, posLevel, pickPos1, pickPos2, putPos1, putPos2 from agv_station_pos;");
+        if (table_station_pos.numRows() > 0 && table_station_pos.numFields() != 6)
+        {
+            combined_logger->error("loadFromDb agv_station_pos error!");
+            return;
+        }
+        for (int row = 0; row < table_station_pos.numRows(); row++)
+        {
+            table_station_pos.setRow(row);
+            int id = atoi(table_station_pos.fieldValue(0));
+            int level = atoi(table_station_pos.fieldValue(1));
+            StationPos pos(id, level ,atoi(table_station_pos.fieldValue(2)),atoi(table_station_pos.fieldValue(3)),atoi(table_station_pos.fieldValue(4)),atoi(table_station_pos.fieldValue(5)));
+            m_station_pos[std::make_pair(id, level)] = pos;
+        }
+    }
+    catch (CppSQLite3Exception &e) {
+        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
+        return;
+    }
+    catch (std::exception e) {
+        combined_logger->error("{0}",e.what());
+        return;
+    }
 }
 
 void AtTaskMaker::init()
@@ -48,7 +80,7 @@ void AtTaskMaker::onDisconnect()
     combined_logger->info("wms_disconnected. ip:{0} port:{1}", m_ip, m_port);
 }
 
-
+#ifndef USETABLE
 void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 {
     AgvTaskPtr task(new AgvTask());
@@ -174,7 +206,125 @@ void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
     response["queuenumber"] = request["queuenumber"];
     response["result"] = RETURN_MSG_RESULT_SUCCESS;
 }
+#else
+void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
+{
+    AgvTaskPtr task(new AgvTask());
 
+    //1.指定车辆
+    int agvId = request["agv"].asInt();
+    task->setAgv(agvId);
+
+    //2.优先级
+    int priority = request["priority"].asInt();
+    task->setPriority(priority);
+
+    //3.额外的参数
+    if (!request["extra_params"].isNull()) {
+        Json::Value extra_params = request["extra_params"];
+        Json::Value::Members mem = extra_params.getMemberNames();
+        for (auto iter = mem.begin(); iter != mem.end(); iter++)
+        {
+            task->setExtraParam(*iter, extra_params[*iter].asString());
+        }
+    }
+    else
+    {
+        task->setExtraParam("runTimes", "1");
+    }
+
+    std::string task_describe;
+    //4.节点
+    if (!request["nodes"].isNull()) {
+        Json::Value nodes = request["nodes"];
+        for (int i = 0; i < nodes.size(); ++i) {
+            Json::Value one_node = nodes[i];
+            int station = one_node["station"].asInt();
+            int doWhat = one_node["dowhat"].asInt();
+            std::string node_params_str;
+            int level = 1;
+            level = stringToInt(one_node["params"].asString());
+            if(level == 0 || level == -1) level = 1;
+            MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
+            if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
+            MapPoint *point = static_cast<MapPoint *>(spirit);
+
+            task_describe.append(point->getName());
+            //根据客户端的代码，
+            //dowhat列表为
+            // 0 --> pick
+            // 1 --> put
+            // 2 --> charge
+            AgvTaskNodePtr node_node(new AgvTaskNode());
+            node_node->setStation(station);
+            std::vector<AgvTaskNodeDoThingPtr> doThings;
+
+            if (doWhat == 0) {
+
+                task_describe.append("[↑] ");
+                //liftup
+                std::vector<std::string> _paramsfork;
+                _paramsfork.push_back("11");
+                StationPos pos = m_station_pos[std::make_pair(station, level)];
+                _paramsfork.push_back(intToString(pos.m_pickPos1));
+                _paramsfork.push_back(intToString(pos.m_pickPos2));
+                node_params_str.append(intToString(pos.m_pickPos1)).append(";").append(intToString(pos.m_pickPos2));
+                node_node->setParams(node_params_str);
+
+                doThings.push_back(AgvTaskNodeDoThingPtr(new AtForkliftThingFork(_paramsfork)));
+
+                node_node->setTaskType(TASK_PICK);
+                node_node->setDoThings(doThings);
+            }else if (doWhat == 1) {
+
+                task_describe.append("[↓] ");
+
+                //setdown
+                std::vector<std::string> _paramsfork;
+                _paramsfork.push_back("00");
+
+                StationPos pos = m_station_pos[std::make_pair(station, level)];
+                _paramsfork.push_back(intToString(pos.m_putPos1));
+                _paramsfork.push_back(intToString(pos.m_putPos2));
+                node_params_str.append(intToString(pos.m_putPos1)).append(";").append(intToString(pos.m_putPos2));
+                node_node->setParams(node_params_str);
+                doThings.push_back(AgvTaskNodeDoThingPtr(new AtForkliftThingFork(_paramsfork)));
+                node_node->setTaskType(TASK_PUT);
+                node_node->setDoThings(doThings);
+
+            }else if (doWhat == 2) {
+                //                AgvTaskNodeDoThingPtr chargeThing(new QingdaoNodeTingCharge(node_params));
+                //                node_node->push_backDoThing(chargeThing);
+            }
+            else if(doWhat == 3)
+            {
+                task_describe.append("[--] ");
+
+                //DONOTHING,JUST MOVE
+                node_node->setTaskType(TASK_MOVE);
+            }
+            task->push_backNode(node_node);
+        }
+    }
+
+    //5.产生时间
+    task->setProduceTime(getTimeStrNow());
+    task->setDescribe(task_describe);
+
+    combined_logger->info(" getInstance()->addTask ");
+
+    TaskManager::getInstance()->addTask(task);
+
+    combined_logger->info("makeTask");
+
+    //TODO:创建任务//TODO:回头再改
+    Json::Value response;
+    response["type"] = MSG_TYPE_RESPONSE;
+    response["todo"] = request["todo"];
+    response["queuenumber"] = request["queuenumber"];
+    response["result"] = RETURN_MSG_RESULT_SUCCESS;
+}
+#endif
 
 
 void AtTaskMaker::finishTask(std::string store_no, std::string storage_no, int type, std::string key_part_no, int agv_id)

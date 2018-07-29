@@ -52,6 +52,19 @@ int QyhBuffer::find(char key,int start)
     return ret;
 }
 
+std::string QyhBuffer::substr(int start, int len)
+{
+    std::string ret;
+    if(start<size()){
+        if(len<0){
+            ret = std::string(data(start));
+        }else{
+            ret = std::string(data(start),len);
+        }
+    }
+    return ret;
+}
+
 int QyhBuffer::getInt32(int start) const
 {
     int ret;
@@ -60,7 +73,7 @@ int QyhBuffer::getInt32(int start) const
     memcpy(&ret,&buf[start],sizeof(int32_t));
     return ret;
 
-//    return *((int32_t*) &buf[start]);
+    //    return *((int32_t*) &buf[start]);
 }
 
 const char *QyhBuffer::data(int start) const

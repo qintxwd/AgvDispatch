@@ -246,7 +246,7 @@ void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, 
 
 double func_dis(int x1, int y1, int x2, int y2)
 {
-    return sqrt(pow(x1-x2,2)+pow(y1-y2,2));
+    return sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 }
 
 char *transToFullMsg(const char *data)

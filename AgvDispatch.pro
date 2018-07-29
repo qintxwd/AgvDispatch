@@ -136,7 +136,7 @@ HEADERS += \
     network/tcpsession.h \
     Anting/atforklift.h \
     Anting/atforkliftthingfork.h \
-    Anting/attaskmaker.h
+    Anting/station_pos.h
 
 SOURCES += \
     agv.cpp \

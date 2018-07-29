@@ -87,9 +87,10 @@ extern CppSQLite3DB g_db;
 #ifndef _WIN32
 void memcpy_s(void *__restrict __dest, size_t __m,const void *__restrict __src, size_t __n);
 #include<unistd.h>
-#define Sleep(value) usleep(value * 1000);
+#define Sleep(value) usleep(value * 1000)
 #else
-#define sleep(value) Sleep(value * 1000);
+#define sleep(value) Sleep(value * 1000)
+#define usleep(value) Sleep(value/1000)
 #endif
 
 //考虑到有些项目可能是多种车一起调度，那么根据项目来区分不同的taskmaker
