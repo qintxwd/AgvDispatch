@@ -20,7 +20,7 @@ void UserLogManager::init()
     checkTable();
 
     g_threadPool.enqueue([this]{
-        while(true){
+        while(!g_quit){
 
             if (logQueue.empty()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));

@@ -32,7 +32,7 @@ void initLog()
         sinks.push_back(color_sink);
 
         //日志文件
-        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt> ("agv_dispatch.log",  1024*1024*20, 5);
+        auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("agv_dispatch.log", 1024 * 1024 * 20, 5);
         sinks.push_back(rotating);
 
         combined_logger = std::make_shared<spdlog::logger>("main", begin(sinks), end(sinks));
@@ -67,12 +67,12 @@ void testAGV()
     g_threadPool.enqueue([&] {
         // test ros agv
         //rosAgvPtr agv(new rosAgv(1,"robot_0","192.168.8.206",7070));
-        rosAgvPtr agv(new rosAgv(1,"robot_0","192.168.8.211",7070));
+        rosAgvPtr agv(new rosAgv(1, "robot_0", "192.168.8.211", 7070));
 
         std::cout << "AGV init...." << std::endl;
 
         agv->init();
-        chipmounter *chip = new chipmounter(1,"chipmounter","10.63.39.190",1000);
+        chipmounter *chip = new chipmounter(1, "chipmounter", "10.63.39.190", 1000);
         //chipmounter *chip = new chipmounter(1,"chipmounter","192.168.8.101",1024);
         chip->init();
         agv->setChipMounter(chip);
@@ -80,18 +80,18 @@ void testAGV()
         sleep(20);
 
         chipinfo info;
-        while(chip != nullptr)
+        while (chip != nullptr)
         {
-            if(!chip->isConnected())
+            if (!chip->isConnected())
             {
                 //chip->init();
                 //std::cout << "chipmounter disconnected, need reconnect...."<< std::endl;
             }
 
-            if(chip->getAction(&info))
+            if (chip->getAction(&info))
             {
-                std::cout << "new task ...." << "action: " <<info.action<< "point: " <<info.point<< std::endl;
-                if(agv->isAGVInit())
+                std::cout << "new task ...." << "action: " << info.action << "point: " << info.point << std::endl;
+                if (agv->isAGVInit())
                 {
                     chip->deleteHeadAction();
                     agv->startTask(info.point, info.action);
@@ -153,35 +153,51 @@ void testAGV()
     });
 }*/
 
+
+
+
+void quit(int sig)
+{
+    g_quit = true;
+}
+
+
+
+
+
+
 int main(int argc, char *argv[])
 {
-    std::cout<<"start server ..."<<std::endl;
+    signal(SIGINT, quit);
+
+    std::cout << "start server ..." << std::endl;
 
     //0.日志输出
     initLog();
 
     //1.打开数据库
-    try{
+    try {
         g_db.open(DB_File);
-    }catch(CppSQLite3Exception &e){
-        combined_logger->error("{0}:{1};",e.errorCode(),e.errorMessage());
+    }
+    catch (CppSQLite3Exception &e) {
+        combined_logger->error("sqlite error {0}:{1};", e.errorCode(), e.errorMessage());
         return -1;
     }
 
     //2.载入地图
-    if(!MapManager::getInstance()->load()){
+    if (!MapManager::getInstance()->load()) {
         combined_logger->error("map manager load fail");
         return -2;
     }
 
     //3.初始化车辆及其链接
-    if(!AgvManager::getInstance()->init()){
+    if (!AgvManager::getInstance()->init()) {
         combined_logger->error("AgvManager init fail");
         return -3;
     }
 
     //4.初始化任务管理
-    if(!TaskManager::getInstance()->init()){
+    if (!TaskManager::getInstance()->init()) {
         combined_logger->error("TaskManager init fail");
         return -4;
     }
@@ -190,7 +206,7 @@ int main(int argc, char *argv[])
     UserManager::getInstance()->init();
 
     //6.初始化消息处理
-    if(!MsgProcess::getInstance()->init()){
+    if (!MsgProcess::getInstance()->init()) {
         combined_logger->error("MsgProcess init fail");
         return -5;
     }
@@ -212,6 +228,8 @@ int main(int argc, char *argv[])
     //tcpip服务
     auto aID = SessionManager::getInstance()->addTcpAccepter(9999);
     SessionManager::getInstance()->openTcpAccepter(aID);
+    aID = SessionManager::getInstance()->addWebSocketAccepter(9998);
+    SessionManager::getInstance()->openWebSocketAccepter(aID);
 #ifdef DY_TEST
     aID = SessionManager::getInstance()->addTcpAccepter(6789);
     SessionManager::getInstance()->openTcpAccepter(aID);
@@ -219,7 +237,7 @@ int main(int argc, char *argv[])
 #endif
     combined_logger->info("server init OK!");
 
-    while(true){
+    while (!g_quit) {
         sleep(1);
     }
 

@@ -22,7 +22,7 @@ void WebSocketSession::read()
     {
         ws.accept();
 
-        MsgProcess::getInstance()->addSubTask(getSessionID());
+        //MsgProcess::getInstance()->addSubTask(getSessionID());
 
         while(ws.is_open())
         {
@@ -31,14 +31,13 @@ void WebSocketSession::read()
             ws.read(buffer);
 
             std::string ss = boost::beast::buffers_to_string(buffer.data());
-            combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}", this->_sessionID, ss.length(), ss);
             Json::Reader reader(Json::Features::strictMode());
             Json::Value root;
             if (reader.parse(ss, root))
             {
                 if (!root["type"].isNull() && !root["queuenumber"].isNull() && !root["todo"].isNull())
                 {
-                    //combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,ss.length(),ss);
+                    combined_logger->info("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,ss.length(),ss);
                     MsgProcess::getInstance()->processOneMsg(root, shared_from_this());
                 }
             }
@@ -67,7 +66,9 @@ void WebSocketSession::start()
 void WebSocketSession::send(const Json::Value &json)
 {
     boost::system::error_code err;
-    ws.write(boost::asio::buffer(json.toStyledString().c_str(),json.toStyledString().length()),err);
+	std::string sss = json.toStyledString();
+	combined_logger->info("SEND! session id={0}  len= {1} json={2}", this->_sessionID, sss.length(), sss.length());
+    ws.write(boost::asio::buffer(sss.c_str(), sss.length()),err);
 }
 
 bool WebSocketSession::doSend(const char *data,int len)

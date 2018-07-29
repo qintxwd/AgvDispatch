@@ -6,7 +6,7 @@
 #include "atforklift.h"
 #include "../userlogmanager.h"
 #include "../agvtask.h"
-#include "network/tcpclient.h"
+#include "../network/tcpclient.h"
 
 #define USETABLE
 AtTaskMaker::AtTaskMaker(std::string _ip, int _port):
@@ -39,11 +39,11 @@ void AtTaskMaker::init_station_pos()
         }
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
+        combined_logger->error("sqlite error{0}:{1}",e.errorCode(),e.errorMessage());
         return;
     }
     catch (std::exception e) {
-        combined_logger->error("{0}",e.what());
+        combined_logger->error("sqlite error{0}",e.what());
         return;
     }
 }

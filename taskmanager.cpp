@@ -32,11 +32,11 @@ void TaskManager::checkTable()
         }
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
+        combined_logger->error("sqlite error {0}:{1}", e.errorCode(), e.errorMessage());
         return;
     }
     catch (std::exception e) {
-        combined_logger->error("{0}", e.what());
+        combined_logger->error("sqlite error {0}", e.what());
         return;
     }
 }
@@ -60,15 +60,15 @@ bool TaskManager::init()
         thing_id = g_db.execScalar("select max(id) from agv_task_node_thing;");
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
+        combined_logger->error("sqlite error {0}:{1}", e.errorCode(), e.errorMessage());
     }
     catch (std::exception e) {
-        combined_logger->error("{0}", e.what());
+        combined_logger->error("sqlite error {0}", e.what());
     }
 
     //启动一个分配任务的线程
     g_threadPool.enqueue([&] {
-        while (true) {
+        while (!g_quit) {
             toDisMtx.lock();
 
             /*if(toDistributeTasks.size() > 0)
@@ -337,11 +337,11 @@ bool TaskManager::saveTask(AgvTaskPtr task)
         g_db.execDML("commit transaction;");
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}", e.errorCode(), e.errorMessage());
+        combined_logger->error("sqlite error {0}:{1}", e.errorCode(), e.errorMessage());
         return false;
     }
     catch (std::exception e) {
-        combined_logger->error("{0}", e.what());
+        combined_logger->error("sqlite error {0}", e.what());
         return false;
     }
     return true;

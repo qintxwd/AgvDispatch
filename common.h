@@ -124,6 +124,6 @@ enum{
 };
 
 extern const int GLOBAL_AGV_PROJECT;
-
+extern std::atomic<bool> g_quit;
 
 #endif // COMMON_H

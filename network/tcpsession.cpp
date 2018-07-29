@@ -3,7 +3,7 @@
 #include "../common.h"
 #include "../msgprocess.h"
 #include "sessionmanager.h"
-#include "agvmanager.h"
+#include "../agvmanager.h"
 #include "../Dongyao/dyforklift.h"
 #include "../Anting/atforklift.h"
 using std::min;
@@ -35,7 +35,7 @@ void TcpSession::send(const Json::Value &json)
     memcpy_s(send_buffer + 1, length+5, (char *)&length, sizeof(length));
     memcpy_s(send_buffer +5, length + 1, msg.c_str(),msg.length());
 
-    int per_send_length = 1300;
+    int per_send_length = MSG_READ_BUFFER_LENGTH;
 
     if(length+5<per_send_length){
         //if(length+5 !=  boost::asio::write(socket_, boost::asio::buffer(data, len)));
@@ -202,7 +202,7 @@ void TcpSession::packageProcess()
                     if (reader.parse(sss, root))
                     {
                         if (!root["type"].isNull() && !root["queuenumber"].isNull() && !root["todo"].isNull()) {
-                            //combined_logger->trace("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,sss);
+                            combined_logger->info("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,sss);
                             MsgProcess::getInstance()->processOneMsg(root, shared_from_this());
                         }
                     }

@@ -258,3 +258,4 @@ char *transToFullMsg(const char *data)
     return full_msg;
 }
 
+std::atomic<bool> g_quit = false;

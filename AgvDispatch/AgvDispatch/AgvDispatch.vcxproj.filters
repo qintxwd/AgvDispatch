@@ -36,9 +36,6 @@
     <ClInclude Include="..\..\protocol.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\qyhtcpclient.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\taskmanager.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -201,6 +198,9 @@
     <ClInclude Include="..\..\Anting\attaskmaker.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Anting\station_pos.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\agv.cpp">
@@ -216,9 +216,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\msgprocess.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\qyhtcpclient.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\taskmanager.cpp">

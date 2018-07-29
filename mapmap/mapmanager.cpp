@@ -707,11 +707,11 @@ void MapManager::init_task_splitinfo()
         //            std::cout<<iter->first.first<<","<<iter->first.second<<' '<<iter->second.front()<<std::endl;
     }
     catch (CppSQLite3Exception &e) {
-        combined_logger->error("{0}:{1}",e.errorCode(),e.errorMessage());
+        combined_logger->error("sqlite error {0}:{1}",e.errorCode(),e.errorMessage());
         return;
     }
     catch (std::exception e) {
-        combined_logger->error("{0}",e.what());
+        combined_logger->error("sqlite error {0}",e.what());
         return;
     }
 }

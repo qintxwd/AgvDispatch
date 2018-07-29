@@ -169,7 +169,7 @@ void MsgProcess::publisher_agv_position()
 {
     const int position_pub_interval = 200;//100ms
     std::chrono::high_resolution_clock::time_point beginTime = std::chrono::high_resolution_clock::now();
-    while (true)
+    while (!g_quit)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
         std::chrono::high_resolution_clock::time_point endTime = std::chrono::high_resolution_clock::now();
@@ -202,7 +202,7 @@ void MsgProcess::publisher_agv_status()
 {
     const int status_pub_interval = 500;//200ms
     std::chrono::high_resolution_clock::time_point beginTime = std::chrono::high_resolution_clock::now();
-    while (true)
+    while (!g_quit)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         std::chrono::high_resolution_clock::time_point endTime = std::chrono::high_resolution_clock::now();
@@ -227,7 +227,7 @@ void MsgProcess::publisher_task()
 {
     const int task_pub_interval = 1000;//500ms
     std::chrono::high_resolution_clock::time_point beginTime = std::chrono::high_resolution_clock::now();
-    while (true)
+    while (!g_quit)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         std::chrono::high_resolution_clock::time_point endTime = std::chrono::high_resolution_clock::now();
@@ -354,23 +354,21 @@ void MsgProcess::processOneMsg(const Json::Value &request, SessionPtr session)
 
         TimeUsed t;
         t.start();
-
-        combined_logger->info("RECV! session id={0}  len= {1}  json=\n{2}", session->getSessionID(), request.toStyledString().length(), request.toStyledString());
-
+		
         //处理消息，如果有返回值，发送返回值
-        //		if ((session->getUserId() <= 0 || session->getUserRole() <= USER_ROLE_VISITOR)) {
-        //			if (request["todo"].asInt() != MSG_TODO_USER_LOGIN) {
-        //				//未登录，却发送了 登录以外的 其它请求
-        //				Json::Value response;
-        //				response["type"] = MSG_TYPE_RESPONSE;
-        //				response["todo"] = request["todo"];
-        //				response["queuenumber"] = request["queuenumber"];
-        //				response["result"] = RETURN_MSG_RESULT_FAIL;
-        //				response["error_code"] = RETURN_MSG_ERROR_CODE_NOT_LOGIN;
-        //				session->send(response);
-        //				return;
-        //			}
-        //		}
+        if ((session->getUserId() <= 0 || session->getUserRole() <= USER_ROLE_VISITOR)) {
+            if (request["todo"].asInt() != MSG_TODO_USER_LOGIN) {
+                //未登录，却发送了 登录以外的 其它请求
+                Json::Value response;
+                response["type"] = MSG_TYPE_RESPONSE;
+                response["todo"] = request["todo"];
+                response["queuenumber"] = request["queuenumber"];
+                response["result"] = RETURN_MSG_RESULT_FAIL;
+                response["error_code"] = RETURN_MSG_ERROR_CODE_NOT_LOGIN;
+                session->send(response);
+                return;
+            }
+        }
 
         typedef std::function<void(SessionPtr, const Json::Value &)> ProcessFunction;
 
