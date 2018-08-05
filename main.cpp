@@ -117,41 +117,42 @@ void testAGV()
 
 }
 
-/*void testElevator()
+void testElevator()
 {
     // test elevator
-    Elevator ele(1, "ele_0", "127.0.0.1", 8889);
-    ele.init();
-    g_threadPool.enqueue([&](){
-        while (!ele.IsConnected())
-            std::this_thread::sleep_for(std::chrono::microseconds(30));
-        int from = 1;
-        int to   = 2;
-        int agv  = 1;
-        // 请求某电梯 (30s超时)
-        int elevator = ele.RequestTakeElevator(from, to, 0, agv, 30);
-        if (elevator != -1) {
-            // 乘梯应答
-            ele.TakeEleAck(from, to, elevator, agv);
-            // 等待电梯的进入指令 (30s超时)
-            if (ele.ConfirmEleInfo(from, to, elevator, agv, 30)) {
-                // todo: 此时agv可以进入, 进入过程每5秒发送一次乘梯应答
-                //
-                // 直到完全进入, agv发送进入电梯应答, 电梯开始运行直到到达目标楼层
-                if (ele.AgvEnterUntilArrive(from, to, elevator, agv, 30)) {
-                    // todo: 此时agv可以离开, 离开过程每5秒发送一次离开指令
-                    //
-                    // 直到完全离开, 发送离开应答结束乘梯流程
-                    ele.AgvLeft(from, to, elevator, agv, 30);
-                    return true;
-                }
-            }
-            //
-        }
+//    Elevator ele(1, "ele_0", "127.0.0.1", 8889);
+//    ele.init();
+//    g_threadPool.enqueue([&](){
+//        while (!ele.IsConnected())
+//            std::this_thread::sleep_for(std::chrono::microseconds(30));
+//        int from = 1;
+//        int to   = 2;
+//        int agv  = 1;
+//        // 请求某电梯 (30s超时)
+//        int elevator = ele.RequestTakeElevator(from, to, 0, agv, 30);
+//        if (elevator != -1) {
+//            // 乘梯应答
+//            ele.TakeEleAck(from, to, elevator, agv);
+//            // 等待电梯的进入指令 (30s超时)
+//            if (ele.ConfirmEleInfo(from, to, elevator, agv, 30)) {
+//                // todo: 此时agv可以进入, 进入过程每5秒发送一次乘梯应答
+//                //
+//                // 直到完全进入, agv发送进入电梯应答, 电梯开始运行直到到达目标楼层
+//                if (ele.AgvEnterUntilArrive(from, to, elevator, agv, 30)) {
+//                    // todo: 此时agv可以离开, 离开过程每5秒发送一次离开指令
+//                    //
+//                    // 直到完全离开, 发送离开应答结束乘梯流程
+//                    ele.AgvLeft(from, to, elevator, agv, 30);
+//                    return true;
+//                }
+//            }
+//            //
+//        }
 
-        return false;
-    });
-}*/
+//        return false;
+//    });
+}
+
 
 
 
@@ -159,17 +160,13 @@ void testAGV()
 void quit(int sig)
 {
     g_quit = true;
+    _exit(0);
 }
-
-
-
-
 
 
 int main(int argc, char *argv[])
 {
     signal(SIGINT, quit);
-
     std::cout << "start server ..." << std::endl;
 
     //0.日志输出
@@ -228,9 +225,12 @@ int main(int argc, char *argv[])
     //tcpip服务
     auto aID = SessionManager::getInstance()->addTcpAccepter(9999);
     SessionManager::getInstance()->openTcpAccepter(aID);
+
+    //websocket fuwu
     aID = SessionManager::getInstance()->addWebSocketAccepter(9998);
     SessionManager::getInstance()->openWebSocketAccepter(aID);
 #ifdef DY_TEST
+    //agv server
     aID = SessionManager::getInstance()->addTcpAccepter(6789);
     SessionManager::getInstance()->openTcpAccepter(aID);
     AgvManager::getInstance()->setServerAccepterID(aID);
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
     combined_logger->info("server init OK!");
 
     while (!g_quit) {
-        sleep(1);
+        usleep(50000);
     }
 
     spdlog::drop_all();

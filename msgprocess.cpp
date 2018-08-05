@@ -259,7 +259,7 @@ void MsgProcess::publisher_task()
                 v_task["errorInfo"] = task->getErrorInfo();
                 v_task["errorTime"] = task->getErrorTime();
                 v_task["isCancel"] = task->getIsCancel();
-
+                v_task["describe"] = task->getDescribe();
                 Json::Value v_extraParams;
                 auto params = task->getExtraParams();
                 for (auto param : params) {

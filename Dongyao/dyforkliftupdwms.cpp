@@ -37,6 +37,7 @@ void DyForkliftUpdWMS::doing(AgvPtr agv)
 void DyForkliftUpdWMS::afterDoing(AgvPtr agv)
 {
     //DONOTHING
+    combined_logger->info("dothings-updatewms done");
 }
 
 bool DyForkliftUpdWMS::result(AgvPtr agv)

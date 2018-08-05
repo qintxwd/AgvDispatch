@@ -425,5 +425,5 @@ AgvPtr AgvManager::getAgvByIP(std::string ip)
         if (agv->getIp() == ip)
             return agv;
     }
-    return NULL;
+    return nullptr;
 }

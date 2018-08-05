@@ -136,7 +136,7 @@ bool TaskManager::init()
                                         int tempDis;
 
                                         std::vector<int> result_temp;
-                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO){
+                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
                                             result_temp = MapManager::getInstance()->getBestPathDy(tempagv->getId(), tempagv->getLastStation(), tempagv->getNowStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
                                         }
                                         else
@@ -154,7 +154,7 @@ bool TaskManager::init()
                                         int tempDis;
 
                                         std::vector<int> result_temp;
-                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO){
+                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
                                             result_temp = MapManager::getInstance()->getBestPathDy(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
                                         }
                                         else
@@ -195,13 +195,15 @@ bool TaskManager::init()
                                 if (agv->getTask() != task) {
                                     if (agv->status != Agv::AGV_STATUS_IDLE)
                                     {
+                                        combined_logger->info(" 指定车辆不空闲 ");
                                         continue;
                                     }
                                 }
                                 int distance;
+                                combined_logger->info("before best path {0} {1} {2}", agv->getLastStation(), agv->getNowStation(), aimStation);
 
                                 std::vector<int> result;
-                                if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
+                                if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
                                 {
                                     result = MapManager::getInstance()->getBestPathDy(agv->getId(), agv->getLastStation(), agv->getNowStation(), aimStation, distance, CAN_CHANGE_DIRECTION);
                                 }
@@ -211,9 +213,12 @@ bool TaskManager::init()
                                 }
                                 if (distance != DISTANCE_INFINITY && result.size() > 0) {
                                     //拿去执行//从未分配队列中拿出去
+                                    combined_logger->info(" 从未分配队列中拿出去 ");
                                     agv->setTask(task);
                                     task->setPath(result);
+                                    combined_logger->info("path={0}",task->getPath().at(0));
                                     pos = itr->second.erase(pos);
+                                    combined_logger->info("3.excuteTask={0}",task->getId());
                                     //占用线路和站点
                                     MapManager::getInstance()->occuStation(aimStation, agv);
                                     for (auto tline : result) {
@@ -444,29 +449,19 @@ void TaskManager::excuteTask(AgvTaskPtr task)
             doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
             doingTaskMtx.unlock();
             finishTask(task);
+            combined_logger->info("task->finish");
+
         }
         else {
             AgvTaskNodePtr node = nodes[index];
             int station = node->getStation();
 
-#ifdef QUNCHUANG_PROJECT
-            AgvPtr agv_base = AgvManager::getInstance()->getAgvById(task->getAgv());
-            rosAgvPtr agv = std::static_pointer_cast<rosAgv>(agv_base);
-#else
-            AgvPtr agv;
-            if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
-            {
-                AgvPtr agv_base = AgvManager::getInstance()->getAgvById(task->getAgv());
-                agv = std::static_pointer_cast<DyForklift>(agv_base);
-            }
-            else
-            {
-                agv = AgvManager::getInstance()->getAgvById(task->getAgv());
-            }
-#endif
+            auto agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+
             try {
                 if (station == NULL) {
                     for (auto thing : node->getDoThings()) {
+                        combined_logger->info("station==null for dothings");
                         if (task->getIsCancel())break;
                         thing->beforeDoing(agv);
                         thing->doing(agv);
@@ -476,10 +471,13 @@ void TaskManager::excuteTask(AgvTaskPtr task)
                 }
                 else {
                     //去往这个点位
+                    combined_logger->info("task->pathsize={0}",task->getPath().size());
+                    combined_logger->info("agv->id={0}",agv->getId());
                     agv->excutePath(task->getPath());
 
                     //执行任务
                     for (auto thing : node->getDoThings()) {
+                        combined_logger->info("for dothings nodesize={0}", node->getDoThings().size());
                         if (task->getIsCancel())break;
                         thing->beforeDoing(agv);
                         thing->doing(agv);
@@ -492,6 +490,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
                 if (!task->getIsCancel()) {
                     doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
                     addTask(task);
+                    combined_logger->info("addtask={0}-{1}",task->getId(), task->getDoingIndex());
                 }
             }
             catch (std::exception e) {

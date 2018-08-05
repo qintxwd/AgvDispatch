@@ -4,8 +4,8 @@
 #include "../common.h"
 #include "../msgprocess.h"
 
-WebSocketSession::WebSocketSession(tcp::socket socket, int sessionId):
-    Session(sessionId),
+WebSocketSession::WebSocketSession(tcp::socket socket, int sessionId, int acceptId):
+    Session(sessionId,acceptId),
     ws(std::move(socket))
 {
     combined_logger->info("new websocket connection sessionId={0} ", sessionId);

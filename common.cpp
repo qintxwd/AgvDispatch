@@ -4,7 +4,8 @@
 ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
 
-const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
+const int GLOBAL_AGV_PROJECT = AGV_PROJECT_ANTING;
+//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
 //const int GLOBAL_AGV_PROJECT = AGV_PROJECT_DONGYAO;
 //const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QUNCHUANG;
 
@@ -258,4 +259,4 @@ char *transToFullMsg(const char *data)
     return full_msg;
 }
 
-std::atomic<bool> g_quit = false;
+std::atomic<bool> g_quit(false);

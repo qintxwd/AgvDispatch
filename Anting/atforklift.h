@@ -6,7 +6,7 @@
 #include "../network/sessionmanager.h"
 
 #define AT_PRECISION 60
-#define AT_MOVE_HEIGHT 300
+#define AT_MOVE_HEIGHT 400
 //距离起点AT_PRECMD_RANGE开始抬升至MOVE_HEIGHT高度　距离终点AT_PRECMD_RANGE时调整至最后动作附近高度
 #define AT_PRECMD_RANGE 800
 #define AT_START_RANGE 200
@@ -92,6 +92,11 @@ private:
     Pose4D m_currentPos;
     int m_power;
     int m_lift_height;
+
+    int m_fix_x;
+    int m_fix_y;
+    int m_fix_a;
+
     std::map<int,  DyMsg> m_unRecvSend;
     std::map<int,  DyMsg> m_unFinishCmd;
     std::mutex msgMtx;

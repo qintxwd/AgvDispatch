@@ -21,10 +21,10 @@ void AtTaskMaker::init_station_pos()
 {
     try {
         if (!g_db.tableExists("agv_station_pos")) {
-            g_db.execDML("CREATE TABLE agv_station_pos (id	INTEGER, posLevel INTEGER,pickPos1	INTEGER, pickPos2 INTEGER, putPos1	INTEGER, putPos2	INTEGER, PRIMARY KEY(id,posLevel))");
+            g_db.execDML("CREATE TABLE agv_station_pos (id	INTEGER, posLevel INTEGER,pickPos1	INTEGER, pickPos2 INTEGER, putPos1	INTEGER, putPos2 INTEGER,x INTEGER,y INTEGER,t INTEGER, PRIMARY KEY(id,posLevel))");
         }
-        CppSQLite3Table table_station_pos = g_db.getTable("select id, posLevel, pickPos1, pickPos2, putPos1, putPos2 from agv_station_pos;");
-        if (table_station_pos.numRows() > 0 && table_station_pos.numFields() != 6)
+        CppSQLite3Table table_station_pos = g_db.getTable("select id, posLevel, pickPos1, pickPos2, putPos1, putPos2,x,y,t from agv_station_pos;");
+        if (table_station_pos.numRows() > 0 && table_station_pos.numFields() != 9)
         {
             combined_logger->error("loadFromDb agv_station_pos error!");
             return;
@@ -34,7 +34,7 @@ void AtTaskMaker::init_station_pos()
             table_station_pos.setRow(row);
             int id = atoi(table_station_pos.fieldValue(0));
             int level = atoi(table_station_pos.fieldValue(1));
-            StationPos pos(id, level ,atoi(table_station_pos.fieldValue(2)),atoi(table_station_pos.fieldValue(3)),atoi(table_station_pos.fieldValue(4)),atoi(table_station_pos.fieldValue(5)));
+            StationPos pos(id, level ,atoi(table_station_pos.fieldValue(2)),atoi(table_station_pos.fieldValue(3)),atoi(table_station_pos.fieldValue(4)),atoi(table_station_pos.fieldValue(5)),atoi(table_station_pos.fieldValue(6)),atoi(table_station_pos.fieldValue(7)),atoi(table_station_pos.fieldValue(8)));
             m_station_pos[std::make_pair(id, level)] = pos;
         }
     }
@@ -268,7 +268,15 @@ void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
                 StationPos pos = m_station_pos[std::make_pair(station, level)];
                 _paramsfork.push_back(intToString(pos.m_pickPos1));
                 _paramsfork.push_back(intToString(pos.m_pickPos2));
-                node_params_str.append(intToString(pos.m_pickPos1)).append(";").append(intToString(pos.m_pickPos2));
+                node_params_str.append(intToString(pos.m_pickPos1))
+                        .append(";")
+                        .append(intToString(pos.m_pickPos2))
+                        .append(";")
+                        .append(intToString(pos.m_x))
+                        .append(";")
+                        .append(intToString(pos.m_y))
+                        .append(";")
+                        .append(intToString(pos.m_t));
                 node_node->setParams(node_params_str);
 
                 doThings.push_back(AgvTaskNodeDoThingPtr(new AtForkliftThingFork(_paramsfork)));
@@ -286,7 +294,15 @@ void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
                 StationPos pos = m_station_pos[std::make_pair(station, level)];
                 _paramsfork.push_back(intToString(pos.m_putPos1));
                 _paramsfork.push_back(intToString(pos.m_putPos2));
-                node_params_str.append(intToString(pos.m_putPos1)).append(";").append(intToString(pos.m_putPos2));
+                node_params_str.append(intToString(pos.m_putPos1))
+                        .append(";")
+                        .append(intToString(pos.m_putPos2))
+                        .append(";")
+                        .append(intToString(pos.m_x))
+                        .append(";")
+                        .append(intToString(pos.m_y))
+                        .append(";")
+                        .append(intToString(pos.m_t));
                 node_node->setParams(node_params_str);
                 doThings.push_back(AgvTaskNodeDoThingPtr(new AtForkliftThingFork(_paramsfork)));
                 node_node->setTaskType(TASK_PUT);

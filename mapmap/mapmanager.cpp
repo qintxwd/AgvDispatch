@@ -24,9 +24,9 @@ void MapManager::checkTable()
         if (!g_db.tableExists("agv_line_dy")) {
             g_db.execDML("create table agv_line_dy(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p1a INTEGER DEFAULT 0,p1f INTEGER DEFAULT 1,p2x INTEGER,p2y INTEGER,p2a INTEGER DEFAULT 0,p2f INTEGER DEFAULT 1, speed REAL DEFAULT 0.4);");
         }
-        if (!g_db.tableExists("agv_line_dy_1")) {
-            g_db.execDML("create table agv_line_dy_1(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p1a INTEGER DEFAULT 0,p1f INTEGER DEFAULT 1,p2x INTEGER,p2y INTEGER,p2a INTEGER DEFAULT 0,p2f INTEGER DEFAULT 1, speed REAL DEFAULT 0.4);");
-        }
+//        if (!g_db.tableExists("agv_line_dy_1")) {
+//            g_db.execDML("create table agv_line_dy_1(id INTEGER,name char(64),type INTEGER,start INTEGER,end INTEGER,p1x INTEGER,p1y INTEGER,p1a INTEGER DEFAULT 0,p1f INTEGER DEFAULT 1,p2x INTEGER,p2y INTEGER,p2a INTEGER DEFAULT 0,p2f INTEGER DEFAULT 1, speed REAL DEFAULT 0.4);");
+//        }
         if (!g_db.tableExists("agv_bkg")) {
             g_db.execDML("create table agv_bkg(id INTEGER,name char(64),data blob,data_len INTEGER,x INTEGER,y INTEGER,width INTEGER,height INTEGER,filename char(512));");
         }
@@ -232,7 +232,7 @@ bool MapManager::save()
 
         g_db.execDML("delete from agv_line;");
 
-        g_db.execDML("delete from agv_line_dy_1;");
+        g_db.execDML("delete from agv_line_dy;");
 
         g_db.execDML("delete from agv_bkg;");
 
@@ -263,7 +263,7 @@ bool MapManager::save()
 
                 MapPoint  *start = static_cast<MapPoint *>(MapManager::getMapSpiritById(path->getStart()));
                 MapPoint  *end = static_cast<MapPoint *>(MapManager::getMapSpiritById(path->getEnd()));
-                bufSQL.format("insert into agv_line_dy_1(id ,name,type ,start ,end ,p1x ,p1y ,p1a, p1f, p2x ,p2y, p2a, p2f) values (%d,'%s', %d,%d,%d, %d, %d, %d, %d, %d, %d, %d, %d);", -path->getId(), path->getName().c_str(), (path->getPathType()==0?1:3), path->getStart(), path->getEnd(),
+                bufSQL.format("insert into agv_line_dy(id ,name,type ,start ,end ,p1x ,p1y ,p1a, p1f, p2x ,p2y, p2a, p2f) values (%d,'%s', %d,%d,%d, %d, %d, %d, %d, %d, %d, %d, %d);", -path->getId(), path->getName().c_str(), (path->getPathType()==0?1:3), path->getStart(), path->getEnd(),
                               start->getRealX(), start->getRealY(), start->getRealA(), getFloor(start->getId()), end->getRealX(), end->getRealY(), end->getRealA(), getFloor(end->getId()));
                 g_db.execDML(bufSQL);
             }

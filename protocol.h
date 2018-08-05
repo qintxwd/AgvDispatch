@@ -34,7 +34,7 @@
 #define MSG_MSG_HEAD		(0x88)
 
 //小于这个值，直接在内存中读取，大于这个值，写入临时文件，读取临时文件
-#define MSG_READ_BUFFER_LENGTH  (1300)  //读取缓存区的 大小
+#define MSG_READ_BUFFER_LENGTH  (1024)  //读取缓存区的 大小
 #define MSG_JSON_PREFIX_LENGTH  (5)     //一个0x88 还有4个字节的一个int，标记json_length
 #define MSG_JSON_MEMORY_LENGTH  (1000)  //json长度超出这个，就由文件缓存
 

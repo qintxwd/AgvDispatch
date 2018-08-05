@@ -12,7 +12,7 @@ using boost::asio::ip::tcp;
 class TcpSession : public Session
 {
 public:
-    TcpSession(tcp::socket socket, int sessionId);
+    TcpSession(tcp::socket socket, int sessionId,int acceptId);
 
     virtual ~TcpSession();
 
@@ -27,14 +27,14 @@ public:
     inline void setAGVPtr(AgvPtr agv){_agvPtr = agv;}
     inline AgvPtr getAgvPtr(){return _agvPtr;}
 private:
+    bool attach();
+
     void packageProcess();
     int ProtocolProcess();
     tcp::socket socket_;
     QyhBuffer buffer;
     char read_buffer[MSG_READ_BUFFER_LENGTH];
     int json_len;
-
-    int _acceptID = -1;
 
     AgvPtr _agvPtr;
 };
