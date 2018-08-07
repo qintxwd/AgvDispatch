@@ -1,9 +1,9 @@
 ﻿#include "qunchuangtaskmaker.h"
 
 #include "../mapmap/mapmanager.h"
-#include "../agvtask.h"
 #include "qunchuangnodethingget.h"
 #include "qunchuangnodetingput.h"
+#include "qunchuangnodedoing.h"
 #include "../taskmanager.h"
 #include "../agvmanager.h"
 
@@ -84,6 +84,10 @@ void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string d
         getNode->push_backDoThing(getThing);
         task->push_backNode(getNode);
         combined_logger->info("makeTask, add  取货node");
+
+        if(toSpirit ==nullptr)
+            task->setExtraParam("NEED_SET_AGV_WAITTING_PUT_STATUS","true");
+
     }
 
     //放货node
@@ -112,7 +116,8 @@ void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string d
     {
         combined_logger->info(" 任务指定了AGV ID: "+intToString(agv_id));
         task->setAgv(agv_id);
-        agv->onTaskStart(task);//通知AGV有新任务
+        if(all_floor_info > 0)
+            agv->setLoading(true); //agv载物
     }
     else
     {
@@ -121,3 +126,100 @@ void QunChuangTaskMaker::makeTask(std::string from ,std::string to,std::string d
 
     TaskManager::getInstance()->addTask(task);
 }
+
+AgvTaskPtr QunChuangTaskMaker::getTaskByDisPatchID(std::string dispatch_id)
+{
+    std::vector<AgvTaskPtr> tasks = TaskManager::getInstance()->getCurrentTasks();
+    for(AgvTaskPtr t : tasks)
+    {
+        if(t->getExtraParam("dispatch_id") == dispatch_id)
+        {
+            return t;
+        }
+    }
+    combined_logger->error(" getTaskIdByDisPatchID failed, dispatch_id: {0} ", dispatch_id);
+    return nullptr;
+}
+
+
+bool QunChuangTaskMaker::cancelTask(std::string dispatch_id, int agv_id) //取消任务
+{
+    AgvTaskPtr task = getTaskByDisPatchID(dispatch_id);
+    lynx::Msg msg = QunChuangTcsConnection::Instance()->getTcsMsgByDispatchId(dispatch_id);
+
+    if(task != nullptr)
+    {
+        AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+
+        combined_logger->debug(" QunChuangTaskMaker cancelTask...... ");
+
+        TaskManager::getInstance()->cancelTask(task->getId());
+
+        if(agv != nullptr)
+        {
+            auto fromSpirit = MapManager::getInstance()->getMapSpiritByName("station_"+ msg["FROM"].string_value());
+
+            int stationId;
+            /*if(agv->isLoading())
+            {
+                stationId = fromSpirit->getId();
+            }
+            else
+            {
+                stationId = agv->getInitStation();
+            }*/
+
+            stationId = fromSpirit->getId();
+
+
+            AgvTaskPtr task(new AgvTask());
+
+            AgvTaskNodePtr waittingNode(new AgvTaskNode());
+            waittingNode->setStation(stationId);
+
+            AgvTaskNodeDoThingPtr doThing(new QunChuangNodeDoing(std::vector<std::string>()));
+            doThing->setStationId(stationId);
+
+            waittingNode->push_backDoThing(doThing);
+            task->push_backNode(waittingNode);
+
+            task->setAgv(agv->getId());
+
+            TaskManager::getInstance()->addTask(task);
+
+            //QunChuangTcsConnection::Instance()->taskFinished(dispatch_id, agv_id, false);
+        }
+        /*else
+            QunChuangTcsConnection::Instance()->taskFinished(dispatch_id, -1, false);
+            */
+
+        return true;
+    }
+
+}
+
+bool QunChuangTaskMaker::forceFinishTask(std::string dispatch_id, int agv_id) //强制结束任务
+{
+    AgvTaskPtr task = getTaskByDisPatchID(dispatch_id);
+    if(task != nullptr)
+    {
+        AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+        task->setStatus(Agv::AGV_STATUS_FORCE_FINISHED);
+        return true;
+    }
+    else
+        return false;
+}
+
+bool QunChuangTaskMaker::taskFinishedNotify(std::string dispatch_id, int agv_id) //结束任务, 用在取空卡赛结束
+{
+    AgvTaskPtr task = getTaskByDisPatchID(dispatch_id);
+    if(task != nullptr)
+    {
+        AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+        task->setExtraParam("TASK_FINISHED_NOFITY","true");
+        return true;
+    }
+    return false;
+}
+

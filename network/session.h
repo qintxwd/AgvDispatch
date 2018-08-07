@@ -15,7 +15,7 @@ using SessionPtr = std::shared_ptr<Session>;
 class Session : public std::enable_shared_from_this<Session>
 {
 public:
-    Session(int sessionId,int acceptId);
+    Session(int sessionId);
 
     virtual ~Session();
 
@@ -31,10 +31,6 @@ public:
 
     void setSessionID(int sID){ _sessionID = sID; }
 
-    int getAcceptID(){ return _acceptID; }
-
-    void setAcceptnID(int sID){ _acceptID = sID; }
-
     void setUserId(int _user_id){user_id = _user_id;}
 
     int getUserId(){return user_id;}
@@ -49,7 +45,6 @@ public:
 
 protected:
     int _sessionID = -1;
-    int _acceptID = -1;
 
     //连接保存一个用户的两个信息
     int user_id = 0;

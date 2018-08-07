@@ -77,7 +77,6 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
         task->setExtraParam("runTimes", "1");
     }
 
-    std::string task_describe;
     //4.节点
     if (!request["nodes"].isNull()) {
         Json::Value nodes = request["nodes"];
@@ -88,11 +87,6 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
             std::string node_params_str = one_node["params"].asString();
             std::vector<std::string> node_params = split(node_params_str, ";");
 
-            MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
-            if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
-            MapPoint *point = static_cast<MapPoint *>(spirit);
-
-            task_describe.append(point->getName());
             //根据客户端的代码，
             //dowhat列表为
             // 0 --> pick
@@ -104,7 +98,6 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 
             if (doWhat == 0) {
 
-                task_describe.append("[↑] ");
                 //liftup
                 std::vector<std::string> _paramsfork;
                 _paramsfork.push_back("11");
@@ -124,8 +117,6 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
                 node_node->setDoThings(doThings);
             }else if (doWhat == 1) {
 
-                task_describe.append("[↓] ");
-
                 //setdown
                 std::vector<std::string> _paramsfork;
                 _paramsfork.push_back("00");
@@ -139,8 +130,6 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
             }
             else if(doWhat == 3)
             {
-                task_describe.append("[--] ");
-
                 //DONOTHING,JUST MOVE
                 node_node->setTaskType(TASK_MOVE);
             }
@@ -150,7 +139,6 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 
     //5.产生时间
     task->setProduceTime(getTimeStrNow());
-    task->setDescribe(task_describe);
 
     combined_logger->info(" getInstance()->addTask ");
 
@@ -306,7 +294,7 @@ void DyTaskMaker::receiveTask(std::string str_task)
         int agvId = stringToInt( all[0]);
         // AgvPtr agv = AgvManager::getInstance()->getAgvById(agvId);
         int priority = stringToInt(all[1]);
-        std::string task_describe;
+
 
         //产生一个任务
         std::vector<AgvTaskNodePtr> nodes;
@@ -329,7 +317,7 @@ void DyTaskMaker::receiveTask(std::string str_task)
 
                 //liftup
                 std::vector<std::string> _paramsfork;
-                _paramsfork.push_back("11");
+                _paramsfork.push_back("1");
                 getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingFork(_paramsfork)));
 
 
@@ -339,7 +327,6 @@ void DyTaskMaker::receiveTask(std::string str_task)
                 _paramswms.push_back(all[i+3]);
                 _paramswms.push_back("0");
                 _paramswms.push_back(all[i+4]);
-                task_describe.append(all[i+2]).append("[").append(all[i+3]).append("]↑ ");
                 DyForkliftUpdWMS* test= new DyForkliftUpdWMS(_paramswms);
                 getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(test));
 
@@ -365,7 +352,7 @@ void DyTaskMaker::receiveTask(std::string str_task)
 
                 //setdown
                 std::vector<std::string> _paramsfork;
-                _paramsfork.push_back("00");
+                _paramsfork.push_back("0");
                 getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingFork(_paramsfork)));
 
 
@@ -375,8 +362,6 @@ void DyTaskMaker::receiveTask(std::string str_task)
                 _paramswms.push_back(all[i+3]);
                 _paramswms.push_back("1");
                 _paramswms.push_back(all[i+4]);
-                task_describe.append(all[i+2]).append("[").append(all[i+3]).append("]↓");
-
                 DyForkliftUpdWMS* test= new DyForkliftUpdWMS(_paramswms);
                 getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(test));
 
@@ -396,9 +381,7 @@ void DyTaskMaker::receiveTask(std::string str_task)
         task->setAgv(agvId);
         task->setTaskNodes(nodes);
         task->setPriority(priority);
-        task->setExtraParam("runTimes", "1");
-        task->setProduceTime(getTimeStrNow());
-        task->setDescribe(task_describe);
+
         //放入未分配的队列中
         TaskManager::getInstance()->addTask(task);
         int id = task->getId();

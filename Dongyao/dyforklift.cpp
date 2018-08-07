@@ -28,7 +28,7 @@ void DyForklift::init(){
 #ifdef RESEND
     g_threadPool.enqueue([&, this] {
         while (true) {
-            std::map<int, DyMsg >::iterator iter;
+            std::map<int, Msg >::iterator iter;
             if(msgMtx.try_lock())
             {
                 for(iter = this->m_unRecvSend.begin(); iter != this->m_unRecvSend.end(); iter++)

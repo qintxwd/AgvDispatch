@@ -136,7 +136,9 @@ HEADERS += \
     network/tcpsession.h \
     Anting/atforklift.h \
     Anting/atforkliftthingfork.h \
-    Anting/station_pos.h
+    Anting/station_pos.h \
+    qunchuang/qunchuangnodedoing.h \
+    agvImpl/ros/agv/rosAgvUtils.h
 
 SOURCES += \
     agv.cpp \
@@ -195,4 +197,9 @@ SOURCES += \
     network/tcpsession.cpp \
     Anting/atforklift.cpp \
     Anting/atforkliftthingfork.cpp \
-    Anting/attaskmaker.cpp
+    Anting/attaskmaker.cpp \
+    device/elevator/elevatorManager.cpp \
+    qunchuang/qunchuangnodedoing.cpp
+
+
+

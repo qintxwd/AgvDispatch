@@ -9,14 +9,13 @@
 using std::min;
 using std::max;
 
-TcpSession::TcpSession(tcp::socket socket, int sessionId, int acceptId):
-    Session(sessionId,acceptId),
+TcpSession::TcpSession(tcp::socket socket, int sessionId):
+    Session(sessionId),
     socket_(std::move(socket)),
     json_len(0)
 {
     combined_logger->debug("new connection from {0}:{1} sessionId={2} ", socket_.remote_endpoint().address().to_string(), socket_.remote_endpoint().port(),sessionId);
 }
-
 TcpSession::~TcpSession()
 {
     close();
@@ -86,19 +85,10 @@ bool TcpSession::doSend(const char *data,int len)
 void TcpSession::close()
 {
     socket_.close();
-    SessionManager::getInstance()->removeSession(shared_from_this());
 }
 
 void TcpSession::start()
 {
-
-    if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
-        if(getAcceptID() == AgvManager::getInstance()->getServerAccepterID()){
-            //this is a agv connection
-            if(!attach())return ;
-        }
-    }
-
     std::thread([this](){
         while(socket_.is_open()){
             boost::system::error_code error;
@@ -230,24 +220,4 @@ void TcpSession::packageProcess()
             break;
         }
     }
-}
-
-bool TcpSession::attach()
-{
-    auto agv = std::static_pointer_cast<AtForklift>(AgvManager::getInstance()->getAgvByIP(socket_.remote_endpoint().address().to_string()));
-    if(agv!=nullptr){
-        agv->setPosition(0, 0, 0);
-        agv->status = Agv::AGV_STATUS_NOTREADY;
-        agv->setQyhTcp(shared_from_this());
-        agv->setPort(socket_.remote_endpoint().port());
-        //start report
-        agv->startReport(100);
-        setAGVPtr(agv);
-
-        return true;
-    }else{
-        combined_logger->info("there is no agv with this ip:{}",socket_.remote_endpoint().address().to_string());
-    }
-
-    return false;
 }

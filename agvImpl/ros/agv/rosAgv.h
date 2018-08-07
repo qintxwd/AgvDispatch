@@ -7,10 +7,11 @@
 #include "../../../userlogmanager.h"
 #include "../../../msgprocess.h"
 #include "linepath.h"
-#include "../../../device/device.h"
-#include "../../../qunchuang/chipmounter/chipmounter.h"
-#include "../../../qunchuang/qunchuangtcsconnection.h"
-#include "../../../realagv.h"
+#include "device/device.h"
+#include "qunchuang/chipmounter/chipmounter.h"
+#include "qunchuang/qunchuangtcsconnection.h"
+#include "realagv.h"
+#include "device/elevator/elevatorManager.h"
 
 
 using namespace std;
@@ -26,6 +27,10 @@ using namespace std;
 #define AGV_POSE_TOPIC_NAME  "/robot_pose"
 #define AGV_POSE_TOPIC_TYPE  "geometry_msgs/Pose"
 #endif
+
+#define INNOLUX_DB_BRANCH_SH1 "INNOLUX-SH1-"
+#define INIT_AGV_POSE_OUT_ELEVATOR_NAME   "init_pose_"
+
 
 
 
@@ -78,6 +83,14 @@ enum down_part_status{
 #define AGV_ACTION_NONE       "none"       //无动作
 
 
+#define AGV_SHELVES_1_FLOOR_HEIGHT  39000
+#define AGV_SHELVES_2_FLOOR_HEIGHT  64000
+#define AGV_SHELVES_3_FLOOR_HEIGHT  87500
+
+#define AGV_SHELVES_1_FLOOR_INIT_HEIGHT  0
+#define AGV_SHELVES_2_FLOOR_INIT_HEIGHT  20000
+#define AGV_SHELVES_3_FLOOR_INIT_HEIGHT  40000
+
 class rosAgv : public RealAgv
 {
 private:
@@ -110,6 +123,17 @@ private:
        void startShelftDown(string action);
        void initStation(string station_name);
        bool isShelftSuccess(bool forward);//判断3层升降货架status, 上下料成功true, 卡料false
+       void reportToTCSStation(int station_id, bool arrived);// arrvied: true, leave: false
+       string getStationNum(string stationName);
+       int getStationId(string station_name);
+       bool isNeedTakeElevator(std::vector<int> lines);
+       std::vector<int> getPathToElevator(std::vector<int> lines);
+       std::vector<int> getPathEnterElevator(std::vector<int> lines);
+       std::vector<int> getPathOutElevator(std::vector<int> lines);
+       std::vector<int> getPathLeaveElevator(std::vector<int> lines);
+       std::vector<int> getPathInElevator(std::vector<int> lines);
+       void setRebootState();
+
 
 public:
     rosAgv(int id,std::string name,std::string ip,int port,int agvType=-1, int agvClass=-1, std::string lineName="");
@@ -127,10 +151,7 @@ public:
     //virtual void excutePath(std::vector<AgvLinePtr> lines);
     virtual void excutePath(std::vector<int> lines);
 
-    void startTask(string station, string action);
-
-
-    bool beforeDoing(string ip, int port, string action, int station_id);
+    bool beforeDoing(string ip, int port, string action, string station);
     bool Doing(string action, int station_id);
     bool afterDoing(string action, int station_id);
     void setChipMounter(chipmounter* device);// only for test, will be removed
@@ -171,6 +192,8 @@ private:
     chipmounter* mChipmounter; //偏贴机
 
     bool m_bInitlayer;
+    bool bAgvConnected;
+
 
     int agvClass; //激光叉车, 激光AGV, 磁条AGV, 二维码AGV
     int agvType; //AGV type;
@@ -178,6 +201,8 @@ private:
 
     void InitShelfLayer();
     void ControlShelfUpDown(int layer, string height);
+
+    bool send(const char *data, int len);
 
 
 

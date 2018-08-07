@@ -28,13 +28,12 @@ void QunChuangNodeThingGet::beforeDoing(AgvPtr agv)
         {
             std::cout << "AGV 取空卡塞, call ros_agv->beforeDoing " <<std::endl;
 
-            ros_agv->beforeDoing(ip, station->getPort(),AGV_ACTION_GET, HexStringToInt(getStationNum(station->getName())));
+            ros_agv->beforeDoing(ip, station->getPort(),AGV_ACTION_GET, getStationNum(station->getName()));
         }
         else
         {
             combined_logger->error("QunChuangNodeThingGet::beforeDoing, IP {1} is invalid", ip);
             std::cout << "AGV 取料, beforeDoing... ip is invalid: "<< ip<<std::endl;
-
             return;
         }
     }

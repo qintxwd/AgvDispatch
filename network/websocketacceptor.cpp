@@ -10,7 +10,7 @@ WebsocketAcceptor::WebsocketAcceptor(boost::asio::io_context &io_context, short 
 
 void WebsocketAcceptor::onAccept(tcp::socket& socket)
 {
-    WebSocketSessionPtr pp = std::make_shared<WebSocketSession>(std::move(socket),SessionManager::getInstance()->getNextSessionId(),getId());
+    WebSocketSessionPtr pp = std::make_shared<WebSocketSession>(std::move(socket),SessionManager::getInstance()->getNextSessionId());
     SessionManager::getInstance()->addSession(pp->getSessionID(),pp);
     pp->start();
 }

@@ -9,6 +9,8 @@
 #include <condition_variable>
 #include <chrono>
 #include "msg.h"
+#include "exception"
+#include "qunchuangtaskmaker.h"
 
 using namespace lynx;
 
@@ -32,7 +34,9 @@ struct QunChuangTcsConnection::RequestContext {
 QunChuangTcsConnection *QunChuangTcsConnection::Instance()
 {
     static QunChuangTcsConnection tcs_conn("10.63.155.12", 2000);
-    //static QunChuangTcsConnection tcs_conn("127.0.0.1", 2000);
+    //static QunChuangTcsConnection tcs_conn("10.63.151.132", 2000);
+    //static QunChuangTcsConnection tcs_conn("10.63.155.15", 2000);
+
     return &tcs_conn;
 }
 
@@ -112,24 +116,141 @@ lynx::Msg QunChuangTcsConnection::getTcsMsgByDispatchId(std::string dispatchId)
 lynx::Msg QunChuangTcsConnection::deleteTcsMsgByDispatchId(std::string dispatchId)
 {
     lynx::Msg msg_data;
+
+    combined_logger->debug("deleteTcsMsgByDispatchId, tcsTasksMtx.lock");
+
+    tcsTasksMtx.lock();
     for(int i=0; i<tcsTasks.size();i++)
     {
         msg_data = tcsTasks.at(i);
         if(dispatchId == msg_data["DISPATCH_ID"].string_value())
         {
+
             tcsTasks.erase(tcsTasks.begin()+i);
             break;
         }
     }
+    combined_logger->debug("deleteTcsMsgByDispatchId, tcsTasksMtx.unlock");
+    tcsTasksMtx.unlock();
+
     return nullptr;
 }
+
+
+bool QunChuangTcsConnection::isTcsMsgExist(std::string dispatchId)
+{
+    lynx::Msg msg_data;
+
+    for(int i=0; i<tcsTasks.size();i++)
+    {
+        msg_data = tcsTasks.at(i);
+        if(dispatchId == msg_data["DISPATCH_ID"].string_value())
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+/*
+ * msg_data: 存在任务
+ * msg: 新任务
+ */
+bool QunChuangTcsConnection::isTcsTaskDuplicate(lynx::Msg msg_data, lynx::Msg msg)
+{
+
+    /*if(msg["DESTINATION"].string_value() != msg_data["DESTINATION"].string_value())
+    {
+        return false;
+    }
+    else if(msg["FROM"].string_value() == msg_data["FROM"].string_value()
+             && msg["DESTINATION"].string_value() == msg_data["DESTINATION"].string_value())
+    {
+         combined_logger->error("相同任务, 添加失败");
+         return true;
+    }*/
+
+    return false;
+}
+
+
+bool QunChuangTcsConnection::addTcsTask(lynx::Msg msg)
+{
+    int taskSize = tcsTasks.size();
+
+    combined_logger->debug("$$$$$$$$$ addTcsTask, Unfinished task num: {0}", taskSize);
+
+    combined_logger->debug("addTcsTask, tcsTasksMtx.lock");
+
+    tcsTasksMtx.lock();
+    for(int i=0; i<tcsTasks.size();i++)
+    {
+        lynx::Msg msg_data = tcsTasks.at(i);
+
+        combined_logger->debug("old task:  ");
+        combined_logger->debug("$$$$$$$$$ addTcsTask, dispatch_id: {0}", msg_data["DISPATCH_ID"].string_value());
+        combined_logger->debug("$$$$$$$$$ addTcsTask, from: {0}", msg_data["FROM"].string_value());
+        combined_logger->debug("$$$$$$$$$ addTcsTask, to: {0}", msg_data["DESTINATION"].string_value());
+        combined_logger->debug("  ");
+
+        if(msg["DISPATCH_ID"].string_value() == msg_data["DISPATCH_ID"].string_value())
+        {
+            if(msg["DESTINATION"].string_value() != msg_data["DESTINATION"].string_value())
+            {
+                combined_logger->debug("msg_data 是第一段任务, 只有上料点, 添加第二段去下料点任务");
+
+                tcsTasks.erase(tcsTasks.begin()+i);//delete 第一段任务
+                tcsTasks.push_back(msg);
+                combined_logger->debug("任务添加成功");
+
+                tcsTasksMtx.unlock();
+                combined_logger->debug("addTcsTask, tcsTasksMtx.unlock");
+
+                return true;
+            }
+        }
+
+        if(isTcsTaskDuplicate(msg_data, msg))
+        {
+            tcsTasksMtx.unlock();
+            combined_logger->debug("addTcsTask, tcsTasksMtx.unlock");
+
+            return false;
+        }
+    }
+
+    tcsTasks.push_back(msg);
+    combined_logger->debug("任务添加成功");
+    combined_logger->debug("addTcsTask, tcsTasksMtx.unlock");
+
+    tcsTasksMtx.unlock();
+    return true;
+}
+
 
 void QunChuangTcsConnection::onRead(const char *data, int len)
 {
 //#define MAX_MSG_LEN     (1024*10)
     std::string msg(data, (size_t)len);
-    //msg = "S1F11L[13]<A[1] CEID ID='3'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID='1'><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='2001'><A[20] DESTINATION ID='2510'><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>";
-    //msg = "S1F11L[13]<A[1] CEID ID='3'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID=''><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='2510'><A[20] DESTINATION ID='2001'><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='0'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='0'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='0'><A[3] PRODUCT_CNT ID=''>";
+
+    //combined_logger->error("TCS RECV:"+msg);
+
+    if(msg == "1")
+        msg = "S1F11L[13]<A[1] CEID ID='3'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID=''><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='2001'><A[20] DESTINATION ID=''><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>";
+    else if(msg == "2")
+        msg = "S1F11L[13]<A[1] CEID ID='3'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID='1'><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='2001'><A[20] DESTINATION ID='2510'><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>";
+    else if(msg == "3")
+        msg = "S1F11L[13]<A[1] CEID ID='3'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID=''><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='2511'><A[20] DESTINATION ID='2000'><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>";
+    else if(msg == "4")
+        msg = "S1F11L[13]<A[1] CEID ID='3'><A[10] LINE_ID ID='F1-A'><A[20] AGV_ID ID=''><A[40] DISPATCH_ID ID='201806120010'><A[2] SEQUENCE ID='1'><A[20] FROM ID='30005'><A[20] DESTINATION ID='2511'><A[40] TRANSFER_OBJ_ID ID=''><A[40] CARRIER_ID ID=''><A[10] SETTING_CODE ID=''><A[5] SLOT_CNT ID='3'><A[20] MTRL_ID ID=''>L[3]L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>L[2]<A[3] SLOTNO ID='1'><A[3] PRODUCT_CNT ID=''>";
+    else if(msg == "21")
+        msg = "S2F1L[3]<A[1] CEID ID='3'><A[20] AGV_ID ID='1'><A[40] DISPATCH_ID ID='201806120010'>";
+    else if(msg == "23")
+        msg = "S2F3L[3]<A[1] CEID ID='3'><A[20] AGV_ID ID='1'><A[40] DISPATCH_ID ID='201806120010'>";
+    else if(msg == "25")
+        msg = "S2F5L[3]<A[1] CEID ID='3'><A[20] AGV_ID ID='1'><A[40] DISPATCH_ID ID='201806120011'>";
+
+
 
     combined_logger->info("TCS RECV:"+msg);
 
@@ -148,8 +269,6 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
 
     // S = 1 && F == 11
     if (S==1 && F==11) {
-        //Add new task to tcsTasks
-        tcsTasks.push_back(msg_data);
 
         //3层升降货架从下往上为第1层, 第2层, 第3层
         int firstFloorInfo = 0; //为3层升降货架第1层是否有料信息, 1为有料, 0为无料
@@ -158,9 +277,8 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
 
 
         std::string from    = msg_data["FROM"].string_value();
-        //std::string from    = "2001";
         std::string to      = msg_data["DESTINATION"].string_value();
-        //std::string to    = "2000";
+
 
         int ceid            = std::stoi(msg_data["CEID"].string_value());
         std::string dispatch_id  = msg_data["DISPATCH_ID"].string_value();
@@ -175,6 +293,14 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
         {
 
         }
+
+        if(from == "2001")
+            from = "2000";
+
+        if(to == "2000")
+            to = "2600";
+
+
 
         std::string line_id = msg_data["LINE_ID"].string_value();
 
@@ -235,6 +361,10 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
 
         int allFloorInfo = thirdFloorInfo*4 + secondFloorInfo*2 + firstFloorInfo;
 
+        //Add new task to tcsTasks
+
+        bool result = addTcsTask(msg_data);
+
         // 返回信息
         lynx::Msg ret_msg({
                                   lynx::Msg(Msg::object{1, "RETURN_CODE", lynx::Msg("0")}),
@@ -247,10 +377,20 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
 
         send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
 
-        //TODO
-        TaskMaker::getInstance()->makeTask(from,to,dispatch_id,ceid,line_id,agv_id, allFloorInfo);
+        if(result)
+        {
+            TaskMaker::getInstance()->makeTask(from,to,dispatch_id,ceid,line_id,agv_id, allFloorInfo);
+        }
+        else
+        {
+           combined_logger->error(" QunChuangTCS new task error, please check...... ");
+        }
 
 
+    }
+    else if(S==2)
+    {
+        processRequest(S,F,msg_data);
     }
     else {
         std::unique_lock<std::mutex> lck(requestContext->mtx);
@@ -260,6 +400,75 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
         requestContext->cv.notify_all();
     }
 }
+
+lynx::Msg QunChuangTcsConnection::createTCSReturnMsg(std::string return_code, lynx::Msg msg_data)
+{
+    lynx::Msg ret_msg(lynx::Msg::array {
+                              lynx::Msg(Msg::object{1, "RETURN_CODE", lynx::Msg(return_code)}),
+                              lynx::Msg(Msg::object{40, "DISPATCH_ID", msg_data["DISPATCH_ID"]}),
+                              /*lynx::Msg(Msg::object{1, "CEID", msg_data["CEID"]}),*/
+                      });
+    return ret_msg;
+}
+
+void QunChuangTcsConnection::processRequest(int S, int F,lynx::Msg msg_data)
+{
+    lynx::Msg ret_msg;
+
+    std::string dispatch_id = msg_data["DISPATCH_ID"].string_value();
+    int agv_id = -1;
+    try
+    {
+        if(!msg_data["AGV_ID"].is_null())
+            agv_id = std::stoi(msg_data["AGV_ID"].string_value());
+    }
+    catch(std::exception e)
+    {
+
+    }
+
+
+    if(S== 2 && F == 1)
+    {
+        combined_logger->debug("QunChuangTCS, processRequest, 取消任务 DISPATCH_ID = {0}, AGV_ID = {1}", dispatch_id,agv_id);
+
+        if(true == TaskMaker::getInstance()->cancelTask(dispatch_id,agv_id))
+            ret_msg = createTCSReturnMsg("0" ,msg_data);
+        else
+            ret_msg = createTCSReturnMsg("1",msg_data);
+
+        auto ret_msg_str = "S2F2" + ret_msg.dump();
+        combined_logger->info(" processRequest, send data: {0} ", ret_msg_str);
+        send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
+    }
+    else if(S== 2 && F == 3)
+    {
+        combined_logger->debug("QunChuangTCS, processRequest, 强制结束任务 DISPATCH_ID = {0}, AGV_ID = {1}", dispatch_id,agv_id);
+
+        if(true == TaskMaker::getInstance()->forceFinishTask(dispatch_id,agv_id))
+            ret_msg = createTCSReturnMsg("0" ,msg_data);
+        else
+            ret_msg = createTCSReturnMsg("1",msg_data);
+
+        auto ret_msg_str = "S2F4" + ret_msg.dump();
+        combined_logger->info(" processRequest, send data: {0} ", ret_msg_str);
+        send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
+    }
+    else if(S== 2 && F == 5)
+    {
+        combined_logger->debug("QunChuangTCS, processRequest, 取空卡赛结束 DISPATCH_ID = {0}, AGV_ID = {1}", dispatch_id,agv_id);
+
+        if(true == TaskMaker::getInstance()->taskFinishedNotify(dispatch_id,agv_id))
+            ret_msg = createTCSReturnMsg("0" ,msg_data);
+        else
+            ret_msg = createTCSReturnMsg("1",msg_data);
+
+        auto ret_msg_str = "S2F6" + ret_msg.dump();
+        combined_logger->info(" processRequest, send data: {0} ", ret_msg_str);
+        send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
+    }
+}
+
 
 void QunChuangTcsConnection::onConnect()
 {
@@ -279,7 +488,7 @@ void QunChuangTcsConnection::taskStart(std::string dispatchId, int agvId)
 
      lynx::Msg msg_data=getTcsMsgByDispatchId(dispatchId);
 
-     //if(nullptr != msg_data)
+     if(isTcsMsgExist(dispatchId))
      {
          // 返回信息
          lynx::Msg ret_msg({
@@ -299,37 +508,48 @@ void QunChuangTcsConnection::taskStart(std::string dispatchId, int agvId)
 
          send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
      }
-     /*else
+     else
      {
          combined_logger->error(" QunChuangTCS taskStart, msg_data = nullptr...... ");
-     }*/
+     }
 }
 
 
 void QunChuangTcsConnection::taskFinished(std::string dispatchId, int agvId, bool success)
 {
-    combined_logger->info(" QunChuangTCS finished...... ");
+    combined_logger->error(" QunChuangTCS finished...... ");
 
     std::string dateTime = getTimeStrNow();
 
-    lynx::Msg msg_data=getTcsMsgByDispatchId(dispatchId);
-
-    //if(msg_data != nullptr)
+    std::string ENDCODE = "PREN";//常完成整個任務
+    std::string AGV_ID = " ";
+    if(agvId > 0)
+        AGV_ID = intToString(agvId);
+    if(!success)
     {
+        if(agvId > 0)
+            ENDCODE = "ABOT";//在AGV執行任務的中途,取消任務
+        else
+            ENDCODE = "CAEN";//中控無車,取消任務
+    }
+
+
+    if(isTcsMsgExist(dispatchId))
+    {
+        lynx::Msg msg_data=getTcsMsgByDispatchId(dispatchId);
+
         std::string destination = msg_data["DESTINATION"].string_value();
-        if(destination == " ")
-            destination = msg_data["FROM"].string_value();
 
         // 返回信息
         lynx::Msg ret_msg({
                               lynx::Msg(Msg::object{1, "CEID", msg_data["CEID"]}),
                               lynx::Msg(Msg::object{20, "LINE_ID", msg_data["LINE_ID"]}),
-                              lynx::Msg(Msg::object{20, "AGV_ID", lynx::Msg(intToString(agvId))}),
+                              lynx::Msg(Msg::object{20, "AGV_ID", lynx::Msg(AGV_ID)}),
                               lynx::Msg(Msg::object{40, "DISPATCH_ID", msg_data["DISPATCH_ID"]}),
                               lynx::Msg(Msg::object{2, "SEQUENCE", lynx::Msg("0")}),
-                              lynx::Msg(Msg::object{20, "OPER_ID", msg_data["DESTINATION"]}),
+                              lynx::Msg(Msg::object{20, "OPER_ID", lynx::Msg(destination)}),
                               lynx::Msg(Msg::object{40, "TRANSFER_OBJ_ID", msg_data["TRANSFER_OBJ_ID"]}),
-                              lynx::Msg(Msg::object{4, "ENDCODE", lynx::Msg("PREN")}),
+                              lynx::Msg(Msg::object{4, "ENDCODE", lynx::Msg(ENDCODE)}),
                               lynx::Msg(Msg::object{80, "ENDREASON", lynx::Msg("")}),
                               lynx::Msg(Msg::object{14, "DATETIME", lynx::Msg(dateTime)}),
                           });
@@ -339,13 +559,103 @@ void QunChuangTcsConnection::taskFinished(std::string dispatchId, int agvId, boo
         std::cout<<"@@@@@@@@ QunChuangTCS finished, send data: " << ret_msg_str << std::endl;
 
         send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
-        //delete dispatch id
 
-        deleteTcsMsgByDispatchId(dispatchId);
     }
-    /*else
+    else
     {
         combined_logger->error(" QunChuangTCS finished, msg_data = nullptr...... ");
-    }*/
+    }
 }
 
+
+void QunChuangTcsConnection::reportArrivedStation(std::string dispatch_id, int agvId, std::string station_name)
+{
+    if(isTcsMsgExist(dispatch_id))
+    {
+        lynx::Msg msg_data=getTcsMsgByDispatchId(dispatch_id);
+
+        std::string from    = msg_data["FROM"].string_value();
+        std::string to      = msg_data["DESTINATION"].string_value();
+
+        combined_logger->info(" QunChuangTCS reportArrivedStation, station_name: {0}", station_name);
+        combined_logger->info(" QunChuangTCS reportArrivedStation, from: {0}", from);
+        combined_logger->info(" QunChuangTCS reportArrivedStation, to: {0}", to);
+
+        if(station_name == "2000")
+            station_name = "2001";
+
+        if(station_name == from || station_name == to)
+        {
+            // 返回信息
+            lynx::Msg ret_msg({
+                                  lynx::Msg(Msg::object{1, "CEID", msg_data["CEID"]}),
+                                  lynx::Msg(Msg::object{20, "LINE_ID", msg_data["LINE_ID"]}),
+                                  lynx::Msg(Msg::object{20, "AGV_ID", lynx::Msg(intToString(agvId))}),
+                                  lynx::Msg(Msg::object{40, "DISPATCH_ID", msg_data["DISPATCH_ID"]}),
+                                  lynx::Msg(Msg::object{2, "SEQUENCE", lynx::Msg("0")}),
+                                  lynx::Msg(Msg::object{20, "OPER_ID", lynx::Msg(station_name)}),
+                                  lynx::Msg(Msg::object{40, "TRANSFER_OBJ_ID", msg_data["TRANSFER_OBJ_ID"]}),
+                              });
+
+            auto ret_msg_str = "S1F13" + ret_msg.dump();
+
+            std::cout<<"@@@@@@@@ QunChuangTCS arrived station, send data: " << ret_msg_str << std::endl;
+
+            send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
+        }
+
+    }
+    else
+    {
+        combined_logger->warn(" QunChuangTCS reportArrivedStation, dispatch_id: {0} can not find", dispatch_id);
+    }
+}
+
+
+void QunChuangTcsConnection::reportLeaveStation(std::string dispatch_id, int agvId, std::string station_name)
+{
+    combined_logger->info(" QunChuangTCS reportLeaveStation start");
+
+    if(isTcsMsgExist(dispatch_id))
+    {
+        lynx::Msg msg_data=getTcsMsgByDispatchId(dispatch_id);
+
+        std::string from    = msg_data["FROM"].string_value();
+        std::string to      = msg_data["DESTINATION"].string_value();
+
+        combined_logger->info(" QunChuangTCS reportArrivedStation, station_name: {0}", station_name);
+        combined_logger->info(" QunChuangTCS reportArrivedStation, from: {0}", from);
+        combined_logger->info(" QunChuangTCS reportArrivedStation, to: {0}", to);
+
+        if(station_name == from || station_name == to)
+        {
+            // 返回信息
+            lynx::Msg ret_msg({
+                                  lynx::Msg(Msg::object{1, "CEID", msg_data["CEID"]}),
+                                  lynx::Msg(Msg::object{20, "LINE_ID", msg_data["LINE_ID"]}),
+                                  lynx::Msg(Msg::object{20, "AGV_ID", lynx::Msg(intToString(agvId))}),
+                                  lynx::Msg(Msg::object{40, "DISPATCH_ID", msg_data["DISPATCH_ID"]}),
+                                  lynx::Msg(Msg::object{2, "SEQUENCE", lynx::Msg("0")}),
+                                  lynx::Msg(Msg::object{20, "OPER_ID", lynx::Msg(station_name)}),
+                                  lynx::Msg(Msg::object{40, "TRANSFER_OBJ_ID", msg_data["TRANSFER_OBJ_ID"]}),
+                              });
+
+            auto ret_msg_str = "S2F7" + ret_msg.dump();
+
+            std::cout<<"@@@@@@@@ QunChuangTCS leave station, send data: " << ret_msg_str << std::endl;
+
+            send(const_cast<char *>(ret_msg_str.c_str()), (int)ret_msg_str.size());
+        }
+
+        //delete dispatch id
+        if(station_name == to)
+            deleteTcsMsgByDispatchId(dispatch_id);
+    }
+    else
+    {
+        combined_logger->warn(" QunChuangTCS reportLeaveStation, dispatch_id: {0} can not find", dispatch_id);
+    }
+
+    combined_logger->info(" QunChuangTCS reportLeaveStation end");
+
+}

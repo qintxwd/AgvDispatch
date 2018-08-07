@@ -39,6 +39,9 @@ public:
     MapPath *getMapPathByStartEnd(int start,int end);
 
     //一个Agv占领一个站点
+    int getFloorNum(std::string floorName);
+
+    //获得站点楼层
     int getStationFloor(int station);
 
     //是否同一楼层站点

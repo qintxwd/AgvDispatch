@@ -33,7 +33,7 @@ void QunChuangNodeTingPut::beforeDoing(AgvPtr agv)
         {
             std::cout << "AGV 上料到偏贴机, call ros_agv  beforeDoing" << std::endl;
 
-            ros_agv->beforeDoing(ip, station->getPort(),AGV_ACTION_PUT,  HexStringToInt(getStationNum(station->getName())));
+            ros_agv->beforeDoing(ip, station->getPort(),AGV_ACTION_PUT,  getStationNum(station->getName()));
         }
         else
         {

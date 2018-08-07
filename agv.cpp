@@ -21,7 +21,8 @@ Agv::Agv(int _id, std::string _name, std::string _ip, int _port) :
     nextStation(0),
     x(0),
     y(0),
-    theta(0)
+    theta(0),
+    loading(false)
 {
 }
 

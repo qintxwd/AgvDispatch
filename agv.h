@@ -10,6 +10,8 @@
 #define ALL_FLOOR_INFO_KEY         "all_floor_info"
 //AGV完成一个Task是否需要回到等待区KEY
 #define NEED_AGV_BACK_TO_WAITING_AREA_KEY  "need_agv_back_to_waiting_area"
+//AGV已装载, 等待送料STATUS
+#define NEED_SET_AGV_WAITTING_PUT_STATUS   "need_set_agv_waitting_put_status"
 
 class AgvTask;
 using AgvTaskPtr = std::shared_ptr<AgvTask>;
@@ -48,8 +50,11 @@ public:
         AGV_STATUS_POWER_LOW = 3,//电量低
         AGV_STATUS_ERROR = 4,//故障
         AGV_STATUS_GO_CHARGING = 5,//返回充电中
-        AGV_STATUS_CHARGING = 6,//正在充电
-        AGV_STATUS_NOTREADY = 7 //刚连接，尚未上报位置
+		AGV_STATUS_CHARGING = 6,//正在充电
+        AGV_STATUS_NOTREADY = 7,//刚连接，尚未上报位置
+        AGV_STATUS_WAITTING_PUT = 8,//AGV已装载, 等待送料
+        AGV_STATUS_FORCE_FINISHED = 9,//AGV强制结束任务
+
     };
 
     //状态
@@ -77,6 +82,15 @@ public:
 	int getLastStation() { return lastStation; }
 	int getNowStation() { return nowStation; }
 	int getNextStation() { return nextStation; }
+    void setInitStation(int station)
+    {
+        initStation = station;
+    }
+
+    virtual int getInitStation()
+    {
+        return initStation;
+    }
 
     void onArriveStation(int station);
     void onLeaveStation(int stationid);
@@ -89,6 +103,16 @@ public:
     virtual void goStation(int station, bool stop = false);
     virtual void stop();
     virtual void callMapChange(int station);
+
+    void setLoading(bool _loading) //agv是否载物
+    {
+        loading = _loading;
+    }
+
+    bool isLoading()
+    {
+        return loading;
+    }
 
     void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
     std::string getExtraParam(std::string key){return extra_params[key];}
@@ -108,6 +132,10 @@ protected:
 	int lastStation;//上一个站点
 	int nowStation;//当前所在站点
 	int nextStation;//下一个站点
+
+    int initStation;//初始化站点
+
+    bool loading;
 
     std::mutex stationMtx;
     std::vector<int> excutestations;

@@ -1,4 +1,4 @@
-#ifndef ELEVATORMANAGER_H
+﻿#ifndef ELEVATORMANAGER_H
 #define ELEVATORMANAGER_H
 
 #include <vector>
@@ -27,8 +27,9 @@ public:
 
     ElevatorPtr getElevatorById(int id);
 
-protected:
+public:
     ElevatorManager();
+    ~ElevatorManager();
 private:
     void checkTable();
 

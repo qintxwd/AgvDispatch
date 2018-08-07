@@ -114,8 +114,21 @@ public:
 
     // (进入电梯应答) agv进入后, 直到可以离开
     bool AgvEnterUntilArrive(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout);
+
+    bool AgvStartLeft(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout);
+
     // agv完全离开电梯, 结束流程
     bool AgvLeft(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout);
+
+    // (进入电梯应答)
+    bool AgvEnterConfirm(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout);
+
+    // wait agv离开电梯
+    bool AgvWaitArrive(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout);
+
+    void StartSendThread(int cmd, int from_floor, int to_floor, int elevator_id, int agv_id);
+    void StopSendThread();
+
 
     virtual bool OpenDoor(int floor);
     virtual void CloseDoor(int floor);
@@ -246,6 +259,8 @@ private:
     bool right_pos_enabled; //启用电梯右侧位置
     bool elevator_enabled;  //启用电梯
     std::vector<int> waitingPoints; //电梯旁边等待区point
+
+    bool send_cmd;  //启用电梯
 
 };
 

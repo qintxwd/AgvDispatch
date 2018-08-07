@@ -73,6 +73,7 @@ bool AgvManager::init()
                 AgvPtr agv(new rosAgv(id,name,ip,port,agvType,agvClass,lineName));
                 agv->init();
                 agv->setPosition(lastStation, nowStation, nextStation);
+				agv->setInitStation(nowStation);
                 agvs.push_back(agv);
             }
             else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
@@ -425,5 +426,5 @@ AgvPtr AgvManager::getAgvByIP(std::string ip)
         if (agv->getIp() == ip)
             return agv;
     }
-    return nullptr;
+    return NULL;
 }

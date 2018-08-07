@@ -74,6 +74,7 @@ bool ElevatorManager::init()
                 ele_enabled = atoi(table_ele.fieldValue(7)) == 1;
 
             ElevatorPtr ele(new Elevator(id,name,ip,port,left_enabled,right_enabled,ele_enabled,waitting_points));
+            ele->init();
             elevators.push_back(ele);
         }
     }catch(CppSQLite3Exception e){

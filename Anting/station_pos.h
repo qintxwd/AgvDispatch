@@ -9,10 +9,7 @@ public:
     int m_pickPos2;
     int m_putPos1;
     int m_putPos2;
-    int m_x;
-    int m_y;
-    int m_t;
-    StationPos(int _id, int _level, int _pickPos1, int _pickPos2, int _putPos1, int _putPos2,int _x,int _y,int _t)
+    StationPos(int _id, int _level, int _pickPos1, int _pickPos2, int _putPos1, int _putPos2)
     {
         m_id = _id;
         m_level = _level;
@@ -20,9 +17,6 @@ public:
         m_pickPos2 = _pickPos2;
         m_putPos1 = _putPos1;
         m_putPos2 = _putPos2;
-        m_x = _x;
-        m_y = _y;
-        m_t = _t;
     }
     StationPos(){}
 };

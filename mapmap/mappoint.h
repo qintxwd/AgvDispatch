@@ -52,6 +52,8 @@ public:
     void setAgvType(int _agvType){agvType = _agvType ;}
     void setLineId(std::string _lineId){lineId = _lineId;}
 
+
+
 private:
     Map_Point_Type point_type;
     int x;

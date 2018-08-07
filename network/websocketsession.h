@@ -22,7 +22,7 @@ using WebSocketSessionPtr = std::shared_ptr<WebSocketSession>;
 class WebSocketSession : public Session
 {
 public:
-    WebSocketSession(tcp::socket socket,int sessionId,int acceptId);
+    WebSocketSession(tcp::socket socket,int sessionId);
 
     virtual ~WebSocketSession();
 

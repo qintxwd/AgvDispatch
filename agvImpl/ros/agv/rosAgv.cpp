@@ -3,6 +3,8 @@
 //#include <locale>
 #include <condition_variable>
 #include "rosAgvUtils.h"
+#include "qunchuang/qunchuangnodedoing.h"
+#include "taskmanager.h"
 
 rosAgv::rosAgv(int id, std::string name, std::string ip, int port,int agvType, int agvClass, std::string lineName):
     RealAgv(id,name,ip,port/*,agvType,agvClass,lineName*/)
@@ -10,17 +12,50 @@ rosAgv::rosAgv(int id, std::string name, std::string ip, int port,int agvType, i
     mChipmounter = nullptr;
 
     m_bInitlayer = false;
-    this->agvType = AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF;
+
+    this->agvType = agvType;
+
+    if(this->agvType ==AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)
+        combined_logger->info("rosAgv, 3层升降货架 AGV" );
+    else
+        combined_logger->info("rosAgv, agvType : {0}",  agvType);
 
     shelf_finished_status="";
     last_tcp_json_data="";
 
+    bAgvConnected = false;
+
     //每个AGV需要根据原点修改
-    initStation("station_2000"); //初始化站点, 通常为AGV原点
+    //initStation("station_20003"); //初始化站点, 通常为AGV原点
+}
+
+void rosAgv::setRebootState()//AGV reboot but server is still running, need reset some state
+{
+    if(mChipmounter != nullptr)
+    {
+        delete mChipmounter;
+        mChipmounter = nullptr;
+    }
+    shelf_finished_status="";
+
+    if(this->getTask() != nullptr)
+    {
+        int taskId = this->getTask()->getId();
+        this->cancelTask();
+        TaskManager::getInstance()->cancelTask(taskId);
+        this->setTask(nullptr);
+    }
+
+    status == Agv::AGV_STATUS_IDLE;
+
+    initStation("station_2600"); //初始化站点, 通常为AGV原点, need set by agv id or name
+
 }
 
 void rosAgv::onConnect()
 {
+    bAgvConnected = true;
+
     combined_logger->info("rosAgv onConnect OK! name: "+getName());
 #if SIMULATOR
     //subTopic((getName() + AGV_POSE_TOPIC_NAME).c_str(), AGV_POSE_TOPIC_TYPE);
@@ -60,6 +95,7 @@ void rosAgv::onConnect()
 
 void rosAgv::onDisconnect()
 {
+    bAgvConnected = false;
 }
 
 void rosAgv::onRead(const char *data,int len)
@@ -155,40 +191,92 @@ void rosAgv::stop()
 {
 }
 
+/*
+ * qunchuang staion like this "station_2500", this function remove "station_"
+ */
+std::string rosAgv::getStationNum(std::string stationName)
+{
+    std::string result;
+    if (stationName.length() == 0)
+        return result;
+
+    size_t pos = stationName.find_first_of("_");
+    if(pos == std::string::npos){
+        return stationName;
+    }
+
+    result = stationName.substr(pos+1);
+    return result;
+}
+
+void rosAgv::reportToTCSStation(int station_id, bool arrive)
+{
+    AgvTaskPtr _task = this->getTask();
+    if(_task != nullptr)
+    {
+        string dispatch_id = _task->getExtraParam("dispatch_id");
+
+        //获取站点：
+        MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station_id);
+        if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)
+        {
+            combined_logger->error("rosAgv, reportToTCSStation, station : {0} is not a station", station_id);
+            return;
+        }
+
+        string station_name = getStationNum(spirit->getName());
+
+        if(arrive)
+        {
+            combined_logger->info("rosAgv,  reportToTCSStation, arrvive station_name : {0}", station_name);
+            QunChuangTcsConnection::Instance()->reportArrivedStation(dispatch_id, this->getId(), station_name);
+        }
+        else
+        {
+            combined_logger->info("rosAgv,  reportToTCSStation, leave station_name : {0}", station_name);
+            QunChuangTcsConnection::Instance()->reportLeaveStation(dispatch_id, this->getId(), station_name);
+        }
+    }
+}
+
 void rosAgv::onTaskStart(AgvTaskPtr _task)
 {
     if(_task != nullptr)
     {
         string dispatch_id = _task->getExtraParam("dispatch_id");
 
-        combined_logger->info("rosAgv,  onTaskStart......");
-        QunChuangTcsConnection::Instance()->taskStart(dispatch_id, this->getId());
+        combined_logger->info("rosAgv,  onTaskStart, dispatch_id: {0}", dispatch_id);
+        if(dispatch_id != " ")
+            QunChuangTcsConnection::Instance()->taskStart(dispatch_id, this->getId());
+
+        //回到等待区node, 强制返回二楼电梯旁边, 后面需要根据AGV和楼层动态设置
+        //完成任务返回待命点, 以后需要添加到TaskManager
+        string need_back_to_waiting = _task->getExtraParam("NEED_AGV_BACK_TO_WAITING_AREA_KEY");
+        if(need_back_to_waiting == "true")
+        {
+            AgvTaskNodePtr waittingNode(new AgvTaskNode());
+            waittingNode->setStation(getStationId("station_2600"));
+
+            AgvTaskNodeDoThingPtr doThing(new QunChuangNodeDoing(std::vector<std::string>()));
+            doThing->setStationId(getStationId("station_2600"));
+
+            waittingNode->push_backDoThing(doThing);
+            _task->push_backNode(waittingNode);
+        }
     }
+
 }
 
 void rosAgv::onTaskFinished(AgvTaskPtr _task)
 {
     combined_logger->info("rosAgv,  onTaskFinished......");
-    if(_task != nullptr)
+    /*if(_task != nullptr)
     {
         string dispatch_id = _task->getExtraParam("dispatch_id");
 
         QunChuangTcsConnection::Instance()->taskFinished(dispatch_id, this->getId(), true);
 
-        //完成任务返回待命点, 以后需要添加到TaskManager
-        string need_back_to_waiting = _task->getExtraParam("NEED_AGV_BACK_TO_WAITING_AREA_KEY");
-        if(need_back_to_waiting == "true")
-        {
-            combined_logger->info("完成任务返回待命点, 以后需要添加到TaskManager......");
-            //startTask("lift_polar_back");
-        }
-        else
-        {
-            sleep(10);
-            combined_logger->info("rosAgv,  onTaskFinished, 不需要返回待命点");
-        }
-    }
-
+    }*/
 }
 
 
@@ -250,10 +338,23 @@ void rosAgv::setChipMounter(chipmounter* device)
     }
 }
 
-bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
+bool rosAgv::beforeDoing(string ip, int port, string action, string station)
 {
     int try_times = 0;
     std::chrono::milliseconds dura(1000);
+
+    if(currentTask == nullptr)
+    {
+        combined_logger->error("rosAgv, beforeDoing, currentTask == nullptr");
+        return false;
+    }
+
+    if(currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+    {
+        combined_logger->error("rosAgv, beforeDoing, 强制结束任务");
+        return true;
+    }
+
 
     combined_logger->error("rosAgv, beforeDoing..., action: {1}", action);
 
@@ -271,7 +372,7 @@ bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
                 combined_logger->info("rosAgv, beforeDoing...,agvType == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF");
 
                 //startShelftUp(action);
-                secondaryLocalization(intToString(station_id));
+                secondaryLocalization(station);
 
                 combined_logger->error("rosAgv, new chipmounter.....");
 
@@ -283,6 +384,18 @@ bool rosAgv::beforeDoing(string ip, int port, string action, int station_id)
                     {
                         std::this_thread::sleep_for(dura);
                         try_times ++;
+
+                        if(currentTask == nullptr)
+                        {
+                           combined_logger->debug("rosAgv, Doing, 任务取消");
+                           return false;
+                        }
+
+                        if(currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+                        {
+                            combined_logger->debug("rosAgv, Doing, 强制结束任务");
+                            return false;
+                        }
                         if(try_times > 600)
                         {
                             combined_logger->error("rosAgv, beforeDoing, connect error, delete mChipmounter...");
@@ -316,21 +429,16 @@ bool rosAgv::Doing(string action, int station_id)
 
     combined_logger->info("rosAgv, . start doing..");
 
-    /*if(station_id == 2510)
-    {
-        station_id=0x2510;
-        combined_logger->info("rosAgv, polar 06");
-    }
-    else if(station_id == 2511)
-    {
-        station_id=0x2511;
-        combined_logger->info("rosAgv, polar 07 ");
-    }*/
-
     if(currentTask == nullptr)
     {
         combined_logger->error("rosAgv, start doing, currentTask == nullptr");
         return false;
+    }
+
+    if(currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+    {
+        combined_logger->error("rosAgv, Doing, 强制结束任务");
+        return true;
     }
 
     //if(station_id is chipmount_station )
@@ -350,34 +458,80 @@ bool rosAgv::Doing(string action, int station_id)
 
             combined_logger->error("rosAgv, startLoading, all_floor_info: " + intToString(all_floor_info));
 
-            mChipmounter->startLoading(station_id, all_floor_info);
-
-            subTopic("/waypoint_user_sub", "std_msgs/String");
-
-            //PLC start to rolling, need AGV also start to rolling
-            startRolling(AGV_SHELVES_ROLLING_FORWORD);
-            combined_logger->info("rosAgv, 等待上料完成...");
-
-            startTask("get_up_part_status");
-
-            while(!mChipmounter->isLoadingFinished())//等待上料完成
+            if(currentTask->getStatus() != Agv::AGV_STATUS_FORCE_FINISHED)
             {
-                std::this_thread::sleep_for(dura);
+
+                mChipmounter->startLoading(station_id, all_floor_info);
+
+                subTopic("/waypoint_user_sub", "std_msgs/String");
+
+                //PLC start to rolling, need AGV also start to rolling
+                startRolling(AGV_SHELVES_ROLLING_FORWORD);
+                combined_logger->info("rosAgv, 等待上料完成...");
+
+                startTask("get_up_part_status");
+
+
+                if(currentTask != nullptr)
+                    combined_logger->info("rosAgv, currentTask status: {0}", currentTask->getStatus());
+
+
+                //while(!mChipmounter->isLoadingFinished() && (currentTask != nullptr && currentTask->getStatus() != Agv::AGV_STATUS_FORCE_FINISHED))//等待上料完成
+                while(!mChipmounter->isLoadingFinished())
+                {
+                    if(currentTask == nullptr)
+                    {
+                       combined_logger->debug("rosAgv, Doing, 任务取消");
+                       return false;
+                    }
+
+                    if(currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+                    {
+                        combined_logger->debug("rosAgv, Doing, 强制结束任务");
+                        break;
+                    }
+
+                    combined_logger->info("rosAgv, 等待上料完成...");
+
+                    std::this_thread::sleep_for(dura);
+                }
+
+                combined_logger->info("rosAgv, 上料完成...");
+
+
+                if(currentTask != nullptr)
+                    combined_logger->info("rosAgv, 222 currentTask status: {0}", currentTask->getStatus());
+
+                //while(m_nav_ctrl_status != NAV_CTRL_STATUS_COMPLETED && (currentTask != nullptr && currentTask->getStatus() != Agv::AGV_STATUS_FORCE_FINISHED))
+                while(m_nav_ctrl_status != NAV_CTRL_STATUS_COMPLETED)
+                {
+                    if(currentTask == nullptr)
+                    {
+                       combined_logger->debug("rosAgv, Doing, 任务取消");
+                       break;
+                    }
+
+                    if(currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+                    {
+                        combined_logger->debug("rosAgv, Doing, 强制结束任务");
+                        break;
+                    }
+
+                    combined_logger->info("rosAgv, 等待货架status...");
+
+                    std::this_thread::sleep_for(dura);
+                }
+
+                combined_logger->info("停止订阅货架status");
+                unSubTopic("/waypoint_user_sub"); //停止订阅货架status
+            }
+            else
+            {
+                combined_logger->error("rosAgv, task force finised");
             }
 
-            combined_logger->info("rosAgv, 上料完成...");
 
-
-            while(m_nav_ctrl_status != NAV_CTRL_STATUS_COMPLETED)
-            {
-                std::this_thread::sleep_for(dura);
-            }
-
-            combined_logger->info("停止订阅货架status");
-            unSubTopic("/waypoint_user_sub"); //停止订阅货架status
-
-
-            if(isShelftSuccess(UP_PART))
+            if(isShelftSuccess(UP_PART) || currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
             {
                 startShelftDown(action);
                 return true;
@@ -406,6 +560,18 @@ bool rosAgv::Doing(string action, int station_id)
 
             while(!mChipmounter->isUnLoadingFinished())//等待下料完成
             {
+                if(currentTask == nullptr)
+                {
+                   combined_logger->debug("rosAgv, Doing, 任务取消");
+                   break;
+                }
+
+                if(currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+                {
+                    combined_logger->debug("rosAgv, Doing, 强制结束任务");
+                    break;
+                }
+
                 std::this_thread::sleep_for(dura);
             }
 
@@ -414,15 +580,27 @@ bool rosAgv::Doing(string action, int station_id)
 
             while(m_nav_ctrl_status != NAV_CTRL_STATUS_COMPLETED)
             {
+                if(currentTask == nullptr)
+                {
+                   combined_logger->debug("rosAgv, Doing, 任务取消");
+                   break;
+                }
+
+                if(currentTask->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+                {
+                    combined_logger->debug("rosAgv, Doing, 强制结束任务");
+                    break;
+                }
                 std::this_thread::sleep_for(dura);
             }
 
             combined_logger->info("停止订阅货架status");
             unSubTopic("/waypoint_user_sub"); //停止订阅货架status
 
+            startShelftDown(action);
+
             if(isShelftSuccess(DOWN_PART))
             {
-                startShelftDown(action);
                 combined_logger->info("rosAgv,Doing,unloading end...");
                 return true;
             }
@@ -441,18 +619,61 @@ bool rosAgv::Doing(string action, int station_id)
 
 bool rosAgv::afterDoing(string action, int station_id)
 {
+    bool taskFinished = false;
+
     if(mChipmounter != nullptr)
     {
-        combined_logger->error("rosAgv, afterDoing, delete mChipmounter...");
+        combined_logger->info("rosAgv, afterDoing, delete mChipmounter...");
 
         delete mChipmounter;
         mChipmounter=nullptr;
 
-        combined_logger->error("rosAgv, afterDoing, delete mChipmounter end...");
-        startTask("dock_back"); // agv back
+        taskFinished = true;
 
-    }    
-    //startTask("lift_polar_back");
+        combined_logger->info("完成任务返回待命点, 先后退一段距离......");
+        startTask("dock_back");
+    }
+
+    AgvTaskPtr _task = this->getTask();
+    if(_task == nullptr)
+        return false;
+
+
+    if(AGV_ACTION_PUT == action || _task->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED)
+    {
+        string dispatch_id = _task->getExtraParam("dispatch_id");
+
+        if(this->agvType == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)
+        {
+            if(taskFinished || _task->getStatus() == Agv::AGV_STATUS_FORCE_FINISHED) //上料完成
+            {
+                QunChuangTcsConnection::Instance()->taskFinished(dispatch_id, this->getId(), true);
+            }
+            else  //下料完成, 等待人工取走空卡塞
+            {
+                combined_logger->debug("下料完成, 等待人工取走空卡塞......");
+
+                while(true)
+                {
+                    if("true" == _task->getExtraParam("TASK_FINISHED_NOFITY"))
+                    {
+                        combined_logger->debug("人工取走空卡塞完成......");
+                        QunChuangTcsConnection::Instance()->taskFinished(dispatch_id, this->getId(), true);
+
+                        break;
+                    }
+                    else
+                        sleep(1);
+                }
+            }
+        }
+        else
+            QunChuangTcsConnection::Instance()->taskFinished(dispatch_id, this->getId(), true);
+    }
+    else
+    {
+        this->status = AGV_STATUS_WAITTING_PUT;
+    }
 
     return true;
 }
@@ -467,29 +688,35 @@ void rosAgv::startRolling(bool forword) //3层升降货架AGV
 void rosAgv::stopRolling()//3层升降货架AGV
 {
     Json::Value msg;
-
     msg["data"]="load_all:0" ;
-
-    publishTopic("/waypoint_user_pub", msg);}
+    publishTopic("/waypoint_user_pub", msg);
+}
 
 void rosAgv::startShelftUp(string action)//3层升降货架AGV
 {
     if(action == AGV_ACTION_PUT)
     {
-        ControlShelfUpDown(3, "87500");
+        ControlShelfUpDown(3, intToString(AGV_SHELVES_3_FLOOR_HEIGHT));
         sleep(1);
-        ControlShelfUpDown(2, "63000");
+
+        ControlShelfUpDown(2, intToString(AGV_SHELVES_2_FLOOR_HEIGHT));
         sleep(1);
-        ControlShelfUpDown(1, "39000");
+
+        ControlShelfUpDown(1, intToString(AGV_SHELVES_1_FLOOR_HEIGHT));
         sleep(10);
     }
     else if(action == AGV_ACTION_GET)
     {
-        ControlShelfUpDown(3, "85500");
+        //ControlShelfUpDown(3, "85500");
+        ControlShelfUpDown(3, intToString(AGV_SHELVES_3_FLOOR_HEIGHT-2000));
         sleep(1);
-        ControlShelfUpDown(2, "61000");
+
+        //ControlShelfUpDown(2, "61000");
+        ControlShelfUpDown(2, intToString(AGV_SHELVES_2_FLOOR_HEIGHT-2000));
         sleep(1);
-        ControlShelfUpDown(1, "37000");
+
+        //ControlShelfUpDown(1, "37000");
+        ControlShelfUpDown(1, intToString(AGV_SHELVES_1_FLOOR_HEIGHT-2000));
         sleep(10);
     }
 
@@ -497,73 +724,18 @@ void rosAgv::startShelftUp(string action)//3层升降货架AGV
 
 void rosAgv::startShelftDown(string action)//3层升降货架AGV
 {
-    ControlShelfUpDown(1, "0");
+    //ControlShelfUpDown(1, "0");
+    ControlShelfUpDown(1, intToString(AGV_SHELVES_1_FLOOR_INIT_HEIGHT));
     sleep(1);
-    ControlShelfUpDown(2, "20000");
+
+    //ControlShelfUpDown(2, "20000");
+    ControlShelfUpDown(2, intToString(AGV_SHELVES_2_FLOOR_INIT_HEIGHT));
     sleep(1);
-    ControlShelfUpDown(3, "40000");
+
+    //ControlShelfUpDown(3, "40000");
+    ControlShelfUpDown(3, intToString(AGV_SHELVES_3_FLOOR_INIT_HEIGHT));
     sleep(1);
 }
-
-
-void rosAgv::startTask(string station, string action)//3层升降货架AGV test
-{
-    int16_t station_id;
-    combined_logger->info("rosAgv, startTask ");
-
-    if(station == "2510")
-    {
-        station_id=0x2510;
-        combined_logger->info("rosAgv, startTask polar 06");
-    }
-    else if(station == "2511")
-    {
-        station_id=0x2511;
-        combined_logger->info("rosAgv, polar 07 ");
-    }
-
-    if(action == AGV_ACTION_GET)
-    {
-        combined_logger->info("rosAgv,  取空卡塞");
-        startTask("lift_polar_" + station);
-        if(m_nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED)//AGV已到达(下料到达)
-        {
-            combined_logger->info("rosAgv, AGV已到达(下料到达)");
-            if(true == Doing(action, station_id))
-            {
-                startTask("lift_polar_back");
-                combined_logger->info("rosAgv, startTask 取空卡塞 end.....");
-            }
-        }
-        else
-        {
-            combined_logger->error("rosAgv, 取空卡塞 error ...");
-        }
-    }
-    else if(action == AGV_ACTION_PUT)
-    {      
-        combined_logger->info("rosAgv, polar 07  上料");
-        startTask("lift_polar_" + station);
-
-        if(m_nav_ctrl_status == NAV_CTRL_STATUS_COMPLETED)//AGV已到达(上料到达)
-        {
-            combined_logger->info("rosAgv, AGV已到达(上料到达)");
-
-            if(true == Doing(action, station_id))
-            {
-                combined_logger->info("rosAgv, start lift_polar_back..");
-                startTask("lift_polar_back");
-            }
-        }
-        else
-        {
-            combined_logger->error("rosAgv, 上料 error ...");
-        }
-    }
-    combined_logger->info("rosAgv, task end haha..");
-}
-
-
 
 
 void rosAgv::ControlShelfUpDown(int layer, string height)//3层升降货架AGV
@@ -594,7 +766,7 @@ void rosAgv::InitShelfLayer()//3层升降货架AGV
 
 bool rosAgv::isAGVInit()
 {
-    agvType = AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF;
+    //agvType = AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF;
 
     if(agvType == AGV_TYPE_THREE_UP_DOWN_LAYER_SHELF)
         return true;
@@ -615,5 +787,19 @@ void rosAgv::initStation(string station_name)
     else
     {
         combined_logger->error("rosAgv, initStation: " + station_name + " error...");
+    }
+}
+
+int rosAgv::getStationId(string station_name)
+{
+    auto nowSpirit = MapManager::getInstance()->getMapSpiritByName(station_name);
+    if(nowSpirit!=nullptr && nowSpirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point)
+    {
+        return nowSpirit->getId();
+    }
+    else
+    {
+        combined_logger->error("rosAgv, getStationId: " + station_name + " error...");
+        return 0;
     }
 }

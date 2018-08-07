@@ -378,19 +378,9 @@ void AtForklift::excutePath(std::vector<int> lines)
     task_type = currentTaskNode->getType();
     combined_logger->info("taskType: {0}", task_type);
 
-    m_fix_x = 0;
-    m_fix_y = 0;
-    m_fix_a = 0;
-
     if(TASK_MOVE != task_type)
     {
-        auto params = split(currentTaskNode->getParams(),";");
-        m_lift_height = stoi(params.at(0));
-        if(params.size()>=5){
-            m_fix_x = stoi(params.at(2));
-            m_fix_y = stoi(params.at(3));
-            m_fix_a = stoi(params.at(4));
-        }
+        m_lift_height = stoi(split(currentTaskNode->getParams(),",").at(0));
     }
     else
     {
@@ -497,7 +487,6 @@ void AtForklift::excutePath(std::vector<int> lines)
     {
         goStation(exelines, true);
     }
-    combined_logger->info("excute path finish");
 }
 //移动至指定站点
 void AtForklift::goStation(std::vector<int> lines,  bool stop)
@@ -512,8 +501,7 @@ void AtForklift::goStation(std::vector<int> lines,  bool stop)
     std::stringstream body;
 
     int endId;
-    for(auto i=0;i<lines.size();++i){
-        auto line = lines[i];
+    for (auto line : lines) {
         MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(line);
         if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)
             continue;
@@ -535,18 +523,14 @@ void AtForklift::goStation(std::vector<int> lines,  bool stop)
             continue;
 
         start = static_cast<MapPoint *>(spirit_start);
-        //        start->getRealX();
-        //        start->getName();
-        //        start->getRealY();
+        start->getRealX();
+        start->getName();
+        start->getRealY();
 
         end = static_cast<MapPoint *>(spirit_end);
-        //        end->getRealX();
-        //        end->getName();
-        //        end->getRealY();
-
-
-
-
+        end->getRealX();
+        end->getName();
+        end->getRealY();
 
         //        combined_logger->info("atForklift goStation start: " + start->getName());
         //        combined_logger->info("atForklift goStation end: " + end->getName());
@@ -560,18 +544,8 @@ void AtForklift::goStation(std::vector<int> lines,  bool stop)
             body<<ATFORKLIFT_MOVE<<"|"<<speed<<","<<m_currentPos.m_x<<","<<m_currentPos.m_y<<","<<m_currentPos.m_theta*57.3<<","<<m_currentPos.m_floor<<",";
             //            \<<"|"<<speed<<dy_path->getP1x()/100.0<<","<<dy_path->getP1y()/100.0<<","<<dy_path->getP1a()<<","<<dy_path->getP1f()<<","<<dy_path->getPathType();
         }
+        body<<dy_path->getPathType()<<"|"<<speed<<","<<dy_path->getP2x()/100.0<<","<<-dy_path->getP2y()/100.0<<","<<dy_path->getP2a()/10.0<<","<<dy_path->getP2f()<<",";
 
-
-        combined_logger->info("i={0},line={1},m_fix_x={2},m_fix_y={3},m_fix_a={4},end.realX={5},end.realX={6},end.realA={7},end of lines = {8}",i,line,m_fix_x,m_fix_y,m_fix_a,end->getRealX(),end->getRealY(),end->getRealA(),excutespaths.back());
-
-        if( line == excutespaths.back()
-                && !(m_fix_a == 0 && m_fix_x == 0 && m_fix_y == 0)
-                && func_dis(dy_path->getP2x(),dy_path->getP2y(),m_fix_x,m_fix_y)<200)
-        {
-            body<<dy_path->getPathType()<<"|"<<speed<<","<<m_fix_x/100.0<<","<<-m_fix_y/100.0<<","<<m_fix_a/10.0<<","<<dy_path->getP2f()<<",";
-        }else{
-            body<<dy_path->getPathType()<<"|"<<speed<<","<<dy_path->getP2x()/100.0<<","<<-dy_path->getP2y()/100.0<<","<<dy_path->getP2a()/10.0<<","<<dy_path->getP2f()<<",";
-        }
     }
     body<<"1";
 

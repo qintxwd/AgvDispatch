@@ -1,6 +1,7 @@
 ﻿#ifndef QUNCHUANGTASKMAKER_H
 #define QUNCHUANGTASKMAKER_H
 
+#include "../agvtask.h"
 #include "../taskmaker.h"
 #include "qunchuangtcsconnection.h"
 
@@ -20,6 +21,11 @@ public:
      * all_floor_info : 0x0000   0x0001   0x0002   0x0003   0x0004   0x0005   0x0006   0x0007
      */
     virtual void makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid,std::string line_id, int agv_id, int all_floor_info);
+
+    bool cancelTask(std::string dispatch_id, int agv_id); //取消任务
+    bool forceFinishTask(std::string dispatch_id, int agv_id); //强制结束任务
+    bool taskFinishedNotify(std::string dispatch_id, int agv_id); //任务结束, 用在取空卡赛结束
+    AgvTaskPtr getTaskByDisPatchID(std::string dispatch_id);
 
 private:
     QunChuangTcsConnection *tcsConnection;

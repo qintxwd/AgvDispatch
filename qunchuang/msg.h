@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <vector>
@@ -7,7 +7,7 @@
 #include <sstream>
 
 
-namespace lynx {
+namespace lynx{
 
 class MsgValue;
 
@@ -106,3 +106,4 @@ std::tuple<int, int, Msg> parseMsg(const std::string& msg, std::string& err);
 std::tuple<int, int, Msg> parseMsg(const char *in, std::string& err);
 
 } // end of namespace
+
