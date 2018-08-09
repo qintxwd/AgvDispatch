@@ -1,4 +1,4 @@
-﻿#ifndef MAPMANAGER_H
+#ifndef MAPMANAGER_H
 #define MAPMANAGER_H
 #include <map>
 #include <utility>
@@ -22,7 +22,7 @@ class MapManager : public noncopyable, public std::enable_shared_from_this<MapMa
 {
 public:
 
-    static MapManagerPtr getInstance(){
+    static MapManagerPtr getInstance() {
         static MapManagerPtr m_inst = MapManagerPtr(new MapManager());
         return m_inst;
     }
@@ -36,7 +36,7 @@ public:
 
     MapSpirit *getMapSpiritByName(std::string name);
 
-    MapPath *getMapPathByStartEnd(int start,int end);
+    MapPath *getMapPathByStartEnd(int start, int end);
 
     //一个Agv占领一个站点
     int getStationFloor(int station);
@@ -45,7 +45,7 @@ public:
     bool isSameFloorStation(int station_1, int station_2);
 
     //一个Agv占领一个站点
-    void occuStation(int station, AgvPtr occuAgv);
+    void addOccuStation(int station, AgvPtr occuAgv);
 
     //线路的反向占用//这辆车行驶方向和线路方向相反
     void addOccuLine(int line, AgvPtr occuAgv);
@@ -56,15 +56,33 @@ public:
     //如果车辆在线路的占领表中，释放出去
     void freeLine(int line, AgvPtr occuAgv);
 
+    //
+    void addBlcokOccu(int blockId,int agvId,int spiritId);
+    void freeBlcokOccu(int blockId, int agvId, int spiritId);
+
     //获取最优路径
-    std::vector<int> getBestPath(int agv,int lastStation, int startStation, int endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
-    std::vector<int> getBestPathDy(int agv,int lastStation, int startStation, int endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
+    std::vector<int> getBestPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
+
+    //获取 距离 目标点位 最近的躲避点
+    int getNearestHaltStation(int agvId, int aimStation);
 
     std::vector<int> getStations(int floor);
 
     bool isSameFloor(int floor, int station);
     int getFloor(int station);
     int getBlock(int spiritID);
+    int getGroup(int spiritID);
+
+    MapPoint *getPointById(int id) { return g_onemap.getPointById(id); }
+    MapPath *getPathById(int id) { return g_onemap.getPathById(id); }
+    MapFloor *getFloorById(int id) { return g_onemap.getFloorById(id); }
+    MapBackground *getBackgroundById(int id) { return g_onemap.getBackgroundById(id); }
+    MapBlock *getBlockById(int id) { return g_onemap.getBlockById(id); }
+    MapGroup *getGroupById(int id) { return g_onemap.getGroupById(id); }
+    MapPath *getPathByStartEnd(int start,int end){return g_onemap.getPathByStartEnd(start,end);}
+
+    bool blockPassable(int blockId, int agvIdD);
+
     //用户接口
     void interSetMap(SessionPtr conn, const Json::Value &request);
     void interGetMap(SessionPtr conn, const Json::Value &request);
@@ -83,23 +101,29 @@ private:
 
     OneMap g_onemap;//地图节点
 
-    std::map<int,std::vector<int> > m_adj;// lineA -- lines{ from line A can reach which lines}
-    std::map<int,int> m_reverseLines;
+    std::map<int, std::vector<int> > m_adj;// lineA -- lines{ from line A can reach which lines}
+    std::map<int, int> m_reverseLines;
 
-    std::map<int,std::vector<int> > line_occuagvs;//一条线路 及其上面的agv
-    std::map<int,int> station_occuagv;//一个站点，及当前占用改站点的agv
-    std::map<int,std::pair<int, std::queue<int> > > block_occuagv;//一个区块，及当前区块占用agv
+    std::map<int, std::vector<int> > line_occuagvs;//一条线路 及其上面的agv
+    std::map<int, int> station_occuagv;//一个站点，及当前占用改站点的agv
+
+    std::mutex groupMtx;
+    std::map<int,std::pair<int, std::vector<int> > > group_occuagv;//一个区块，及当前区块占用agv
+
+    std::mutex blockMtx;
+    std::map<int,std::pair<int, std::vector<int> > > block_occuagv;//一个区块，及当前区块占用agv
 
     std::vector<int> getPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect);
+    std::vector<int> getPath(int from, int to, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
     void checkTable();
 
     void getReverseLines();
     void getAdj();
 
-	bool pathPassable(MapPath *line, int agvId);
-    void init_task_splitinfo();
+    bool pathPassable(MapPath *line, int agvId);
+    //void init_task_splitinfo();
     std::atomic_bool mapModifying;
-    std::map< std::pair<int,int>, std::queue<int> > m_chd_station;
+    std::map< std::pair<int, int>, std::queue<int> > m_chd_station;
 };
 
 #endif // MAPMANAGER_H

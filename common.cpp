@@ -83,6 +83,14 @@ std::string intToString(int i)
     return out.str();
 }
 
+std::string longToString(long l)
+{
+    std::stringstream out;
+    out<<l;
+    return out.str();
+}
+
+
 int stringToInt(std::string str)
 {
     std::stringstream out;
@@ -250,13 +258,18 @@ double func_dis(int x1, int y1, int x2, int y2)
     return sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 }
 
-char *transToFullMsg(const char *data)
+std::string transToFullMsg(const std::string &data)
 {
-    int data_length = strlen(data);
-    char *full_msg = new char[data_length+13];
+    std::stringstream ss;
     time_t   TimeStamp = clock();
-    snprintf(full_msg,strlen(data)+13, "*06d04d%s#",TimeStamp,data_length+10,data);
-    return full_msg;
+    std::string timeStampStr = "000000" + longToString(TimeStamp);
+    std::string lenstr = "0000"+intToString(data.length()+10);
+    ss <<"*"
+      <<timeStampStr.substr(timeStampStr.length()-6)
+      <<lenstr.substr(lenstr.length()-4)
+      <<data
+     <<"#";
+    return ss.str();
 }
 
 std::atomic<bool> g_quit(false);

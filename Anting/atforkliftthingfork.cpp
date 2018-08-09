@@ -18,8 +18,7 @@ AtForkliftThingFork::AtForkliftThingFork(std::vector<std::string> _params):
 void AtForkliftThingFork::beforeDoing(AgvPtr agv)
 {
     //DONOTHING
-//    Q_UNUSED(agv)
-
+    //Q_UNUSED(agv)
 }
 
 void AtForkliftThingFork::doing(AgvPtr agv)
@@ -144,7 +143,7 @@ void AtForkliftThingFork::afterDoing(AgvPtr agv)
 
     Pose4D pos = forklift->getPos();
     //update station
-    forklift->setPosition(forklift->getNowStation(), forklift->nearestStation(pos.m_x*100, -pos.m_y*100, pos.m_floor), forklift->getNextStation());
+    forklift->setPosition(forklift->getNowStation(), forklift->nearestStation(pos.m_x*100, -pos.m_y*100, pos.m_theta*57.3, pos.m_floor), forklift->getNextStation());
     combined_logger->info("current station:{0}", forklift->getNowStation());
     bresult = true;
 }

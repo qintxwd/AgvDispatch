@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <atomic>
+#include <algorithm>
 #include "agvtasknode.h"
 #include "mapmap/mapmanager.h"
 #include "agv.h"
@@ -41,7 +42,8 @@ public:
         priority(PRIORITY_NORMAL),
         error_code(0),
         isCancel(false),
-        doingIndex(0)
+        doingIndex(0),
+        runTimes(1)
     {
     }
 
@@ -64,6 +66,12 @@ public:
     std::vector<AgvTaskNodePtr> getTaskNodes(){return nodes;}
     void setTaskNodes(std::vector<AgvTaskNodePtr> _nodes){nodes=_nodes;}
     void push_backNode(AgvTaskNodePtr _node){nodes.push_back(_node);}
+    void push_frontNode(AgvTaskNodePtr _node){
+        std::reverse(nodes.begin(), nodes.end());
+        nodes.push_back(_node);
+        std::reverse(nodes.begin(), nodes.end());
+    }
+
 
     int getDoingIndex(){return doingIndex;}
     void setDoingIndex(int _doingIndex){doingIndex = _doingIndex;}
@@ -94,6 +102,8 @@ public:
     void cancel(){isCancel = true;}
     bool getIsCancel(){return isCancel;}
 
+    int getRunTimes(){return runTimes;}
+    void setRunTimes(int _runTimes){runTimes = _runTimes;}
 private:
     std::vector<AgvTaskNodePtr> nodes;
     std::vector<int> path;
@@ -114,6 +124,8 @@ private:
     int doingIndex;
 
     std::atomic_bool isCancel;
+
+    int runTimes;//循环次数，默认为1
 
 private:
     std::map<std::string,std::string> extra_params;

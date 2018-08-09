@@ -1,4 +1,4 @@
-﻿#include "virtualrosagv.h"
+#include "virtualrosagv.h"
 #include "mapmap/onemap.h"
 #include "mapmap/mapmanager.h"
 #include "agvtask.h"
@@ -12,7 +12,8 @@
 
 VirtualRosAgv::VirtualRosAgv(int id,std::string name):
     VirtualAgv(id,name),
-    lastStationOdometer(0)
+    lastStationOdometer(0),
+    isPaused(false)
 {
 
 }
@@ -25,6 +26,18 @@ VirtualRosAgv::~VirtualRosAgv()
 void VirtualRosAgv::init()
 {
     //do nothing
+}
+
+bool VirtualRosAgv::pause()
+{
+    isPaused = true;
+    return true;
+}
+
+bool VirtualRosAgv::resume()
+{
+    isPaused = false;
+    return true;
 }
 
 void VirtualRosAgv::excutePath(std::vector<int> lines)
@@ -191,6 +204,10 @@ void VirtualRosAgv::goStation(int station, bool stop)
     bool firstMove = true;
     while(true){
         if(isStop)break;
+        if(isPaused){
+            Sleep(500);
+            continue;
+        }
         //1.向目标前进100ms的距离 假设每次前进10 //3.重新计算当前位置
         if(path->getPathType() == MapPath::Map_Path_Type_Line){
             currentT += 10.0 / path_length;

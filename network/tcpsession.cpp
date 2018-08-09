@@ -19,7 +19,7 @@ TcpSession::TcpSession(tcp::socket socket, int sessionId, int acceptId):
 
 TcpSession::~TcpSession()
 {
-    close();
+    //close();
 }
 
 void TcpSession::send(const Json::Value &json)
@@ -28,7 +28,7 @@ void TcpSession::send(const Json::Value &json)
     int length = msg.length();
     if(length<=0)return;
 
-    combined_logger->info("SEND! session id={0}  len= {1} json={2}" ,this->_sessionID,length,msg);
+    //combined_logger->info("SEND! session id={0}  len= {1} json={2}" ,this->_sessionID,length,msg);
 
     char *send_buffer = new char[length + 6];
     memset(send_buffer, 0, length + 6);
@@ -86,7 +86,6 @@ bool TcpSession::doSend(const char *data,int len)
 void TcpSession::close()
 {
     socket_.close();
-    SessionManager::getInstance()->removeSession(shared_from_this());
 }
 
 void TcpSession::start()
@@ -212,7 +211,7 @@ void TcpSession::packageProcess()
                     if (reader.parse(sss, root))
                     {
                         if (!root["type"].isNull() && !root["queuenumber"].isNull() && !root["todo"].isNull()) {
-                            combined_logger->info("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,sss);
+                            //combined_logger->info("RECV! session id={0}  len={1} json=\n{2}" ,this->_sessionID,json_len,sss);
                             MsgProcess::getInstance()->processOneMsg(root, shared_from_this());
                         }
                     }

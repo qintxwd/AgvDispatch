@@ -1,4 +1,4 @@
-﻿#ifndef AGV_H
+#ifndef AGV_H
 #define AGV_H
 #include <string>
 #include <vector>
@@ -89,6 +89,9 @@ public:
     virtual void goStation(int station, bool stop = false);
     virtual void stop();
     virtual void callMapChange(int station);
+
+    virtual bool pause(){return true;}
+    virtual bool resume(){return true;}
 
     void setExtraParam(std::string key,std::string value){extra_params[key] = value;}
     std::string getExtraParam(std::string key){return extra_params[key];}

@@ -352,8 +352,8 @@ void MsgProcess::processOneMsg(const Json::Value &request, SessionPtr session)
     //request需要copy一个到线程中。
     g_threadPool.enqueue([&, request,session] {
 
-        TimeUsed t;
-        t.start();
+//        TimeUsed t;
+//        t.start();
 		
         //处理消息，如果有返回值，发送返回值
         if ((session->getUserId() <= 0 || session->getUserRole() <= USER_ROLE_VISITOR)) {
@@ -422,8 +422,8 @@ void MsgProcess::processOneMsg(const Json::Value &request, SessionPtr session)
     };
         table[request["todo"].asInt()].f(session, request);
 
-        t.end();
-        combined_logger->debug("msg process time used:{0} ms",t.getUsed()*1000.0);
+//        t.end();
+//        combined_logger->debug("msg process time used:{0} ms",t.getUsed()*1000.0);
     });
 }
 

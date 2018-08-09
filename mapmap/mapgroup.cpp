@@ -14,9 +14,7 @@ MapGroup::~MapGroup()
 MapSpirit *MapGroup::clone()
 {
     MapGroup *p = new MapGroup(getId(),getName());
-    for(auto a:agvs){
-        p->addAgv(a);
-    }
+
     for(auto s:spirits){
         p->addSpirit(s);
     }

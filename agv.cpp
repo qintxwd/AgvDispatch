@@ -1,4 +1,4 @@
-﻿
+
 #include <thread>
 
 #include "agv.h"
@@ -34,13 +34,13 @@ void Agv::init()
 }
 
 void Agv::setPosition(int _lastStation, int _nowStation, int _nextStation) {
-	lastStation = _lastStation;
-	nowStation = _nowStation;
-	nextStation = _nextStation;
+    lastStation = _lastStation;
+    nowStation = _nowStation;
+    nextStation = _nextStation;
 
-	if (nowStation > 0) {
-		onArriveStation(nowStation);
-	}
+    if (nowStation > 0) {
+        onArriveStation(nowStation);
+    }
 };
 
 //到达后是否停下，如果不停下，就是不减速。
@@ -55,11 +55,20 @@ void Agv::stop()
 
 void Agv::onArriveStation(int station)
 {
-    MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
+    auto mapmanagerptr = MapManager::getInstance();
+
+    //add block occur
+    auto block = mapmanagerptr->getBlock(station);
+    if(block!=-1)
+        mapmanagerptr->addBlcokOccu(block,getId(),station);
+
+    MapSpirit *spirit = mapmanagerptr->getMapSpiritById(station);
 
     if(spirit->getSpiritType()!=MapSpirit::Map_Sprite_Type_Point)return ;
 
     MapPoint *point = static_cast<MapPoint *>(spirit);
+
+    combined_logger->info("agv id:{0} arrive station:{1}",getId(),point->getName());
 
     x = point->getX();
     y = point->getY();
@@ -85,7 +94,7 @@ void Agv::onArriveStation(int station)
     //TODO:释放之前的线路和站点
     std::vector<MapPath *> paths;
     for(auto line:excutespaths){
-        MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(line);
+        MapSpirit *spirit = mapmanagerptr->getMapSpiritById(line);
         if(spirit ==nullptr)continue;
         if(spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
         MapPath *path = static_cast<MapPath *>(spirit);
@@ -106,43 +115,99 @@ void Agv::onArriveStation(int station)
             auto line = paths[i];
             int end = line->getEnd();
             int lineId = line->getId();
-            MapManager::getInstance()->freeStation(end,shared_from_this());
-            MapManager::getInstance()->freeLine(lineId,shared_from_this());
+            mapmanagerptr->freeStation(end,shared_from_this());
+            mapmanagerptr->freeLine(lineId,shared_from_this());
         }
     }
 
-	char buf[SQL_MAX_LENGTH];
-	snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
-	try {
-		g_db.execDML(buf);
-	}
-	catch (CppSQLite3Exception e) {
-		combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
-	}
-	catch (std::exception e) {
-		combined_logger->error("sqlerr code:{0} ", e.what());
-	}
+    char buf[SQL_MAX_LENGTH];
+    snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
+    try {
+        g_db.execDML(buf);
+    }
+    catch (CppSQLite3Exception e) {
+        combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
+    }
+    catch (std::exception e) {
+        combined_logger->error("sqlerr code:{0} ", e.what());
+    }
 
+    //判断下一段线路的可行性 [block]
+    //判断下一个线路 是否在block内，block内是否已经有其他车辆。如果有的话，就暂停 一下当前动作
+    //TODO:
+    auto itr = std::find(excutestations.begin(),excutestations.end(),nowStation);
+    if(itr!=excutestations.end()){
+        ++itr;
+        if(itr!=excutestations.end()){
+            nextStation = *itr;
+            //next path is block free
+            auto p = mapmanagerptr->getPathByStartEnd(nowStation,nextStation);
+            if(p!=nullptr){
+                auto b = mapmanagerptr->getBlock(p->getId());
+                if(b!=-1){
+                    if(!mapmanagerptr->blockPassable(b,getId())){
+                        pause();
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Agv::onLeaveStation(int stationid)
 {
-	nowStation = 0;
+    auto mapmanagerptr = MapManager::getInstance();
+
+    nowStation = 0;
     lastStation = stationid;
+
+    auto point = mapmanagerptr->getPointById(stationid);
+    if(point!=nullptr){
+        combined_logger->error("agv id:{0} leave station:{1}",getId(),point->getName());
+    }
+    //add block occur
+    auto line = mapmanagerptr->getPathByStartEnd(lastStation,nextStation);
+    if(line!=nullptr){
+        auto block = mapmanagerptr->getBlock(line->getId());
+        if(block!=-1){
+            mapmanagerptr->addBlcokOccu(block,getId(),line->getId());
+        }
+    }
+
     //释放这个站点的占用
     MapManager::getInstance()->freeStation(stationid,shared_from_this());
 
-	char buf[SQL_MAX_LENGTH];
-	snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
-	try {
-		g_db.execDML(buf);
-	}
-	catch (CppSQLite3Exception e) {
-		combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
-	}
-	catch (std::exception e) {
-		combined_logger->error("sqlerr code:{0} ", e.what());
-	}
+    char buf[SQL_MAX_LENGTH];
+    snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
+    try {
+        g_db.execDML(buf);
+    }
+    catch (CppSQLite3Exception e) {
+        combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
+    }
+    catch (std::exception e) {
+        combined_logger->error("sqlerr code:{0} ", e.what());
+    }
+
+    //判断下一个站点的可行性 [block]
+    //判断下一个站点 是否在block内，block内是否已经有其他车辆。如果有的话，就暂停 一下当前动作
+    auto itr = std::find(excutestations.begin(),excutestations.end(),nowStation);
+    if(itr!=excutestations.end()){
+        ++itr;
+        if(itr!=excutestations.end()){
+            nextStation = *itr;
+            //next path is block free
+            auto p = MapManager::getInstance()->getPointById(nextStation);
+            if(p!=nullptr){
+                auto b = MapManager::getInstance()->getBlock(p->getId());
+                if(b!=-1){
+                    if(!MapManager::getInstance()->blockPassable(b,getId())){
+                        pause();
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Agv::onError(int code, std::string msg)

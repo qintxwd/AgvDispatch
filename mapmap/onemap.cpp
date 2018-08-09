@@ -63,6 +63,75 @@ MapSpirit *OneMap::getSpiritById(int id)
     return nullptr;
 }
 
+MapPoint *OneMap::getPointById(int id)
+{
+    for (auto p : all_element) {
+        if (p->getId() == id && p->getSpiritType() == MapSpirit::Map_Sprite_Type_Point) {
+            return static_cast<MapPoint *>(p);
+        }
+    }
+    return nullptr;
+}
+MapPath *OneMap::getPathById(int id)
+{
+    for (auto p : all_element) {
+        if (p->getId() == id && p->getSpiritType() == MapSpirit::Map_Sprite_Type_Path) {
+            return static_cast<MapPath *>(p);
+        }
+    }
+    return nullptr;
+}
+MapPath *OneMap::getPathByStartEnd(int start,int end)
+{
+    for (auto p : all_element) {
+        if (p->getSpiritType() == MapSpirit::Map_Sprite_Type_Path) {
+            auto pp = static_cast<MapPath *>(p);
+            if(pp->getStart() == start && pp->getEnd() == end){
+                return pp;
+            }
+        }
+    }
+    return nullptr;
+}
+
+MapFloor *OneMap::getFloorById(int id)
+{
+    for (auto p : all_element) {
+        if (p->getId() == id && p->getSpiritType() == MapSpirit::Map_Sprite_Type_Floor) {
+            return static_cast<MapFloor *>(p);
+        }
+    }
+    return nullptr;
+}
+MapBackground *OneMap::getBackgroundById(int id)
+{
+    for (auto p : all_element) {
+        if (p->getId() == id && p->getSpiritType() == MapSpirit::Map_Sprite_Type_Background) {
+            return static_cast<MapBackground *>(p);
+        }
+    }
+    return nullptr;
+}
+MapBlock *OneMap::getBlockById(int id)
+{
+    for (auto p : all_element) {
+        if (p->getId() == id && p->getSpiritType() == MapSpirit::Map_Sprite_Type_Block) {
+            return static_cast<MapBlock *>(p);
+        }
+    }
+    return nullptr;
+}
+MapGroup *OneMap::getGroupById(int id)
+{
+    for (auto p : all_element) {
+        if (p->getId() == id && p->getSpiritType() == MapSpirit::Map_Sprite_Type_Group) {
+            return static_cast<MapGroup *>(p);
+        }
+    }
+    return nullptr;
+}
+
+
 std::vector<int> OneMap::getStations()
 {
     std::vector<int> points;

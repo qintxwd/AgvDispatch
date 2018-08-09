@@ -29,9 +29,15 @@ public:
     virtual void callMapChange(int station);
 
     virtual void onTaskStart(AgvTaskPtr _task);
+
+    virtual bool pause();
+
+    virtual bool resume();
+
 private:
     bool isStop;
     int lastStationOdometer;
+    bool isPaused;
 };
 
 #endif // VIRTUALROSAGV_H

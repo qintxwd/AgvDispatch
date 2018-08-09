@@ -88,15 +88,15 @@ void DyForklift::onTaskFinished(AgvTaskPtr _task)
 //    return full_msg;
 //}
 
-bool DyForklift::resend(const char *data,int len){
-    if(!data||len<=0)return false;
-    bool sendResult = send(data,len);
+bool DyForklift::resend(const std::string &msg) {
+    if (msg.length()<= 0)return false;
+    bool sendResult = send(msg);
     //    bool sendResult = true;
 
     int resendTimes = 0;
-    while(!sendResult && ++resendTimes< maxResendTime){
-        std::this_thread::sleep_for(std::chrono::duration<int,std::milli>(500));
-        sendResult = send(data,len);
+    while (!sendResult && ++resendTimes < maxResendTime) {
+        std::this_thread::sleep_for(std::chrono::duration<int, std::milli>(500));
+        sendResult = send(msg);
     }
     return sendResult;
 }
@@ -105,7 +105,7 @@ bool DyForklift::turn(float speed, float angle)
 {
     std::stringstream body;
     body<<FORKLIFT_TURN<<speed<<"|"<<angle;
-    return resend(body.str().c_str(), body.str().length());
+    return resend(body.str());
 }
 
 bool DyForklift::fork(int params)
@@ -116,7 +116,7 @@ bool DyForklift::fork(int params)
     body.width(2);
     body.fill('0');
     body<<params;
-    return resend(body.str().c_str(), body.str().length());
+    return resend(body.str());
 }
 
 bool DyForklift::heart()
@@ -126,7 +126,7 @@ bool DyForklift::heart()
     body.width(2);
     body<<FORKLIFT_HEART;
     body<<m_lift<<m_lift;
-    return resend(body.str().c_str(), body.str().length());
+    return resend(body.str());
 }
 bool DyForklift::waitTurnEnd(int waitMs)
 {
@@ -304,10 +304,10 @@ void DyForklift::arrve(int x, int y) {
             MapPoint *point = static_cast<MapPoint *>(spirit);
 
             if(func_dis(x, y, point->getRealX(), point->getRealY())<PRECISION && station != this->nowStation){
-                combined_logger->info("agv{0} arrive station:{1}", id, point->getName());
+                //combined_logger->info("agv{0} arrive station:{1}", id, point->getName());
                 onArriveStation(station);
-                this->lastStation = this->nowStation;
-                this->nowStation = station;
+//                this->lastStation = this->nowStation;
+//                this->nowStation = station;
             }
         }
     }
@@ -353,7 +353,7 @@ bool DyForklift::move(float speed, float distance)
 {
     std::stringstream body;
     body<<FORKLIFT_MOVE_NOLASER<<speed<<"|"<<distance;
-    return resend(body.str().c_str(), body.str().length());
+    return resend(body.str());
 }
 
 //执行路径规划结果
@@ -613,7 +613,7 @@ void DyForklift::goStation(std::vector<int> lines,  bool stop)
     //    ss<<body.str();
     //    ss<<"#";
 
-    resend(body.str().c_str(),body.str().length());
+    resend(body.str());
 
     do
     {
@@ -638,40 +638,26 @@ void DyForklift::setQyhTcp(SessionPtr _qyhTcp)
     m_qTcp = _qyhTcp;
 }
 //发送消息给小车
-bool DyForklift::send(const char *data, int len)
+//发送消息给小车
+bool DyForklift::send(const std::string &data)
 {
-    if(strlen(data) != len)
-    {
-        combined_logger->error("send length error");
-        return false;
-    }
-    char *sendContent = transToFullMsg(data);
+    std::string sendContent = transToFullMsg(data);
 
-    if(FORKLIFT_HEART != stringToInt(std::string(sendContent+11,2)))
+    if (FORKLIFT_HEART != stringToInt(sendContent.substr(11, 2)))
     {
         combined_logger->info("send to agv{0}:{1}", id, sendContent);
     }
-
-    char * temp = new char[len+13];
-    strcpy(temp, sendContent);
-    bool res = m_qTcp->doSend(temp, len+12);
-    if(!res)
-    {
-        combined_logger->info("send failed");
-    }
+    bool res = m_qTcp->doSend(sendContent.c_str(), sendContent.length());
     DyMsg msg;
-    msg.msg = std::string(temp);
+    msg.msg = sendContent;
     msg.waitTime = 0;
-    m_unRecvSend[stoi(msg.msg.substr(1,6))] = msg;
-    int msgType = std::stoi(msg.msg.substr(11,2));
-    if(FORKLIFT_STARTREPORT != msgType && FORKLIFT_HEART != msgType)
+    m_unRecvSend[stoi(msg.msg.substr(1, 6))] = msg;
+    int msgType = std::stoi(msg.msg.substr(11, 2));
+    if (FORKLIFT_STARTREPORT != msgType && FORKLIFT_HEART != msgType)
     {
-        m_unFinishCmd[msgType]= msg;
+        m_unFinishCmd[msgType] = msg;
     }
-    delete[] temp;
-	delete[] sendContent;
     return res;
-
 }
 
 //开始上报
@@ -684,7 +670,7 @@ bool DyForklift::startReport(int interval)
     body<<interval;
 
     //eg:*12345600172100100#
-    return resend(body.str().c_str(), body.str().length());
+    return resend(body.str());
 }
 
 //结束上报
@@ -693,7 +679,7 @@ bool DyForklift::endReport()
     std::stringstream body;
     body<<FORKLIFT_ENDREPORT;
     //eg:*123456001222#
-    return resend(body.str().c_str(), body.str().length());
+    return resend(body.str());
 }
 
 //判断小车命令是否执行结束

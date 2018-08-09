@@ -73,18 +73,20 @@ public:
     bool isFinish(int cmd_type);
 
     Pose4D getPos();
-    int nearestStation(int x, int y, int floor);
+    int nearestStation(int x, int y, int a, int floor);
     void arrve(int x,int y);
 
     void onTaskStart(AgvTaskPtr _task);
     void onTaskFinished(AgvTaskPtr _task);
 
     ~AtForklift(){}
+    virtual bool pause();
+    virtual bool resume();
 private:
     static const int maxResendTime = 10;
 
-    bool resend(const char *data, int len);
-    bool send(const char *data, int len);
+    bool resend(const std::string &msg);
+    bool send(const std::string &msg);
 
     void init();
     bool turnResult;
@@ -107,6 +109,9 @@ private:
     int task_type;
 
     SessionPtr m_qTcp;
+
+    bool pausedFlag;//是否暂停了
+    bool sendPause;//发送的是暂停的指令，还是继续的指令
 };
 
 #endif // ATFORKLIFT_H

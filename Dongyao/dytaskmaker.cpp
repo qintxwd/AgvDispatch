@@ -63,18 +63,22 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
     int priority = request["priority"].asInt();
     task->setPriority(priority);
 
-    //3.额外的参数
-    if (!request["extra_params"].isNull()) {
+    //3.执行次数
+    if (!request["runTimes"].isNull())
+    {
+        int runTimes = request["runTimes"].asInt();
+        task->setRunTimes(runTimes);
+    }
+
+    //4.额外的参数
+    if (!request["extra_params"].isNull())
+    {
         Json::Value extra_params = request["extra_params"];
         Json::Value::Members mem = extra_params.getMemberNames();
         for (auto iter = mem.begin(); iter != mem.end(); iter++)
         {
             task->setExtraParam(*iter, extra_params[*iter].asString());
         }
-    }
-    else
-    {
-        task->setExtraParam("runTimes", "1");
     }
 
     std::string task_describe;
@@ -396,7 +400,7 @@ void DyTaskMaker::receiveTask(std::string str_task)
         task->setAgv(agvId);
         task->setTaskNodes(nodes);
         task->setPriority(priority);
-        task->setExtraParam("runTimes", "1");
+        task->setRunTimes(1);
         task->setProduceTime(getTimeStrNow());
         task->setDescribe(task_describe);
         //放入未分配的队列中

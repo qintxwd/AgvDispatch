@@ -38,6 +38,7 @@ public:
 
     virtual void reconnect();
     virtual bool send(const char *data, int len);
+
 protected:
      TcpClient *tcpClient;
 };

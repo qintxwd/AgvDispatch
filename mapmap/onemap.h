@@ -42,6 +42,14 @@ public:
 
     MapSpirit *getSpiritById(int id);
 
+    MapPoint *getPointById(int id);
+    MapPath *getPathById(int id);
+    MapPath *getPathByStartEnd(int start,int end);
+    MapFloor *getFloorById(int id);
+    MapBackground *getBackgroundById(int id);
+    MapBlock *getBlockById(int id);
+    MapGroup *getGroupById(int id);
+
     void setMaxId(int maxid){max_id = maxid; }
     int getMaxId(){return max_id; }
 private:

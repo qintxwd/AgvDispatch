@@ -70,8 +70,8 @@ public:
 private:
     static const int maxResendTime = 10;
 
-    bool resend(const char *data, int len);
-    bool send(const char *data, int len);
+    bool resend(const std::string &data);
+    bool send(const std::string &data);
 
     void init();
     bool turnResult;

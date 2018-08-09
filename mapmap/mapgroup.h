@@ -4,7 +4,7 @@
 #include <list>
 #include "mapspirit.h"
 
-//一个区块，只允许部分车辆通行
+//一个区块 区块内只能有一个车
 class MapGroup : public MapSpirit
 {
 public:
@@ -17,12 +17,8 @@ public:
     void removeSpirit(int spirit){spirits.remove(spirit);}
     std::list<int> getSpirits(){return spirits;}
 
-    void addAgv(int agv){agvs.push_back(agv);}
-    void removeAgv(int agv){agvs.remove(agv);}
-    std::list<int> getAgvs()  const {return agvs;}
 private:
     std::list<int> spirits;//区块
-    std::list<int> agvs;//通行车辆
 };
 
 #endif // MAPGROUP_H

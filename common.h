@@ -46,6 +46,7 @@ std::string getTimeStrTomorrow();
 
 std::string toHexString(char *data, int len);
 std::string intToString(int i);
+std::string longToString(long l);
 int stringToInt(std::string str);
 bool stringToBool(std::string str);
 
@@ -56,7 +57,8 @@ int HexStringToInt(std::string str);
 
 //东药名匠公用
 double func_dis(int x1, int y1, int x2, int y2);
-char* transToFullMsg(const char *data);
+std::string transToFullMsg(const std::string &data);
+
 class Pose4D
 {
 public:
