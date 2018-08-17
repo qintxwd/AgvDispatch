@@ -50,6 +50,282 @@ bool TaskManager::hasTaskDoing()
     return !toDistributeTasks.empty() && !doingTask.empty();
 }
 
+bool TaskManager::distributeTask(AgvTaskPtr task)
+{
+    auto mapmanagerptr = MapManager::getInstance();
+
+    std::vector<AgvTaskNodePtr> nodes = task->getTaskNodes();
+    int index = task->getDoingIndex();
+    if (index >= nodes.size())
+    {
+        //任务完成了
+        int runTimes = task->getRunTimes() - 1;
+
+        combined_logger->info("{0} 任务完成了, 还需{1}个循环 ", task->getId(), runTimes);
+
+        if (runTimes <= 0)
+        {
+            AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+            agv->status = Agv::AGV_STATUS_IDLE;
+            finishTask(task);
+            return true;
+        }
+        else
+        {
+            task->setDoingIndex(0);
+            task->setRunTimes(runTimes);
+        }
+    }
+    else
+    {
+        AgvTaskNodePtr node = nodes[index];
+        int aimStation = node->getStation();
+        AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+        if (agv != nullptr && aimStation == 0 && agv->getTask() == task)
+        {
+            //拿去执行//从未分配队列中拿出去agv
+            excuteTask(task);
+            return true;
+        }
+        else
+        {
+            if (agv == nullptr)
+            {
+                //未分配AGV
+                AgvPtr bestAgv = nullptr;
+                int minDis = DISTANCE_INFINITY;
+                std::vector<int> result;
+                //遍历所有的agv
+                AgvManager::getInstance()->foreachAgv(
+                            [&](AgvPtr tempagv) {
+                    if (tempagv->status != Agv::AGV_STATUS_IDLE)
+                    {
+                        //combined_logger->error(" tempagv->status != Agv::AGV_STATUS_IDLE return... ");
+                        return;
+                    }
+                    if (tempagv->getNowStation() != 0)
+                    {
+                        int tempDis;
+
+                        std::vector<int> result_temp;
+
+                        result_temp = mapmanagerptr->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNowStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
+
+                        if (result_temp.size() > 0 && tempDis < minDis)
+                        {
+                            minDis = tempDis;
+                            bestAgv = tempagv;
+                            result = result_temp;
+                        }
+                    }
+                    else
+                    {
+                        int tempDis;
+
+                        std::vector<int> result_temp;
+
+                        result_temp = mapmanagerptr->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
+
+                        if (result_temp.size() > 0 && tempDis < minDis)
+                        {
+                            minDis = tempDis;
+                            bestAgv = tempagv;
+                            result = result_temp;
+                        }
+                    }
+                });
+
+                if (bestAgv != NULL && minDis != DISTANCE_INFINITY)
+                {
+                    //找到了最优线路和最佳agv
+                    combined_logger->info(" 找到了最优线路和最佳agv {0}", bestAgv->getId());
+                    mapmanagerptr->addOccuStation(aimStation, bestAgv);
+                    for (auto tline : result)
+                    {
+                        mapmanagerptr->addOccuLine(tline, bestAgv);
+                    }
+                    bestAgv->setTask(task);
+                    task->setPath(result);
+                    task->setAgv(bestAgv->getId());
+                    bestAgv->onTaskStart(task);
+                    excuteTask(task);
+                    return true;
+                }
+                else
+                {
+                    //未能找到车辆和线路
+                    bestAgv = nullptr;
+                    minDis = DISTANCE_INFINITY;
+                    result.clear();
+                    int haltStation = -1;
+
+
+                    //寻找空闲车辆到该避让点等待
+                    AgvManager::getInstance()->foreachAgv(
+                                [&](AgvPtr tempagv) {
+                        if (tempagv->status != Agv::AGV_STATUS_IDLE)
+                        {
+                            return;
+                        }
+
+                        //1.寻找距离目的地最近的避让点
+                        int haltStationTemp = mapmanagerptr->getNearestHaltStation(tempagv->getId(),aimStation);
+
+                        //2.寻找该车到达 躲避点的线路
+                        if (tempagv->getNowStation() != 0)
+                        {
+                            int tempDis;
+
+                            std::vector<int> result_temp;
+
+                            result_temp = mapmanagerptr->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNowStation(), haltStationTemp, tempDis, CAN_CHANGE_DIRECTION);
+
+                            if (result_temp.size() > 0 && tempDis < minDis)
+                            {
+                                minDis = tempDis;
+                                bestAgv = tempagv;
+                                result = result_temp;
+                                haltStation = haltStationTemp;
+                            }
+                        }
+                        else
+                        {
+                            int tempDis;
+
+                            std::vector<int> result_temp;
+
+                            result_temp = mapmanagerptr->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), haltStation, tempDis, CAN_CHANGE_DIRECTION);
+
+                            if (result_temp.size() > 0 && tempDis < minDis)
+                            {
+                                minDis = tempDis;
+                                bestAgv = tempagv;
+                                result = result_temp;
+                                haltStation = haltStationTemp;
+                            }
+                        }
+                    });
+
+                    //找到了空闲车辆去往避让点
+                    if (bestAgv != nullptr && minDis != DISTANCE_INFINITY && haltStation != -1)
+                    {
+                        combined_logger->info(" 找到了去往躲避点{0} 的最优线路和最佳agv {1}", haltStation, bestAgv->getId());
+
+                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING ||GLOBAL_AGV_PROJECT == AGV_PROJECT_QINGDAO){
+                            mapmanagerptr->addOccuStation(haltStation, bestAgv);
+                            for (auto tline : result)
+                            {
+                                mapmanagerptr->addOccuLine(tline, bestAgv);
+                            }
+
+
+                            //在前面增加一个 去往躲避点的节点，
+                            AgvTaskNodePtr node_node(new AgvTaskNode());
+                            node_node->setStation(haltStation);
+                            node_node->setTaskType(TASK_MOVE);
+                            task->push_frontNode(node_node);
+
+                            bestAgv->setTask(task);
+                            task->setPath(result);
+                            task->setAgv(bestAgv->getId());
+                            bestAgv->onTaskStart(task);
+
+                            excuteTask(task);
+                            return true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                //已分配AGV
+                //指定车辆不空闲
+                if (agv->getTask() != task)
+                {
+                    if (agv->status != Agv::AGV_STATUS_IDLE)
+                    {
+                        //combined_logger->info(" 指定车辆不空闲 ");
+                        return false;
+                    }
+                }
+                int distance = DISTANCE_INFINITY;
+                //combined_logger->info("before best path {0} {1} {2}", agv->getLastStation(), agv->getNowStation(), aimStation);
+
+                std::vector<int> result;
+
+                result = mapmanagerptr->getBestPath(agv->getId(), agv->getLastStation(), agv->getNowStation(), aimStation, distance, CAN_CHANGE_DIRECTION);
+
+                if (distance != DISTANCE_INFINITY && result.size() > 0)
+                {
+                    //拿去执行//从未分配队列中拿出去
+                    combined_logger->info(" 从未分配队列中拿出去 ");
+                    agv->setTask(task);
+                    task->setPath(result);
+                    combined_logger->info("path={0}", task->getPath().at(0));
+                    combined_logger->info("3.excuteTask={0}", task->getId());
+                    //占用线路和站点
+                    mapmanagerptr->addOccuStation(aimStation, agv);
+                    for (auto tline : result)
+                    {
+                        mapmanagerptr->addOccuLine(tline, agv);
+                    }
+                    excuteTask(task);
+                    return true;
+                }
+                else
+                {
+                    //如果agv已经在躲避点了
+                    auto nowSstaion = static_cast<MapPoint *>(mapmanagerptr->getMapSpiritById(agv->getNowStation()));
+                    if (nowSstaion != nullptr && nowSstaion->getPointType() == MapPoint::Map_Point_Type_HALT) {
+                        return false;
+                    }
+
+                    distance = DISTANCE_INFINITY;
+                    result.clear();
+                    //没有合适的路程
+                    //如果有空闲车辆，那么先执行到 距离目的地最近的避让点
+                    //1.寻找距离目的地最近的避让点
+                    int haltStation = mapmanagerptr->getNearestHaltStation(agv->getId(),aimStation);
+                    if(haltStation == -1) return false;
+                    //2.寻找车辆到该避让点等待
+
+                    result = mapmanagerptr->getBestPath(agv->getId(), agv->getLastStation(), agv->getNowStation(), haltStation, distance, CAN_CHANGE_DIRECTION);
+
+                    //找到了空闲车辆去往避让点
+                    if (distance != DISTANCE_INFINITY && result.size() > 0)
+                    {
+                        combined_logger->info(" 找到了去往避让点{0} 的最优线路 agv {1}", haltStation, agv->getId());
+                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING ||GLOBAL_AGV_PROJECT == AGV_PROJECT_QINGDAO ){
+                            mapmanagerptr->addOccuStation(haltStation, agv);
+                            for (auto tline : result)
+                            {
+                                mapmanagerptr->addOccuLine(tline, agv);
+                            }
+
+                            //在前面增加一个 去往躲避点的节点，
+                            AgvTaskNodePtr node_node(new AgvTaskNode());
+                            node_node->setStation(haltStation);
+                            node_node->setTaskType(TASK_MOVE);
+                            task->push_frontNode(node_node);
+
+
+                            agv->setTask(task);
+                            task->setPath(result);
+                            task->setAgv(agv->getId());
+                            agv->onTaskStart(task);
+
+                            excuteTask(task);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 bool TaskManager::init()
 {
     //check table
@@ -83,280 +359,15 @@ bool TaskManager::init()
                 for (auto pos = itr->second.begin(); pos != itr->second.end();)
                 {
                     AgvTaskPtr task = *pos;
-                    std::vector<AgvTaskNodePtr> nodes = task->getTaskNodes();
-                    int index = task->getDoingIndex();
-                    if (index >= nodes.size())
-                    {
-                        //任务完成了
-                        int runTimes = task->getRunTimes() - 1;
-
-                        combined_logger->info("{0} 任务完成了, 还需{1}个循环 ", task->getId(), runTimes);
-
-                        if (runTimes <= 0)
-                        {
-                            AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
-                            agv->status = Agv::AGV_STATUS_IDLE;
-                            pos = itr->second.erase(pos);
-                            finishTask(task);
-                            continue;
-                        }
-                        else
-                        {
-                            task->setDoingIndex(0);
-                            task->setRunTimes(runTimes);
-                            continue;
-                        }
+                    //分配任务
+                    bool d = distributeTask(task);
+                    if(d){
+                        //任务 分配 OK
+                        pos = itr->second.erase(pos);
+                    }else{
+                        //任务 分配 fail
+                        ++pos;
                     }
-                    else
-                    {
-                        AgvTaskNodePtr node = nodes[index];
-                        int aimStation = node->getStation();
-                        AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
-                        if (agv != nullptr && aimStation == 0 && agv->getTask() == task)
-                        {
-                            //拿去执行//从未分配队列中拿出去agv
-                            pos = itr->second.erase(pos);
-                            excuteTask(task);
-                            continue;
-                        }
-                        else
-                        {
-                            if (agv == nullptr)
-                            {
-                                //未分配AGV
-                                AgvPtr bestAgv = nullptr;
-                                int minDis = DISTANCE_INFINITY;
-                                std::vector<int> result;
-                                //遍历所有的agv
-                                AgvManager::getInstance()->foreachAgv(
-                                            [&](AgvPtr tempagv) {
-                                    if (tempagv->status != Agv::AGV_STATUS_IDLE)
-                                    {
-                                        combined_logger->error(" tempagv->status != Agv::AGV_STATUS_IDLE return... ");
-                                        return;
-                                    }
-                                    if (tempagv->getNowStation() != 0)
-                                    {
-                                        int tempDis;
-
-                                        std::vector<int> result_temp;
-
-                                        result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNowStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
-
-                                        if (result_temp.size() > 0 && tempDis < minDis)
-                                        {
-                                            minDis = tempDis;
-                                            bestAgv = tempagv;
-                                            result = result_temp;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        int tempDis;
-
-                                        std::vector<int> result_temp;
-
-                                        result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), aimStation, tempDis, CAN_CHANGE_DIRECTION);
-
-                                        if (result_temp.size() > 0 && tempDis < minDis)
-                                        {
-                                            minDis = tempDis;
-                                            bestAgv = tempagv;
-                                            result = result_temp;
-                                        }
-                                    }
-                                });
-
-                                if (bestAgv != NULL && minDis != DISTANCE_INFINITY)
-                                {
-                                    //找到了最优线路和最佳agv
-                                    combined_logger->info(" 找到了最优线路和最佳agv {0}", bestAgv->getId());
-                                    MapManager::getInstance()->addOccuStation(aimStation, bestAgv);
-                                    for (auto tline : result)
-                                    {
-                                        MapManager::getInstance()->addOccuLine(tline, bestAgv);
-                                    }
-                                    bestAgv->setTask(task);
-                                    task->setPath(result);
-                                    task->setAgv(bestAgv->getId());
-                                    pos = itr->second.erase(pos);
-
-                                    bestAgv->onTaskStart(task);
-                                    excuteTask(task);
-                                    continue;
-                                }
-                                else
-                                {
-                                    //未能找到车辆和线路
-                                    bestAgv = nullptr;
-                                    minDis = DISTANCE_INFINITY;
-                                    result.clear();
-                                    int haltStation = -1;
-
-
-                                    //寻找空闲车辆到该避让点等待
-                                    AgvManager::getInstance()->foreachAgv(
-                                                [&](AgvPtr tempagv) {
-                                        if (tempagv->status != Agv::AGV_STATUS_IDLE)
-                                        {
-                                            return;
-                                        }
-
-                                        //1.寻找距离目的地最近的避让点
-                                        int haltStationTemp = MapManager::getInstance()->getNearestHaltStation(tempagv->getId(),aimStation);
-
-                                        //2.寻找该车到达 躲避点的线路
-                                        if (tempagv->getNowStation() != 0)
-                                        {
-                                            int tempDis;
-
-                                            std::vector<int> result_temp;
-
-                                            result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNowStation(), haltStationTemp, tempDis, CAN_CHANGE_DIRECTION);
-
-                                            if (result_temp.size() > 0 && tempDis < minDis)
-                                            {
-                                                minDis = tempDis;
-                                                bestAgv = tempagv;
-                                                result = result_temp;
-                                                haltStation = haltStationTemp;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            int tempDis;
-
-                                            std::vector<int> result_temp;
-
-                                            result_temp = MapManager::getInstance()->getBestPath(tempagv->getId(), tempagv->getLastStation(), tempagv->getNextStation(), haltStation, tempDis, CAN_CHANGE_DIRECTION);
-
-                                            if (result_temp.size() > 0 && tempDis < minDis)
-                                            {
-                                                minDis = tempDis;
-                                                bestAgv = tempagv;
-                                                result = result_temp;
-                                                haltStation = haltStationTemp;
-                                            }
-                                        }
-                                    });
-
-                                    //找到了空闲车辆去往避让点
-                                    if (bestAgv != nullptr && minDis != DISTANCE_INFINITY && haltStation != -1)
-                                    {
-                                        combined_logger->info(" 找到了去往躲避点{0} 的最优线路和最佳agv {1}", haltStation, bestAgv->getId());
-
-                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
-                                            MapManager::getInstance()->addOccuStation(haltStation, bestAgv);
-                                            for (auto tline : result)
-                                            {
-                                                MapManager::getInstance()->addOccuLine(tline, bestAgv);
-                                            }
-                                            bestAgv->setTask(task);
-                                            task->setPath(result);
-                                            task->setAgv(bestAgv->getId());
-                                            pos = itr->second.erase(pos);
-
-                                            bestAgv->onTaskStart(task);
-
-                                            //在前面增加一个 去往躲避点的节点，
-                                            AgvTaskNodePtr node_node(new AgvTaskNode());
-                                            node_node->setStation(haltStation);
-                                            node_node->setTaskType(TASK_MOVE);
-                                            task->push_frontNode(node_node);
-
-                                            excuteTask(task);
-                                        }
-                                        continue;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                //已分配AGV
-                                //指定车辆不空闲
-                                if (agv->getTask() != task)
-                                {
-                                    if (agv->status != Agv::AGV_STATUS_IDLE)
-                                    {
-                                        combined_logger->info(" 指定车辆不空闲 ");
-                                        continue;
-                                    }
-                                }
-                                int distance = DISTANCE_INFINITY;
-                                combined_logger->info("before best path {0} {1} {2}", agv->getLastStation(), agv->getNowStation(), aimStation);
-
-                                std::vector<int> result;
-
-                                result = MapManager::getInstance()->getBestPath(agv->getId(), agv->getLastStation(), agv->getNowStation(), aimStation, distance, CAN_CHANGE_DIRECTION);
-
-                                if (distance != DISTANCE_INFINITY && result.size() > 0)
-                                {
-                                    //拿去执行//从未分配队列中拿出去
-                                    combined_logger->info(" 从未分配队列中拿出去 ");
-                                    agv->setTask(task);
-                                    task->setPath(result);
-                                    combined_logger->info("path={0}", task->getPath().at(0));
-                                    pos = itr->second.erase(pos);
-                                    combined_logger->info("3.excuteTask={0}", task->getId());
-                                    //占用线路和站点
-                                    MapManager::getInstance()->addOccuStation(aimStation, agv);
-                                    for (auto tline : result)
-                                    {
-                                        MapManager::getInstance()->addOccuLine(tline, agv);
-                                    }
-                                    excuteTask(task);
-                                    continue;
-                                }
-                                else
-                                {
-                                    //如果agv已经在躲避点了
-                                    auto nowSstaion = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(agv->getNowStation()));
-                                    if (nowSstaion != nullptr && nowSstaion->getPointType() == MapPoint::Map_Point_Type_HALT) {
-                                        continue;
-                                    }
-
-                                    distance = DISTANCE_INFINITY;
-                                    result.clear();
-                                    //没有合适的路程
-                                    //如果有空闲车辆，那么先执行到 距离目的地最近的避让点
-                                    //1.寻找距离目的地最近的避让点
-                                    int haltStation = MapManager::getInstance()->getNearestHaltStation(agv->getId(),aimStation);
-                                    //2.寻找车辆到该避让点等待
-
-                                    result = MapManager::getInstance()->getBestPath(agv->getId(), agv->getLastStation(), agv->getNowStation(), haltStation, distance, CAN_CHANGE_DIRECTION);
-
-                                    //找到了空闲车辆去往避让点
-                                    if (distance != DISTANCE_INFINITY && result.size() > 0)
-                                    {
-                                        combined_logger->info(" 找到了去往避让点{0} 的最优线路 agv {1}", haltStation, agv->getId());
-                                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
-                                            MapManager::getInstance()->addOccuStation(haltStation, bestAgv);
-                                            for (auto tline : result)
-                                            {
-                                                MapManager::getInstance()->addOccuLine(tline, bestAgv);
-                                            }
-                                            bestAgv->setTask(task);
-                                            task->setPath(result);
-                                            task->setAgv(bestAgv->getId());
-                                            pos = itr->second.erase(pos);
-
-                                            bestAgv->onTaskStart(task);
-
-                                            //在前面增加一个 去往躲避点的节点，
-                                            AgvTaskNodePtr node_node(new AgvTaskNode());
-                                            node_node->setStation(haltStation);
-                                            node_node->setTaskType(TASK_MOVE);
-                                            task->push_frontNode(node_node);
-
-                                            excuteTask(task);
-                                        }
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    ++pos;
                 }
             }
             toDisMtx.unlock();
@@ -593,7 +604,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
             doingTaskMtx.lock();
             doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
             doingTaskMtx.unlock();
-            finishTask(task);
+            addTask(task);
             combined_logger->info("task->finish");
         }
         else
@@ -642,7 +653,9 @@ void TaskManager::excuteTask(AgvTaskPtr task)
                 task->setDoingIndex(task->getDoingIndex() + 1);
                 if (!task->getIsCancel())
                 {
+                    doingTaskMtx.lock();
                     doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
+                    doingTaskMtx.unlock();
                     addTask(task);
                     combined_logger->info("addtask={0}-{1}", task->getId(), task->getDoingIndex());
                 }

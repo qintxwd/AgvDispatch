@@ -271,6 +271,7 @@ void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
             MapPoint *point = static_cast<MapPoint *>(spirit);
 
             task_describe.append(point->getName());
+            task_describe.append("["+intToString(level)+"]");
             //根据客户端的代码，
             //dowhat列表为
             // 0 --> pick

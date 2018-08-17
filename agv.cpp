@@ -41,7 +41,7 @@ void Agv::setPosition(int _lastStation, int _nowStation, int _nextStation) {
     if (nowStation > 0) {
         onArriveStation(nowStation);
     }
-};
+}
 
 //到达后是否停下，如果不停下，就是不减速。
 //是一个阻塞的函数
@@ -56,17 +56,15 @@ void Agv::stop()
 void Agv::onArriveStation(int station)
 {
     auto mapmanagerptr = MapManager::getInstance();
+    int block = -1;
 
-    //add block occur
-    auto block = mapmanagerptr->getBlock(station);
+    //add block occur station
+    block = mapmanagerptr->getBlock(station);
     if(block!=-1)
         mapmanagerptr->addBlcokOccu(block,getId(),station);
 
-    MapSpirit *spirit = mapmanagerptr->getMapSpiritById(station);
-
-    if(spirit->getSpiritType()!=MapSpirit::Map_Sprite_Type_Point)return ;
-
-    MapPoint *point = static_cast<MapPoint *>(spirit);
+    //free block last path and station
+    MapPoint *point = mapmanagerptr->getPointById(station);
 
     combined_logger->info("agv id:{0} arrive station:{1}",getId(),point->getName());
 
@@ -94,10 +92,8 @@ void Agv::onArriveStation(int station)
     //TODO:释放之前的线路和站点
     std::vector<MapPath *> paths;
     for(auto line:excutespaths){
-        MapSpirit *spirit = mapmanagerptr->getMapSpiritById(line);
-        if(spirit ==nullptr)continue;
-        if(spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
-        MapPath *path = static_cast<MapPath *>(spirit);
+        MapPath *path = mapmanagerptr->getPathById(line);
+        if(path == nullptr)continue;
         paths.push_back(path);
     }
 
@@ -111,12 +107,30 @@ void Agv::onArriveStation(int station)
     if(findIndex != -1){
         //之前的道路占用全部释放
         //之前的站点占用全部释放
-        for(int i=0;i<findIndex;++i){
+        for(int i=0;i<=findIndex;++i){
             auto line = paths[i];
+            int start = line->getStart();
             int end = line->getEnd();
             int lineId = line->getId();
-            mapmanagerptr->freeStation(end,shared_from_this());
+            //free start station
+            mapmanagerptr->freeStation(start,shared_from_this());
+            block = mapmanagerptr->getBlock(start);
+            if(block!=-1)
+                mapmanagerptr->addBlcokOccu(block,getId(),station);
+
+            //free end station
+            if(i!=findIndex){
+                mapmanagerptr->freeStation(end,shared_from_this());
+                block = mapmanagerptr->getBlock(end);
+                if(block!=-1)
+                    mapmanagerptr->addBlcokOccu(block,getId(),end);
+            }
+
+            //free last line
             mapmanagerptr->freeLine(lineId,shared_from_this());
+            block = mapmanagerptr->getBlock(lineId);
+            if(block!=-1)
+                mapmanagerptr->addBlcokOccu(block,getId(),lineId);
         }
     }
 
@@ -157,13 +171,26 @@ void Agv::onArriveStation(int station)
 void Agv::onLeaveStation(int stationid)
 {
     auto mapmanagerptr = MapManager::getInstance();
+    //add block occur station
+    auto block = mapmanagerptr->getBlock(stationid);
+    if(block!=-1)
+        mapmanagerptr->freeBlcokOccu(block,getId(),stationid);
+
+    //free block last path
+    auto lastpath = mapmanagerptr->getPathByStartEnd(stationid,nextStation);
+    if(lastpath!=nullptr){
+        block = mapmanagerptr->getBlock(lastpath->getId());
+        if(block!=-1){
+            mapmanagerptr->addBlcokOccu(block,getId(),lastpath->getId());
+        }
+    }
 
     nowStation = 0;
     lastStation = stationid;
 
     auto point = mapmanagerptr->getPointById(stationid);
     if(point!=nullptr){
-        combined_logger->error("agv id:{0} leave station:{1}",getId(),point->getName());
+        combined_logger->info("agv id:{0} leave station:{1}",getId(),point->getName());
     }
     //add block occur
     auto line = mapmanagerptr->getPathByStartEnd(lastStation,nextStation);

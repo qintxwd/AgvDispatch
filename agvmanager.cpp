@@ -81,7 +81,6 @@ bool AgvManager::init()
                 {
                     AgvPtr agv(new VirtualRosAgv(id, name));
                     agv->init();
-                    agv->setPosition(lastStation, nowStation, nextStation);
                     agvs.push_back(agv);
                 }
                 else
@@ -94,14 +93,7 @@ bool AgvManager::init()
             }
             else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
             {
-                if(1 == agvType)
-                {
-                    AgvPtr agv(new VirtualRosAgv(id, name));
-                    agv->init();
-                    agv->setPosition(lastStation, nowStation, nextStation);
-                    agvs.push_back(agv);
-                }
-                else
+                if(AGV_TYPE_ANTING_FORKLIFT == agvType)
                 {
                     AtForkliftPtr agv(new AtForklift(id, name, ip, port));
                     agv->status = Agv::AGV_STATUS_NOTREADY;
@@ -109,12 +101,15 @@ bool AgvManager::init()
                     agvs.push_back(agv);
                 }
             }
-            else
+            else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_QINGDAO)
             {
-                AgvPtr agv(new VirtualRosAgv(id, name));
-                agv->init();
-                agv->setPosition(lastStation, nowStation, nextStation);
-                agvs.push_back(agv);
+                if(AGV_TYPE_VIRTUAL_ROS_AGV == agvType)
+                {
+                    AgvPtr agv(new VirtualRosAgv(id, name));
+                    agv->init();
+                    agv->setPosition(lastStation, nowStation, nextStation);
+                    agvs.push_back(agv);
+                }
             }
         }
     }
@@ -207,6 +202,12 @@ void AgvManager::getPositionJson(Json::Value &json)
                 online_flag = false;
             }
         }
+
+        if (GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING) {
+            if (agv->status == Agv::AGV_STATUS_NOTREADY)
+                continue;
+        }
+
         if(online_flag)
         {
             Json::Value json_one_agv;
@@ -215,6 +216,13 @@ void AgvManager::getPositionJson(Json::Value &json)
             json_one_agv["x"] = agv->getX();
             json_one_agv["y"] = agv->getY();
             json_one_agv["theta"] = agv->getTheta();
+
+            //发布占用道路和站点信息[用于绘制不同的线路和站点的颜色]
+            auto sps = MapManager::getInstance()->getOccuSpirit(agv->getId());
+            std::stringstream ss;
+            for (auto sp : sps)ss << sp << ";";
+            json_one_agv["occurs"] = ss.str();
+
             json_all_agv.append(json_one_agv);
         }
     }

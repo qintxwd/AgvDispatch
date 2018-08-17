@@ -27,6 +27,9 @@
 
 #define DB_File ("agv.db")
 
+#define AGV_TYPE_VIRTUAL_ROS_AGV        -1
+#define AGV_TYPE_ANTING_FORKLIFT         1
+
 typedef std::chrono::duration<int,std::milli> duration_millisecond;
 typedef std::chrono::duration<int> duration_second;
 typedef std::chrono::duration<int,std::ratio<60*60>> duration_hour;

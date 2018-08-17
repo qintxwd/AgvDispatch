@@ -1,4 +1,4 @@
-#include "mapmanager.h"
+﻿#include "mapmanager.h"
 #include "../sqlite3/CppSQLite3.h"
 #include "../msgprocess.h"
 #include "../common.h"
@@ -85,16 +85,47 @@ MapPath *MapManager::getMapPathByStartEnd(int start, int end)
     return nullptr;
 }
 
+void MapManager::printGroup()
+{
+    for(auto p=group_occuagv.begin();p!=group_occuagv.end();++p){
+        combined_logger->debug("groupId:{0} ====================",p->first);
+        auto pp = p->second;
+        combined_logger->debug("agv:{0}",pp.first);
+        std::stringstream ss1;
+        ss1<<"stations: ";
+        for(auto ppp:pp.second){
+            auto ptr = getPointById(ppp);
+            if(ptr!=nullptr){
+                ss1<<ptr->getName()<<" ";
+            }
+        }
+        std::stringstream ss2;
+        ss2<<"paths: ";
+        for(auto ppp:pp.second){
+            auto ptr = getPathById(ppp);
+            if(ptr!=nullptr){
+                ss2<<ptr->getName()<<" ";
+            }
+        }
+        combined_logger->debug("{0}",ss1.str());
+        combined_logger->debug("{0}",ss2.str());
+        combined_logger->debug("===================");
+    }
+
+
+}
+
 //一个Agv占领一个站点
 void MapManager::addOccuStation(int station, AgvPtr occuAgv)
 {
     station_occuagv[station] = occuAgv->getId();
-    //combined_logger->info("occu station:{0} agv:{1}", station, occuAgv->getId());
+    combined_logger->debug("occu station:{0} agv:{1}", station, occuAgv->getId());
 
     int groupId = getGroup(station);
 
     if(groupId != -1)
     {
+        combined_logger->info("occupy group:{0} agv:{1}", groupId, occuAgv->getId());
         UNIQUE_LCK(groupMtx);
         auto iter = group_occuagv.find(groupId);
         std::vector<int> occuSpirits;
@@ -102,12 +133,10 @@ void MapManager::addOccuStation(int station, AgvPtr occuAgv)
         {
             occuSpirits = iter->second.second;
         }
-        else
-        {
-            combined_logger->info("occupy group:{0} agv:{1}", groupId, occuAgv->getId());
-        }
         occuSpirits.push_back(station);
         group_occuagv[groupId] = std::make_pair(occuAgv->getId(), occuSpirits);
+
+        //printGroup();
     }
 }
 
@@ -118,14 +147,7 @@ void MapManager::addOccuLine(int line, AgvPtr occuAgv)
     {
         line_occuagvs[line].push_back(occuAgv->getId());
     }
-    //combined_logger->info("occupy line:{0} agv:{1}", line, occuAgv->getId());
-
-    if (m_reverseLines[line] != 0) {
-        int reverseLine = m_reverseLines[line];
-        if(std::find(line_occuagvs[reverseLine].begin(), line_occuagvs[reverseLine].end(), occuAgv->getId()) == line_occuagvs[reverseLine].end())
-            line_occuagvs[reverseLine].push_back(occuAgv->getId());
-        //combined_logger->info("occupy reverseline:{0} agv:{1}", reverseLine, occuAgv->getId());
-    }
+    combined_logger->debug("occupy line:{0} agv:{1}", line, occuAgv->getId());
 
     int groupId = getGroup(line);
     if(groupId != -1)
@@ -137,12 +159,9 @@ void MapManager::addOccuLine(int line, AgvPtr occuAgv)
         {
             occuSpirits = iter->second.second;
         }
-        else
-        {
-            combined_logger->info("occupy group:{0} agv:{1}", groupId, occuAgv->getId());
-        }
         occuSpirits.push_back(line);
         group_occuagv[groupId] = std::make_pair(occuAgv->getId(), occuSpirits);
+        //printGroup();
     }
 }
 
@@ -151,8 +170,8 @@ void MapManager::freeStation(int station, AgvPtr occuAgv)
 {
     if (station_occuagv[station] == occuAgv->getId()) {
         station_occuagv[station] = 0;
-        //combined_logger->info("free station:{0} agv:{1}", station, occuAgv->getId());
     }
+    combined_logger->debug("free station:{0} agv:{1}", station, occuAgv->getId());
 
     int groupId = getGroup(station);
     if(groupId != -1)
@@ -163,20 +182,54 @@ void MapManager::freeStation(int station, AgvPtr occuAgv)
         if(iter != group_occuagv.end())
         {
             occuSpirits = iter->second.second;
-        }
-        for(auto itr=occuSpirits.begin();itr!=occuSpirits.end();){
-            if((*itr) == station)
+            auto ii = std::remove(occuSpirits.begin(),occuSpirits.end(),station);
+            occuSpirits.erase(ii,occuSpirits.end());
+            if(!occuSpirits.size())
             {
-                itr = occuSpirits.erase(itr);
+                group_occuagv.erase(iter);
+                combined_logger->info("free group:{0} agv:{1}", groupId, occuAgv->getId());
             }else{
-                ++itr;
+                group_occuagv[groupId] = std::make_pair(occuAgv->getId(), occuSpirits);
             }
         }
-        if(!occuSpirits.size())
-        {
-            group_occuagv.erase(iter);
-            combined_logger->info("free group:{0} agv:{1}", groupId, occuAgv->getId());
+        //printGroup();
+    }
+}
+
+//如果车辆在线路的占领表中，释放出去
+void MapManager::freeLine(int line, AgvPtr occuAgv)
+{
+    for (auto itr = line_occuagvs[line].begin(); itr != line_occuagvs[line].end(); ) {
+        if (*itr == occuAgv->getId()) {
+            itr = line_occuagvs[line].erase(itr);
         }
+        else {
+            ++itr;
+        }
+    }
+
+    combined_logger->info("free line:{0} agv:{1}", line, occuAgv->getId());
+
+    int groupId = getGroup(line);
+    if(groupId != -1)
+    {
+        UNIQUE_LCK(groupMtx);
+        auto iter = group_occuagv.find(groupId);
+        std::vector<int> occuSpirits;
+        if(iter != group_occuagv.end())
+        {
+            occuSpirits = iter->second.second;
+            auto ii = std::remove(occuSpirits.begin(),occuSpirits.end(),line);
+            occuSpirits.erase(ii,occuSpirits.end());
+            if(!occuSpirits.size())
+            {
+                group_occuagv.erase(iter);
+                combined_logger->info("free group:{0} agv:{1}", groupId, occuAgv->getId());
+            }else{
+                group_occuagv[groupId] = std::make_pair(occuAgv->getId(), occuSpirits);
+            }
+        }
+        //printGroup();
     }
 }
 
@@ -243,71 +296,13 @@ void MapManager::freeBlcokOccu(int blockId, int agvId, int spiritId)
             occuSpirits = iter->second.second;
         }
 
-        for(auto itr=occuSpirits.begin();itr!=occuSpirits.end();){
-            if((*itr) == spiritId)
-            {
-                itr = occuSpirits.erase(itr);
-            }else{
-                ++itr;
-            }
-        }
+        auto ii = std::remove(occuSpirits.begin(),occuSpirits.end(),spiritId);
+        occuSpirits.erase(ii,occuSpirits.end());
 
         if(!occuSpirits.size())
         {
             block_occuagv.erase(iter);
             combined_logger->info("free block:{0} agv:{1}", blockId, agvId);
-        }
-    }
-}
-
-//如果车辆在线路的占领表中，释放出去
-void MapManager::freeLine(int line, AgvPtr occuAgv)
-{
-    for (auto itr = line_occuagvs[line].begin(); itr != line_occuagvs[line].end(); ) {
-        if (*itr == occuAgv->getId()) {
-            itr = line_occuagvs[line].erase(itr);
-            combined_logger->info("free line:{0} agv:{1}", line, occuAgv->getId());
-        }
-        else {
-            ++itr;
-        }
-    }
-    if (m_reverseLines[line] != 0) {
-
-        int reverseLine = m_reverseLines[line];
-
-        for (auto itr = line_occuagvs[reverseLine].begin(); itr != line_occuagvs[reverseLine].end(); ) {
-            if (*itr == occuAgv->getId()) {
-                itr = line_occuagvs[reverseLine].erase(itr);
-                combined_logger->info("free reverseline:{0} agv:{1}", reverseLine, occuAgv->getId());
-            }
-            else {
-                ++itr;
-            }
-        }
-    }
-    int groupId = getBlock(line);
-    if(groupId != -1)
-    {
-        UNIQUE_LCK(groupMtx);
-        auto iter = group_occuagv.find(groupId);
-        std::vector<int> occuSpirits;
-        if(iter != group_occuagv.end())
-        {
-            occuSpirits = iter->second.second;
-        }
-        for(auto itr=occuSpirits.begin();itr!=occuSpirits.end();){
-            if((*itr) == line)
-            {
-                itr = occuSpirits.erase(itr);
-            }else{
-                ++itr;
-            }
-        }
-        if(!occuSpirits.size())
-        {
-            group_occuagv.erase(iter);
-            combined_logger->info("free group:{0} agv:{1}", groupId, occuAgv->getId());
         }
     }
 }
@@ -618,10 +613,10 @@ bool MapManager::loadFromDb()
         g_onemap.setMaxId(max_id);
         getReverseLines();
         getAdj();
-//        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
-//        {
-//            init_task_splitinfo();
-//        }
+        //        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
+        //        {
+        //            init_task_splitinfo();
+        //        }
     }
     catch (CppSQLite3Exception &e) {
         combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
@@ -710,7 +705,7 @@ std::vector<int> MapManager::getBestPath(int agv, int lastStation, int startStat
 }
 
 bool MapManager::pathPassable(MapPath *line, int agvId) {
-
+    //TODO: to delete
     if (line_occuagvs[line->getId()].size() > 1 || (line_occuagvs[line->getId()].size() == 1 && *(line_occuagvs[line->getId()].begin()) != agvId))
         return false;
 
@@ -741,8 +736,8 @@ bool MapManager::pathPassable(MapPath *line, int agvId) {
         if (std::find(sps.begin(), sps.end(), line->getId()) != sps.end() ||
                 std::find(sps.begin(), sps.end(), line->getEnd()) != sps.end())
         {
-            //该线路/线路终点属于这个block
-            //判断该block是否有agv以外的其他agv
+            //该线路/线路终点属于这个group
+            //判断该group是否有agv以外的其他agv
             if (group_occuagv.find(group->getId()) != group_occuagv.end() && group_occuagv[group->getId()].first != agvId)
                 return false;
         }
@@ -796,50 +791,6 @@ int MapManager::getNearestHaltStation(int agvId, int aimStation)
 
     return halt;
 }
-
-
-
-//void MapManager::init_task_splitinfo()
-//{
-//    try {
-//        if (!g_db.tableExists("agv_task_split")) {
-//            g_db.execDML("create table agv_task_split(from_block INTEGER, to_block INTEGER, chdir_station TEXT) ;");
-//        }
-//        CppSQLite3Table table_tasksplit = g_db.getTable("select from_block, to_block, chdir_station from agv_task_split;");
-//        if (table_tasksplit.numRows() > 0 && table_tasksplit.numFields() != 3)
-//        {
-//            combined_logger->error("loadFromDb agv_task_split error!");
-//            return;
-//        }
-//        for (int row = 0; row < table_tasksplit.numRows(); row++)
-//        {
-//            table_tasksplit.setRow(row);
-
-//            int from_block = atoi(table_tasksplit.fieldValue(0));
-//            int to_block = atoi(table_tasksplit.fieldValue(1));
-//            std::vector<std::string> chdir_pos = split(table_tasksplit.fieldValue(2), ";");
-//            std::queue<int> chdir_station;
-//            for(auto pos:chdir_pos)
-//            {
-//                chdir_station.push(stoi(pos));
-//            }
-//            m_chd_station[std::make_pair(from_block, to_block)] = chdir_station;
-//        }
-//        //        std::map< std::pair<int,int>, std::vector<std::string> >::iterator iter;
-
-//        //        for(iter = m_chd_station.begin(); iter != m_chd_station.end(); iter++)
-
-//        //            std::cout<<iter->first.first<<","<<iter->first.second<<' '<<iter->second.front()<<std::endl;
-//    }
-//    catch (CppSQLite3Exception &e) {
-//        combined_logger->error("sqlite error {0}:{1}",e.errorCode(),e.errorMessage());
-//        return;
-//    }
-//    catch (std::exception e) {
-//        combined_logger->error("sqlite error {0}",e.what());
-//        return;
-//    }
-//}
 
 std::vector<int> MapManager::getPath(int from, int to, int &distance, bool changeDirect)
 {
@@ -1058,7 +1009,6 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
                     lineDistanceColors[line->getId()].distance = line->getLength();
                     lineDistanceColors[line->getId()].color = AGV_LINE_COLOR_GRAY;
                     Q.insert(std::make_pair(lineDistanceColors[line->getId()].distance, line->getId()));
-                    break;
                 }
             }
         }
@@ -1073,9 +1023,8 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
         {
             if (lineDistanceColors[adj].color == AGV_LINE_COLOR_BLACK)continue;
 
-            MapSpirit *pp = g_onemap.getSpiritById(adj);
-            if (pp->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)continue;
-            MapPath *path = static_cast<MapPath *>(pp);
+            MapPath *path = g_onemap.getPathById(adj);
+            if (path == nullptr)continue;
             if (!pathPassable(path, agv))continue;
             if (lineDistanceColors[adj].color == AGV_LINE_COLOR_WHITE) {
                 lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
@@ -1161,6 +1110,7 @@ void MapManager::getReverseLines()
     for (auto a : paths) {
         for (auto b : paths) {
             if (a == b)continue;
+
             int aEndId = a->getEnd();
             int aStartId = a->getStart();
             int bStartId = b->getStart();
@@ -1180,14 +1130,33 @@ void MapManager::getReverseLines()
             MapPoint *pBEnd = static_cast<MapPoint *>(bEnd);
             MapPoint *pAStart = static_cast<MapPoint *>(aStart);
 
+
+//            if((a->getId() == 239 && b->getId() == 249)||
+//                    (b->getId() == 239 && a->getId() == 249)){
+//                combined_logger->debug("aid={0},aname={1},  bid={2},bname={3}",a->getId(),a->getName(),b->getId(),b->getName());
+//                combined_logger->debug("pAStart={0} ,pAStart name={1},  pAEnd={2},pAEnd name={3}",pAStart->getId(),pAStart->getName(),pAEnd->getId(),pAEnd->getName());
+//                combined_logger->debug("pBStart={0} ,pBStart name={1},  pBEnd={2},pBEnd name={3}",pBStart->getId(),pBStart->getName(),pBEnd->getId(),pBEnd->getName());
+
+//                combined_logger->debug("pAStart x ={0} ,pAStart y={1},  pBEnd x={2},pBEnd y={3}",pAStart->getRealX(),pAStart->getRealY(),pBEnd->getRealX(),pBEnd->getRealY());
+//                combined_logger->debug("pBStart x ={0} ,pBStart y={1},  pAEnd x={2},pAEnd y={3}",pBStart->getRealX(),pBStart->getRealY(),pAEnd->getRealX(),pAEnd->getRealY());
+
+//                combined_logger->debug("pAStart x ==pBEnd x {0} ,pAStart y== pBEnd y {1}",pAStart->getRealX() == pBEnd->getRealX(),pAStart->getRealY() == pBEnd->getRealY());
+//                combined_logger->debug("pBStart x ==pAEnd x {0} ,pBStart y== pAEnd y {1}",pBStart->getRealX()== pAEnd->getRealX(),pBStart->getRealY()==pAEnd->getRealY());
+
+//                combined_logger->debug("{0}=={1},{2}=={3},{4}=={5},{6}=={7}",pAEnd->getRealX(),pBStart->getRealX() ,pAEnd->getRealY(), pBStart->getRealY()
+//                                       ,pBEnd->getRealX(), pAStart->getRealX() , pBEnd->getRealY() ,pAStart->getRealY());
+//                combined_logger->debug("qyh");
+//            }
+
             if (a->getEnd() == b->getStart() && a->getStart() == b->getEnd()) {
                 m_reverseLines[a->getId()] = b->getId();
             }else if(pAEnd->getRealX() == pBStart->getRealX() && pAEnd->getRealY() == pBStart->getRealY()
-                     && pBEnd->getRealX() == pAStart->getRealX() && pBEnd->getRealY() == pAStart->getRealX()){
+                     && pBEnd->getRealX() == pAStart->getRealX() && pBEnd->getRealY() == pAStart->getRealY()){
                 m_reverseLines[a->getId()] = b->getId();
             }
         }
     }
+    return ;
 }
 
 void MapManager::getAdj()
@@ -1202,6 +1171,8 @@ void MapManager::getAdj()
             }
         }
     }
+
+    return ;
 }
 
 void MapManager::clear()
@@ -1271,6 +1242,24 @@ int MapManager::getBlock(int spiritID)
         }
     }
     return block;
+}
+
+std::list<int> MapManager::getOccuSpirit(int agvId)
+{
+    std::list<int> l;
+    for (auto s : station_occuagv) {
+        if (s.second == agvId) {
+            l.push_back(s.first);
+        }
+    }
+
+    for (auto s : line_occuagvs) {
+        if(std::find(s.second.begin(),s.second.end(),agvId)!=s.second.end())
+        {
+            l.push_back(s.first);
+        }
+    }
+    return l;
 }
 
 bool MapManager::blockPassable(int blockId,int agvId)

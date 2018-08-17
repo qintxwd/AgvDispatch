@@ -53,7 +53,6 @@ public:
     int type(){return Type;}
 
     void onRead(const char *data,int len);
-    void onRecv(const char *data,int len);
 
     void excutePath(std::vector<int> lines);
     void goStation(std::vector<int> lines,  bool stop);

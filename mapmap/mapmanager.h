@@ -83,6 +83,8 @@ public:
 
     bool blockPassable(int blockId, int agvIdD);
 
+    std::list<int> getOccuSpirit(int agvId);
+
     //用户接口
     void interSetMap(SessionPtr conn, const Json::Value &request);
     void interGetMap(SessionPtr conn, const Json::Value &request);
@@ -121,6 +123,8 @@ private:
     void getAdj();
 
     bool pathPassable(MapPath *line, int agvId);
+
+    void printGroup();
     //void init_task_splitinfo();
     std::atomic_bool mapModifying;
     std::map< std::pair<int, int>, std::queue<int> > m_chd_station;

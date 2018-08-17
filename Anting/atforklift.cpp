@@ -150,10 +150,6 @@ int AtForklift::nearestStation(int x, int y, int a, int floor)
     return min_station;
 }
 
-void AtForklift::onRecv(const char *data, int len)
-{
-    combined_logger->info("agv{0} recv data:{1}", id, data);
-}
 //解析小车上报消息
 void AtForklift::onRead(const char *data, int len)
 {
@@ -194,8 +190,12 @@ void AtForklift::onRead(const char *data, int len)
                 {
                     //find nearest station
                     nowStation = nearestStation(x, y, theta, m_currentPos.m_floor);
-                    if (nowStation != -1)
+                    if (nowStation != -1){
                         status = AGV_STATUS_IDLE;
+                        onArriveStation(nowStation);
+                        //occur now station
+                        MapManager::getInstance()->addOccuStation(nowStation,shared_from_this());
+                    }
                 }
                 else
                 {
@@ -279,7 +279,7 @@ void AtForklift::arrve(int x, int y) {
         if (spirit != nullptr && spirit->getSpiritType() == MapSpirit::Map_Sprite_Type_Point)
         {
             auto point = static_cast<MapPoint *>( spirit );
-            if (func_dis(x, y, point->getRealX(), point->getRealY()) > 2*AT_START_RANGE) {
+            if (func_dis(x, y, point->getRealX(), point->getRealY()) > AT_START_RANGE) {
                 //too far leave station
                 onLeaveStation(nowStation);
             }
@@ -289,10 +289,8 @@ void AtForklift::arrve(int x, int y) {
     //2.did agv arrive a station
     for (auto station : excutestations)
     {
-        MapSpirit *spirit = mapmanagerptr->getMapSpiritById(station);
-        if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
-
-        MapPoint *point = static_cast<MapPoint *>(spirit);
+        MapPoint *point = mapmanagerptr->getPointById(station);
+        if (point == nullptr)continue;
 
         if (func_dis(x, y, point->getRealX(), point->getRealY()) < AT_PRECISION && station != this->nowStation) {
             onArriveStation(station);
@@ -337,7 +335,6 @@ void AtForklift::arrve(int x, int y) {
             }
         }
     }
-
 }
 //进电梯时用
 bool AtForklift::move(float speed, float distance)
@@ -636,10 +633,15 @@ bool AtForklift::send(const std::string &data)
         combined_logger->info("send to agv{0}:{1}", id, sendContent);
     }
     bool res = m_qTcp->doSend(sendContent.c_str(), sendContent.length());
+    if(!res){
+        combined_logger->info("send to agv msg fail!");
+    }
     DyMsg msg;
     msg.msg = sendContent;
     msg.waitTime = 0;
+    msgMtx.lock();
     m_unRecvSend[stoi(msg.msg.substr(1, 6))] = msg;
+    msgMtx.unlock();
     int msgType = std::stoi(msg.msg.substr(11, 2));
     if (ATFORKLIFT_STARTREPORT != msgType && ATFORKLIFT_HEART != msgType)
     {
@@ -691,6 +693,7 @@ bool AtForklift::isFinish(int cmd_type)
 
 bool AtForklift::pause()
 {
+    combined_logger->debug("==============agv:{0} paused!",getId());
     std::stringstream body;
     body << ATFORKLIFT_MOVE_NOLASER;
     body << 1;
@@ -700,6 +703,7 @@ bool AtForklift::pause()
 
 bool AtForklift::resume()
 {
+    combined_logger->debug("==============agv:{0} resume!",getId());
     std::stringstream body;
     body << ATFORKLIFT_MOVE_NOLASER;
     body << 0;

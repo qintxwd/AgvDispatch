@@ -61,6 +61,10 @@ public:
 protected:
     TaskManager();
 private:
+
+    //return true if task is distributed
+    bool distributeTask(AgvTaskPtr task);
+
     void checkTable();
     //未分配的任务[优先级/任务列表]
     std::map<int, std::vector<AgvTaskPtr> ,std::greater<int> > toDistributeTasks;

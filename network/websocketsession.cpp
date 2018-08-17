@@ -22,8 +22,6 @@ void WebSocketSession::read()
     {
         ws.accept();
 
-        //MsgProcess::getInstance()->addSubTask(getSessionID());
-
         while(ws.is_open())
         {
             boost::beast::multi_buffer buffer;
@@ -45,11 +43,11 @@ void WebSocketSession::read()
     }
     catch(boost::system::system_error const& se)
     {
-        combined_logger->debug("error websocket session id={0}  Error={2}" ,this->_sessionID,se.code().message());
+        combined_logger->debug("error websocket session id={0}  Error={1}" ,this->_sessionID,se.code().message());
     }
     catch(std::exception const& e)
     {
-        combined_logger->debug("error websocket session id={0}  Error={2}" ,this->_sessionID,e.what());
+        combined_logger->debug("error websocket session id={0}  Error={1}" ,this->_sessionID,e.what());
     }
 
 
