@@ -87,7 +87,7 @@ void VirtualRosAgv::excutePath(std::vector<int> lines)
 
         //还有下一站。
         //分类讨论
-        if(!nextPoint->getMapChange() && !nextPoint->getMapChange())
+        if(!nowPoint->getMapChange() && !nextPoint->getMapChange())
         {
             //两个都不是地图切换点
             goStation(now,false);

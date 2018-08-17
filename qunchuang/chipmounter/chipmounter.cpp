@@ -72,7 +72,7 @@ void chipmounter::onRead(const char *data,int len)
     if(len == 4)
     {
         bytesToHexstring(data, 4, str_received, 8);
-        str_received[9]='\0';
+        str_received[8]='\0';
 
         temp = string(str_received);
 

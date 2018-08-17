@@ -15,6 +15,7 @@ AtForklift::AtForklift(int id, std::string name, std::string ip, int port) :
     status = Agv::AGV_STATUS_NOTREADY;
     pausedFlag = false;
     sendPause = true;//表示发送了暂停指令、false表示发送了暂停指令
+    turnResult = true;
     init();
 }
 
@@ -37,7 +38,7 @@ void AtForklift::init() {
                         bool ret = this->m_qTcp->doSend(temp, iter->second.msg.length());
                         combined_logger->info("resend:{0}, waitTime:{1}, result:{2}", iter->first, iter->second.waitTime, ret ? "success" : "fail");
 
-                        delete temp;
+                        delete[] temp;
                         iter->second.waitTime = 0;
                     }
                 }
@@ -454,7 +455,7 @@ void AtForklift::excutePath(std::vector<int> lines)
 
     do
     {
-        double speed;
+        double speed = 0.4;
         exelines.clear();
         for (unsigned int i = start; i < lines.size(); i++)
         {
@@ -518,7 +519,7 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
     combined_logger->info("atForklift goStation");
     std::stringstream body;
 
-    int endId;
+    int endId = 0;
     for (auto i = 0; i < lines.size(); ++i) {
         auto line = lines[i];
         MapSpirit *spirit = mapmanagerptr->getMapSpiritById(line);

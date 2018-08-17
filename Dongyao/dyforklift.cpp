@@ -439,7 +439,7 @@ void DyForklift::excutePath(std::vector<int> lines)
 
     do
     {
-        double speed;
+        double speed = 0.4;
         exelines.clear();
         for(unsigned int i = start; i < lines.size(); i++)
         {
@@ -547,7 +547,7 @@ void DyForklift::goStation(std::vector<int> lines,  bool stop)
     combined_logger->info("dyForklift goStation");
     std::stringstream body;
 
-    int endId;
+    int endId = 0;
     for (auto line : lines) {
         MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(line);
         if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Path)

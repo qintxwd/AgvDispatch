@@ -432,8 +432,8 @@ bool MapManager::loadFromDb()
             int agvType = atoi(table_station.fieldValue(14));
             std::string lineId = std::string(table_station.fieldValue(15));
 
-
-            MapPoint *point = new MapPoint(id, name, (MapPoint::Map_Point_Type)type, x, y, realX, realY, realA, labeXoffset, labelYoffset, mapchange, locked, ip, port, agvType, lineId);
+            MapPoint::Map_Point_Type t = static_cast<MapPoint::Map_Point_Type>(type);
+            MapPoint *point = new MapPoint(id, name, t, x, y, realX, realY, realA, labeXoffset, labelYoffset, mapchange, locked, ip, port, agvType, lineId);
 
             g_onemap.addSpirit(point);
         }
@@ -457,7 +457,8 @@ bool MapManager::loadFromDb()
             bool locked = atoi(table_line.fieldValue(10)) == 1;
             double speed = atof(table_line.fieldValue(11));
 
-            MapPath *path = new MapPath(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked,speed);
+            MapPath::Map_Path_Type t = static_cast<MapPath::Map_Path_Type>(type);
+            MapPath *path = new MapPath(id, name, start, end, t, length, p1x, p1y, p2x, p2y, locked,speed);
             g_onemap.addSpirit(path);
         }
 
@@ -1346,7 +1347,8 @@ void MapManager::interSetMap(SessionPtr conn, const Json::Value &request)
                 int port = station["port"].asInt();
                 int agvType = station["agvType"].asInt();
                 std::string lineId = station["lineId"].asString();
-                MapPoint *p = new MapPoint(id, name, (MapPoint::Map_Point_Type)station_type, x, y, realX, realY, realA, labelXoffset, labelYoffset, mapchange, locked,ip,port,agvType,lineId);
+                MapPoint::Map_Point_Type t = static_cast<MapPoint::Map_Point_Type>(station_type);
+                MapPoint *p = new MapPoint(id, name, t, x, y, realX, realY, realA, labelXoffset, labelYoffset, mapchange, locked,ip,port,agvType,lineId);
                 g_onemap.addSpirit(p);
             }
 
@@ -1366,7 +1368,9 @@ void MapManager::interSetMap(SessionPtr conn, const Json::Value &request)
                 int length = line["length"].asInt();
                 bool locked = line["locked"].asBool();
                 double speed = line["speed"].asDouble();
-                MapPath *p = new MapPath(id, name, start, end, (MapPath::Map_Path_Type)type, length, p1x, p1y, p2x, p2y, locked,speed);
+
+                MapPath::Map_Path_Type t = static_cast<MapPath::Map_Path_Type>(type);
+                MapPath *p = new MapPath(id, name, start, end, t, length, p1x, p1y, p2x, p2y, locked,speed);
                 g_onemap.addSpirit(p);
             }
 
@@ -1576,7 +1580,7 @@ void MapManager::interGetMap(SessionPtr conn, const Json::Value &request)
                 char *ss = new char[lenlen];
                 Base64encode(ss, p->getImgData(), p->getImgDataLen());
                 pv["data"] = std::string(ss, lenlen);
-                delete ss;
+                delete[] ss;
                 pv["data_len"] = p->getImgDataLen();
                 pv["width"] = p->getWidth();
                 pv["height"] = p->getHeight();

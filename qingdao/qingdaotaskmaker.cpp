@@ -34,7 +34,7 @@ void QingdaoTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 	if (!request["extra_params"].isNull()) {
 		Json::Value extra_params = request["extra_params"];
 		Json::Value::Members mem = extra_params.getMemberNames();
-		for (auto iter = mem.begin(); iter != mem.end(); iter++)
+		for (auto iter = mem.begin(); iter != mem.end(); ++iter)
 		{
 			task->setExtraParam(*iter, extra_params[*iter].asString());
 		}		

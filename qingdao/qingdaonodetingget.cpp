@@ -3,7 +3,8 @@
 
 
 QingdaoNodeTingGet::QingdaoNodeTingGet(std::vector<std::string> _params):
-	AgvTaskNodeDoThing(_params)
+	AgvTaskNodeDoThing(_params),
+    bresult(false)
 {
 }
 

@@ -127,7 +127,7 @@ bool chargemachine::sendCommand(unsigned char*data, int len)
     memcpy(msg, data, len);
     memcpy(msg+len, CRC, 2);
     bool ret = send(msg, len+2);
-    delete msg;
+    delete[] msg;
     return ret;
 }
 

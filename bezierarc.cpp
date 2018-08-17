@@ -7,8 +7,8 @@
 #define _ABS(x) (x < 0 ? -x : x)
 
 const double TOLERANCE = 0.0000001;  // Application specific tolerance
-
-extern double sqrt(double);
+//
+//extern double sqrt(double);
 
 double q1, q2, q3, q4, q5;
 

@@ -20,7 +20,8 @@ class AgvTaskNode : public std::enable_shared_from_this<AgvTaskNode>
 {
 public:
     AgvTaskNode():
-        aimStation(0)
+        aimStation(0),
+        type(TASK_PICK)
     {
     }
 
