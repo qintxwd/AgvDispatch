@@ -575,6 +575,7 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
     }
     body << "1";
 
+    //TODO 掉线处理
     resend(body.str());
 
     do

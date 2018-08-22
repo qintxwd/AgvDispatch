@@ -191,6 +191,7 @@ void AgvManager::foreachAgv(AgvEachCallback cb)
 
 void AgvManager::getPositionJson(Json::Value &json)
 {
+    auto mapmanagerptr = MapManager::getInstance();
     std::unique_lock<std::mutex> lck(mtx);
     Json::Value json_all_agv;
     for (auto agv : agvs) {
@@ -216,9 +217,21 @@ void AgvManager::getPositionJson(Json::Value &json)
             json_one_agv["x"] = agv->getX();
             json_one_agv["y"] = agv->getY();
             json_one_agv["theta"] = agv->getTheta();
+            
+            //发布agv所属楼层ID
+            json_one_agv["floor"] = -1;
+            if (agv->getNowStation() > 0) {
+                json_one_agv["floor"] = mapmanagerptr->getFloor(agv->getNowStation());
+            }
+            else {
+                auto path = mapmanagerptr->getPathByStartEnd(agv->getLastStation(), agv->getNextStation());
+                if(path!=nullptr){
+                    json_one_agv["floor"] = mapmanagerptr->getFloor(path->getId());
+                }
+            }
 
             //发布占用道路和站点信息[用于绘制不同的线路和站点的颜色]
-            auto sps = MapManager::getInstance()->getOccuSpirit(agv->getId());
+            auto sps = mapmanagerptr->getOccuSpirit(agv->getId());
             std::stringstream ss;
             for (auto sp : sps)ss << sp << ";";
             json_one_agv["occurs"] = ss.str();

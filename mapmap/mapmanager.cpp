@@ -1194,7 +1194,7 @@ bool MapManager::isSameFloor(int floor, int station)
     return count > 0 ? true : false;
 }
 
-int MapManager::getFloor(int station)
+int MapManager::getFloor(int spiritID)
 {
     int floor = -1;
     std::list<MapFloor *> floors = g_onemap.getFloors();
@@ -1202,7 +1202,15 @@ int MapManager::getFloor(int station)
     {
         std::list<int> pointlist = onefloor->getPoints();
 
-        if(std::find(pointlist.begin(), pointlist.end(), station) != pointlist.end())
+        if(std::find(pointlist.begin(), pointlist.end(), spiritID) != pointlist.end())
+        {
+            floor = std::stoi(onefloor->getName().substr(6));
+            break;
+        }
+
+        std::list<int> pathlist = onefloor->getPaths();
+
+        if (std::find(pathlist.begin(), pathlist.end(), spiritID) != pathlist.end())
         {
             floor = std::stoi(onefloor->getName().substr(6));
             break;

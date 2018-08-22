@@ -277,6 +277,7 @@ void AtTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
             // 0 --> pick
             // 1 --> put
             // 2 --> charge
+            // 3 --> move
             AgvTaskNodePtr node_node(new AgvTaskNode());
             node_node->setStation(station);
             std::vector<AgvTaskNodeDoThingPtr> doThings;

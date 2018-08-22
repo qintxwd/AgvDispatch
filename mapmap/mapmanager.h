@@ -69,7 +69,7 @@ public:
     std::vector<int> getStations(int floor);
 
     bool isSameFloor(int floor, int station);
-    int getFloor(int station);
+    int getFloor(int spiritID);
     int getBlock(int spiritID);
     int getGroup(int spiritID);
 

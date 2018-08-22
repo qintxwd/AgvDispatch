@@ -65,8 +65,8 @@ bool TaskManager::distributeTask(AgvTaskPtr task)
 
         if (runTimes <= 0)
         {
-            AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
-            agv->status = Agv::AGV_STATUS_IDLE;
+//            AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
+//            agv->status = Agv::AGV_STATUS_IDLE;
             finishTask(task);
             return true;
         }
