@@ -597,7 +597,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
         task->setStatus(AgvTask::AGV_TASK_STATUS_EXCUTING);
         std::vector<AgvTaskNodePtr> nodes = task->getTaskNodes();
         int index = task->getDoingIndex();
-
+        if(index == 0)task->setDoTime(getTimeStrNow());
         if (index >= nodes.size())
         {
             //任务完成了
