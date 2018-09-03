@@ -9,6 +9,7 @@
 #include <mutex>
 #include <algorithm>
 #include <memory>
+#include <limits>
 #include <limits.h>
 #include "utils/Log/spdlog/spdlog.h"
 #include "utils/Log/spdlog/fmt/ostr.h"
@@ -24,7 +25,7 @@
 #define  CAN_CHANGE_DIRECTION  false
 
 #define  DISTANCE_INFINITY INT_MAX
-
+#define  DISTANCE_INFINITY_DOUBLE   ((std::numeric_limits<double>::max)())
 #define DB_File ("agv.db")
 
 #define AGV_TYPE_VIRTUAL_ROS_AGV        -1

@@ -371,7 +371,7 @@ bool TaskManager::init()
                 }
             }
             toDisMtx.unlock();
-            std::this_thread::sleep_for(duration_millisecond(200));
+            usleep(20000);
         }
     });
 

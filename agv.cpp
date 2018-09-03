@@ -65,7 +65,7 @@ void Agv::onArriveStation(int station)
 
     //free block last path and station
     MapPoint *point = mapmanagerptr->getPointById(station);
-
+    if(point == nullptr)return ;
     combined_logger->info("agv id:{0} arrive station:{1}",getId(),point->getName());
 
     x = point->getX();
@@ -91,11 +91,13 @@ void Agv::onArriveStation(int station)
     }
     //TODO:释放之前的线路和站点
     std::vector<MapPath *> paths;
+    stationMtx.lock();
     for(auto line:excutespaths){
         MapPath *path = mapmanagerptr->getPathById(line);
         if(path == nullptr)continue;
         paths.push_back(path);
     }
+    stationMtx.unlock();
 
     int findIndex = -1;
     for(int i=0;i<paths.size();++i){
@@ -148,12 +150,13 @@ void Agv::onArriveStation(int station)
 
     //判断下一段线路的可行性 [block]
     //判断下一个线路 是否在block内，block内是否已经有其他车辆。如果有的话，就暂停 一下当前动作
-    //TODO:
+    stationMtx.lock();
     auto itr = std::find(excutestations.begin(),excutestations.end(),nowStation);
     if(itr!=excutestations.end()){
         ++itr;
         if(itr!=excutestations.end()){
             nextStation = *itr;
+            stationMtx.unlock();
             //next path is block free
             auto p = mapmanagerptr->getPathByStartEnd(nowStation,nextStation);
             if(p!=nullptr){
@@ -164,7 +167,11 @@ void Agv::onArriveStation(int station)
                     }
                 }
             }
+        }else{
+            stationMtx.unlock();
         }
+    }else{
+        stationMtx.unlock();
     }
 }
 
@@ -204,6 +211,22 @@ void Agv::onLeaveStation(int stationid)
     //释放这个站点的占用
     MapManager::getInstance()->freeStation(stationid,shared_from_this());
 
+    bool b_getNextStation = false;
+    stationMtx.lock();
+    for(auto line:excutespaths){
+        MapPath *path = mapmanagerptr->getPathById(line);
+        if(path == nullptr)continue;
+        if(path->getStart() == nowStation){
+            nextStation = path->getEnd();
+            b_getNextStation = true;
+            break;
+        }
+    }
+    stationMtx.unlock();
+    if(!b_getNextStation){
+        nextStation = 0;
+    }
+
     char buf[SQL_MAX_LENGTH];
     snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
     try {
@@ -218,20 +241,12 @@ void Agv::onLeaveStation(int stationid)
 
     //判断下一个站点的可行性 [block]
     //判断下一个站点 是否在block内，block内是否已经有其他车辆。如果有的话，就暂停 一下当前动作
-    auto itr = std::find(excutestations.begin(),excutestations.end(),nowStation);
-    if(itr!=excutestations.end()){
-        ++itr;
-        if(itr!=excutestations.end()){
-            nextStation = *itr;
-            //next path is block free
-            auto p = MapManager::getInstance()->getPointById(nextStation);
-            if(p!=nullptr){
-                auto b = MapManager::getInstance()->getBlock(p->getId());
-                if(b!=-1){
-                    if(!MapManager::getInstance()->blockPassable(b,getId())){
-                        pause();
-                    }
-                }
+    auto p = MapManager::getInstance()->getPointById(nextStation);
+    if(p!=nullptr){
+        auto b = MapManager::getInstance()->getBlock(p->getId());
+        if(b!=-1){
+            if(!MapManager::getInstance()->blockPassable(b,getId())){
+                pause();
             }
         }
     }

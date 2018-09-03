@@ -43,8 +43,8 @@ bool VirtualRosAgv::resume()
 void VirtualRosAgv::excutePath(std::vector<int> lines)
 {
     isStop = false;
-    excutespaths = lines;
     stationMtx.lock();
+    excutespaths = lines;
     excutestations.clear();
     for (auto line : lines) {
         MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(line);

@@ -38,7 +38,7 @@ inline ThreadPool::ThreadPool(size_t threads)
         workers.emplace_back(
             [this]
             {
-                for(;;)
+                for(;!stop;)
                 {
                     std::function<void()> task;
 

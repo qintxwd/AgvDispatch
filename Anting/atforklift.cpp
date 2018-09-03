@@ -288,14 +288,22 @@ void AtForklift::arrve(int x, int y) {
     }
 
     //2.did agv arrive a station
-    for (auto station : excutestations)
-    {
+    int arriveId = -1;
+    double minDis = DISTANCE_INFINITY_DOUBLE;
+    stationMtx.lock();
+    for(auto station:excutestations){
         MapPoint *point = mapmanagerptr->getPointById(station);
         if (point == nullptr)continue;
 
-        if (func_dis(x, y, point->getRealX(), point->getRealY()) < AT_PRECISION && station != this->nowStation) {
-            onArriveStation(station);
+        auto dis = func_dis(x, y, point->getRealX(), point->getRealY());
+        if(dis<minDis && dis<AT_PRECISION && station != nowStation){
+            minDis = dis;
+            arriveId = station;
         }
+    }
+    stationMtx.unlock();
+    if(arriveId!=-1){
+        onArriveStation(arriveId);
     }
 
     //4. did agv arrive actionpoint
@@ -591,6 +599,7 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
             int b;
             if(nowStation!=0){
                 int pId = -1;
+                stationMtx.lock();
                 for (int i = 0; i < excutespaths.size(); ++i) {
                     auto path = mapmanagerptr->getPathById(excutespaths[i]);
                     if (path!=nullptr && path->getStart() == nowStation) {
@@ -598,6 +607,7 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
                         break;
                     }
                 }
+                stationMtx.unlock();
                 b = mapmanagerptr->getBlock(pId);
             }
             else {

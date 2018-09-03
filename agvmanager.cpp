@@ -224,9 +224,17 @@ void AgvManager::getPositionJson(Json::Value &json)
                 json_one_agv["floor"] = mapmanagerptr->getFloor(agv->getNowStation());
             }
             else {
-                auto path = mapmanagerptr->getPathByStartEnd(agv->getLastStation(), agv->getNextStation());
-                if(path!=nullptr){
-                    json_one_agv["floor"] = mapmanagerptr->getFloor(path->getId());
+                if(agv->getLastStation()>0 && agv->getNextStation()>0){
+                    auto path = mapmanagerptr->getPathByStartEnd(agv->getLastStation(), agv->getNextStation());
+                    if(path!=nullptr){
+                        json_one_agv["floor"] = mapmanagerptr->getFloor(path->getId());
+                    }
+                }else{
+                    if(agv->getLastStation()>0){
+                        json_one_agv["floor"] = mapmanagerptr->getFloor(agv->getLastStation());
+                    }else if(agv->getNextStation()>0){
+                        json_one_agv["floor"] = mapmanagerptr->getFloor(agv->getNextStation());
+                    }
                 }
             }
 

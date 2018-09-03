@@ -41,15 +41,15 @@ public:
 
     //状态
     enum {
-        AGV_STATUS_HANDING = -1,//手动模式中，不可用
-        AGV_STATUS_IDLE = 0,//空闲可用
-        AGV_STATUS_UNCONNECT = 1,//未连接
-        AGV_STATUS_TASKING = 2,//正在执行任务
-        AGV_STATUS_POWER_LOW = 3,//电量低
-        AGV_STATUS_ERROR = 4,//故障
-        AGV_STATUS_GO_CHARGING = 5,//返回充电中
-        AGV_STATUS_CHARGING = 6,//正在充电
-        AGV_STATUS_NOTREADY = 7 //刚连接，尚未上报位置
+        AGV_STATUS_HANDING      = -1,
+        AGV_STATUS_IDLE         = 0,
+        AGV_STATUS_UNCONNECT    = 1,
+        AGV_STATUS_TASKING      = 2,
+        AGV_STATUS_POWER_LOW    = 3,
+        AGV_STATUS_ERROR        = 4,
+        AGV_STATUS_GO_CHARGING  = 5,
+        AGV_STATUS_CHARGING     = 6,
+        AGV_STATUS_NOTREADY     = 7,
     };
 
     //状态

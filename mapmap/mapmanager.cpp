@@ -1204,7 +1204,7 @@ int MapManager::getFloor(int spiritID)
 
         if(std::find(pointlist.begin(), pointlist.end(), spiritID) != pointlist.end())
         {
-            floor = std::stoi(onefloor->getName().substr(6));
+            floor = onefloor->getId(); //std::stoi(onefloor->getName().substr(6));
             break;
         }
 
@@ -1212,7 +1212,7 @@ int MapManager::getFloor(int spiritID)
 
         if (std::find(pathlist.begin(), pathlist.end(), spiritID) != pathlist.end())
         {
-            floor = std::stoi(onefloor->getName().substr(6));
+            floor = onefloor->getId(); //std::stoi(onefloor->getName().substr(6));
             break;
         }
     }
