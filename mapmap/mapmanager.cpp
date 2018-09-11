@@ -120,10 +120,10 @@ void MapManager::addOccuStation(int station, AgvPtr occuAgv)
 {
     station_occuagv[station] = occuAgv->getId();
     combined_logger->debug("occu station:{0} agv:{1}", station, occuAgv->getId());
+    
+    std::vector<int> groupIds = getGroup(station);
 
-    int groupId = getGroup(station);
-
-    if(groupId != -1)
+    for(auto groupId:groupIds)
     {
         combined_logger->info("occupy group:{0} agv:{1}", groupId, occuAgv->getId());
         UNIQUE_LCK(groupMtx);
@@ -149,8 +149,9 @@ void MapManager::addOccuLine(int line, AgvPtr occuAgv)
     }
     combined_logger->debug("occupy line:{0} agv:{1}", line, occuAgv->getId());
 
-    int groupId = getGroup(line);
-    if(groupId != -1)
+        //同一条line可能属于多个Group
+    std::vector<int> groupIds = getGroup(line);
+    for(auto groupId:groupIds)
     {
         UNIQUE_LCK(groupMtx);
         auto iter = group_occuagv.find(groupId);
@@ -173,8 +174,8 @@ void MapManager::freeStation(int station, AgvPtr occuAgv)
     }
     combined_logger->debug("free station:{0} agv:{1}", station, occuAgv->getId());
 
-    int groupId = getGroup(station);
-    if(groupId != -1)
+    std::vector<int> groupIds = getGroup(station);
+    for(auto groupId:groupIds)
     {
         UNIQUE_LCK(groupMtx);
         auto iter = group_occuagv.find(groupId);
@@ -210,8 +211,9 @@ void MapManager::freeLine(int line, AgvPtr occuAgv)
 
     combined_logger->info("free line:{0} agv:{1}", line, occuAgv->getId());
 
-    int groupId = getGroup(line);
-    if(groupId != -1)
+    //TODO 如果一段路径同属于多个block 此处需要验证
+    std::vector<int> groupIds = getGroup(line);
+    for(auto groupId:groupIds)
     {
         UNIQUE_LCK(groupMtx);
         auto iter = group_occuagv.find(groupId);
@@ -264,7 +266,7 @@ bool MapManager::isSameFloorStation(int station_1, int station_2)
         return false;
 }
 
-void MapManager::addBlcokOccu(int blockId, int agvId, int spiritId)
+void MapManager::addBlockOccu(int blockId, int agvId, int spiritId)
 {
     if(blockId != -1)
     {
@@ -284,7 +286,7 @@ void MapManager::addBlcokOccu(int blockId, int agvId, int spiritId)
     }
 }
 
-void MapManager::freeBlcokOccu(int blockId, int agvId, int spiritId)
+void MapManager::freeBlockOccu(int blockId, int agvId, int spiritId)
 {
     if(blockId != -1)
     {
@@ -381,7 +383,7 @@ bool MapManager::save()
                 std::list<int> ps1 = group->getSpirits();
                 for (auto p : ps1)str1 << p << ";";
 
-                bufSQL.format("insert into agv_group(id ,name,spirits) values (%d,'%s', '%s');", group->getId(), group->getName().c_str(), str1.str().c_str());
+                bufSQL.format("insert into agv_group(id ,name,spirits,groupType) values (%d,'%s', '%s',%d);", group->getId(), group->getName().c_str(), str1.str().c_str(), group->getGroupType());
                 g_db.execDML(bufSQL);
             }
         }
@@ -581,16 +583,17 @@ bool MapManager::loadFromDb()
             g_onemap.addSpirit(mblock);
         }
 
-        CppSQLite3Table table_group = g_db.getTable("select id,name,spirits from agv_group;");
-        if (table_group.numRows() > 0 && table_group.numFields() != 3)return false;
+        CppSQLite3Table table_group = g_db.getTable("select id,name,spirits,groupType from agv_group;");
+        if (table_group.numRows() > 0 && table_group.numFields() != 4)return false;
         for (int row = 0; row < table_group.numRows(); row++)
         {
             table_group.setRow(row);
 
             int id = atoi(table_group.fieldValue(0));
             std::string name = std::string(table_group.fieldValue(1));
+            int groupType = atoi(table_group.fieldValue(3));
 
-            MapGroup *mgroup = new MapGroup(id, name);
+            MapGroup *mgroup = new MapGroup(id, name, groupType);
 
             std::string pointstr = std::string(table_group.fieldValue(2));
 
@@ -730,7 +733,7 @@ bool MapManager::pathPassable(MapPath *line, int agvId) {
         return false;
 
     //判断group占用
-    auto groups = g_onemap.getGroups();
+    auto groups = g_onemap.getGroups(COMMON_GROUP);
     UNIQUE_LCK(groupMtx);
     for (auto group : groups) {
         auto sps = group->getSpirits();
@@ -764,7 +767,7 @@ int MapManager::getNearestHaltStation(int agvId, int aimStation)
                     continue;
 
                 //判断group占用
-                auto groups = g_onemap.getGroups();
+                auto groups = g_onemap.getGroups(HALT_GROUP);
                 for (auto group : groups)
                 {
                     auto sps = group->getSpirits();
@@ -1219,18 +1222,17 @@ int MapManager::getFloor(int spiritID)
     return floor;
 }
 
-int MapManager::getGroup(int spiritID)
+std::vector<int> MapManager::getGroup(int spiritID)
 {
-    int group = -1;
-    auto groups = g_onemap.getGroups();
+    std::vector<int> group;
+    auto groups = g_onemap.getGroups(COMMON_GROUP);
     for (auto onegroup : groups)
     {
         std::list<int> spiritslist = onegroup->getSpirits();
 
         if (std::find(spiritslist.begin(), spiritslist.end(), spiritID) != spiritslist.end())
         {
-            group = onegroup->getId();
-            break;
+            group.push_back(onegroup->getId());
         }
     }
     return group;
@@ -1469,8 +1471,9 @@ void MapManager::interSetMap(SessionPtr conn, const Json::Value &request)
                 Json::Value group = request["groups"][i];
                 int id = group["id"].asInt();
                 std::string name = group["name"].asString();
+                int groupType = group["type"].asInt();
                 Json::Value spirits = group["spirits"];
-                MapGroup *p = new MapGroup(id, name);
+                MapGroup *p = new MapGroup(id, name, groupType);
                 for (unsigned int k = 0; k < spirits.size(); ++k) {
                     Json::Value spirit = spirits[k];
                     p->addSpirit(spirit.asInt());
@@ -1554,7 +1557,7 @@ void MapManager::interGetMap(SessionPtr conn, const Json::Value &request)
                 pv["realA"] = p->getRealA();
                 pv["labelXoffset"] = p->getLabelXoffset();
                 pv["labelYoffset"] = p->getLabelYoffset();
-                pv["mapChange"] = p->getMapChange();
+                pv["mapchange"] = p->getMapChange();
                 pv["locked"] = p->getLocked();
                 pv["ip"] = p->getIp();
                 pv["port"] = p->getPort();
@@ -1648,6 +1651,7 @@ void MapManager::interGetMap(SessionPtr conn, const Json::Value &request)
                 Json::Value pv;
                 pv["id"] = p->getId();
                 pv["name"] = p->getName();
+                pv["type"] = p->getGroupType();
                 Json::Value ppv;
                 auto ps = p->getSpirits();
                 int kk = 0;
@@ -1898,4 +1902,67 @@ void MapManager::interTrafficControlLine(SessionPtr conn, const Json::Value &req
         }
     }
     conn->send(response);
+}
+
+
+bool MapManager::addOccuGroup(int groupid, int agvId)
+{
+    auto group = getGroupById(groupid);
+    if(group != nullptr){
+        combined_logger->info("group id:{0} change status to lock", groupid);
+    }
+    else
+    {
+        combined_logger->info("group id:{0} error", groupid);
+    }
+    auto sps = group->getSpirits();
+    for(auto spirit:sps)
+    {
+        //TODO 检查当前电梯是否已经被AGV锁定如果已锁定返回错误
+        auto line = MapManager::getInstance()->getPathById(spirit);
+        if(line != nullptr)
+        {
+            if(line_occuagvs[line->getId()].size())
+            {
+                return false;
+            }
+        }
+    }
+    for(auto spirit:sps)
+    {
+        auto line = MapManager::getInstance()->getPathById(spirit);
+        if(line != nullptr)
+        {
+            line_occuagvs[line->getId()].push_back(agvId);
+        }
+    }
+    return true;
+}
+bool MapManager::freeGroup(int groupid, int agvId)
+{
+    auto group = getGroupById(groupid);
+    if(group != nullptr){
+        combined_logger->info("group id:{0} change status to unlock", groupid);
+    }
+    else
+    {
+        combined_logger->info("group id:{0} error", groupid);
+    }
+    auto sps = group->getSpirits();
+    for(auto spirit:sps)
+    {
+        auto line = MapManager::getInstance()->getPathById(spirit);
+        if(line != nullptr)
+        {
+            for (auto itr = line_occuagvs[line->getId()].begin(); itr != line_occuagvs[line->getId()].end(); ) {
+                if (*itr == agvId) {
+                    itr = line_occuagvs[line->getId()].erase(itr);
+                }
+                else {
+                    ++itr;
+                }
+            }
+        }
+    }
+    return true;
 }

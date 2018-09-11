@@ -7,7 +7,6 @@
 #include "mapbackground.h"
 #include "mapblock.h"
 #include "mapgroup.h"
-#include "../Dongyao/dymappath.h"
 
 //一个地图[有若干个元素组成]//用于显示和保存地图
 class OneMap
@@ -37,7 +36,7 @@ public:
     std::list<MapPath *> getRootPaths();
     std::list<MapPath *> getPaths();
     std::list<MapBlock *> getBlocks();
-    std::list<MapGroup *> getGroups();
+    std::list<MapGroup *> getGroups(int groupType);
     std::list<MapSpirit *> getAllElement(){return all_element;}
 
     MapSpirit *getSpiritById(int id);

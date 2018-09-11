@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <mutex>
+#include <functional>
 #include "utils/noncopyable.h"
 #include "protocol.h"
 #include "network/session.h"
@@ -50,6 +51,7 @@ public:
     void interAdd(SessionPtr conn, const Json::Value &request);
     void interDelete(SessionPtr conn, const Json::Value &request);
     void interModify(SessionPtr conn, const Json::Value &request);
+    void interStop(SessionPtr conn, const Json::Value &request);
 protected:
     AgvManager();
 private:

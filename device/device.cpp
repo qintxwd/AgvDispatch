@@ -1,4 +1,4 @@
-#include "device.h"
+﻿#include "device.h"
 
 Device::Device(int _id, std::string _name, std::string _ip, int _port) :
     id(_id),
@@ -8,6 +8,13 @@ Device::Device(int _id, std::string _name, std::string _ip, int _port) :
     tcpClient(nullptr)
 {
     connected = false;
+    runFlag = false;
+}
+
+Device::Device()
+{
+    connected = false;
+    runFlag = false;
 }
 
 Device::~Device()
@@ -23,6 +30,15 @@ bool Device::init()
     TcpClient::ClientDisconnectCallback ondisconnect = std::bind(&Device::onDisconnect, this);
     tcpClient = new TcpClient(ip, port, onread, onconnect, ondisconnect);
     return tcpClient != nullptr ? true : false;
+}
+
+void Device::start()
+{
+    if(tcpClient != nullptr)
+    {
+        tcpClient->start();
+        runFlag = true;
+    }
 }
 
 void Device::unInit()
@@ -46,11 +62,14 @@ void Device::onRead(const char *data,int len)
 void Device::onConnect()
 {
     connected = true;
+    combined_logger->info("connect success {0}:{1}", ip, port);
 }
 
 void Device::onDisconnect()
 {
     connected = false;
+    combined_logger->info("disconnect {0}:{1}", ip, port);
+
 }
 
 void Device::reconnect()

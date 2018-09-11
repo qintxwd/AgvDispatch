@@ -5,7 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <map>
-
+#define CAR_LENGTH 200
 //3层升降货架是否有料信息KEY
 #define ALL_FLOOR_INFO_KEY         "all_floor_info"
 //AGV完成一个Task是否需要回到等待区KEY
@@ -41,15 +41,15 @@ public:
 
     //状态
     enum {
-        AGV_STATUS_HANDING      = -1,
-        AGV_STATUS_IDLE         = 0,
-        AGV_STATUS_UNCONNECT    = 1,
-        AGV_STATUS_TASKING      = 2,
-        AGV_STATUS_POWER_LOW    = 3,
-        AGV_STATUS_ERROR        = 4,
-        AGV_STATUS_GO_CHARGING  = 5,
-        AGV_STATUS_CHARGING     = 6,
-        AGV_STATUS_NOTREADY     = 7,
+        AGV_STATUS_HANDING = -1,//手动模式中，不可用
+        AGV_STATUS_IDLE = 0,//空闲可用
+        AGV_STATUS_UNCONNECT = 1,//未连接
+        AGV_STATUS_TASKING = 2,//正在执行任务
+        AGV_STATUS_POWER_LOW = 3,//电量低
+        AGV_STATUS_ERROR = 4,//故障
+        AGV_STATUS_GO_CHARGING = 5,//返回充电中
+        AGV_STATUS_CHARGING = 6,//正在充电
+        AGV_STATUS_NOTREADY = 7 //刚连接，尚未上报位置
     };
 
     //状态
@@ -65,14 +65,18 @@ public:
     std::string getName(){return name;}
     std::string getIp(){return ip;}
     int getPort(){return port;}
+    int getType() {return agvType;}
     void setName(std::string _name){name=_name;}
     void setIp(std::string _ip){ip=_ip;}
     void setPort(int _port){port=_port;}
     void setX(int _x){x=_x;}
     void setY(int _y){y=_y;}
     void setTheta(int _theta){theta=_theta;}
+    void setType(int _type){agvType = _type;}
+    void setFloor(int _floor){floor = _floor;}
     int getX(){return x;}
     int getY(){return y;}
+    int getFloor(){return floor;}
     int getTheta(){return theta;}
 	int getLastStation() { return lastStation; }
 	int getNowStation() { return nowStation; }
@@ -101,11 +105,12 @@ protected:
     std::string name;
     std::string ip;
     int port;
+    int agvType;
 
-    //位置信息//直接显示要显示的位置
     double x;
     double y;
     double theta;
+    int floor;
 
 	//计算路径用的
 	int lastStation;//上一个站点
@@ -114,6 +119,7 @@ protected:
 
     std::mutex stationMtx;
     std::vector<int> excutestations;
+    int currentEndStation;
     std::vector<int> excutespaths;
 
     std::map<std::string,std::string> extra_params;

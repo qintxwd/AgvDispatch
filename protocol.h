@@ -120,6 +120,9 @@ typedef enum Msg_Todo
 	MSG_TODO_TRAFFIC_RELEASE_STATION,//交通管制 释放,一个站点//stationId[int32]
 	MSG_TODO_TRAFFIC_RELEASE_LINE,//交通管制 释放，一条线路//lineId[int32]
 
+    MSG_TODO_AGV_MANAGE_STOP,//停止//id[4]
+    MSG_TODO_QUERY_DEVICE_LOG, //查询设备日志 deviceid
+    MSG_TODO_ELEVATOR_CONTROL, //控制电梯
     //publish request and response
     MSG_TODO_PUB_AGV_POSITION,//发布的agv位置信息，该信息的queuebumber = 0
     MSG_TODO_PUB_AGV_STATUS,//发布的agv状态信息，该信息的queuebumber = 0

@@ -1,4 +1,4 @@
-#include "elevatorManager.h"
+﻿#include "elevatorManager.h"
 #include "sqlite3/CppSQLite3.h"
 #include "common.h"
 #include "userlogmanager.h"
@@ -45,7 +45,7 @@ bool ElevatorManager::init()
         {
             table_ele.setRow(row);
 
-            if(table_ele.fieldIsNull(6))
+            if(table_ele.fieldIsNull(7))
             {
                 combined_logger->error("Elevator {0} enabled field is null", row);
                 continue;
@@ -74,6 +74,8 @@ bool ElevatorManager::init()
                 ele_enabled = atoi(table_ele.fieldValue(7)) == 1;
 
             ElevatorPtr ele(new Elevator(id,name,ip,port,left_enabled,right_enabled,ele_enabled,waitting_points));
+            ele->init();
+            ele->start();
             elevators.push_back(ele);
         }
     }catch(CppSQLite3Exception e){

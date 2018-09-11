@@ -119,9 +119,7 @@ HEADERS += \
     qingdao/qingdaotaskmaker.h \
     qunchuang/msg.h \
     Dongyao/dyforklift.h \
-    Dongyao/dyforkliftthingturn.h \
     Dongyao/dytaskmaker.h \
-    Dongyao/dymappath.h \
     Dongyao/dyforkliftupdwms.h \
     Dongyao/dyforkliftthingfork.h \
     Dongyao/charge/chargemachine.h \
@@ -134,10 +132,13 @@ HEADERS += \
     network/acceptor.h \
     network/websocketacceptor.h \
     network/tcpsession.h \
+    Anting/attaskmaker.h \
     Anting/atforklift.h \
     Anting/atforkliftthingfork.h \
-    Anting/station_pos.h
-
+    Anting/station_pos.h \
+    Dongyao/dyforkliftthingcharge.h \
+    device/devicemanager.h \
+    device/elevator/elevatorManager.h
 SOURCES += \
     agv.cpp \
     agvmanager.cpp \
@@ -178,9 +179,7 @@ SOURCES += \
     qingdao/qingdaonodetingput.cpp \
     qingdao/qingdaotaskmaker.cpp \
     Dongyao/dyforklift.cpp \
-    Dongyao/dyforkliftthingturn.cpp \
     Dongyao/dytaskmaker.cpp \
-    Dongyao/dymappath.cpp \
     Dongyao/dyforkliftupdwms.cpp \
     Dongyao/dyforkliftthingfork.cpp \
     Dongyao/charge/chargemachine.cpp \
@@ -195,4 +194,7 @@ SOURCES += \
     network/tcpsession.cpp \
     Anting/atforklift.cpp \
     Anting/atforkliftthingfork.cpp \
-    Anting/attaskmaker.cpp
+    Anting/attaskmaker.cpp \
+    Dongyao/dyforkliftthingcharge.cpp \
+    device/devicemanager.cpp \
+    device/elevator/elevatorManager.cpp

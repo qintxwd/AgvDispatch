@@ -91,7 +91,7 @@ void TcpSession::close()
 void TcpSession::start()
 {
 
-    if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING){
+    if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING || GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO){
         if(getAcceptID() == AgvManager::getInstance()->getServerAccepterID()){
             //this is a agv connection
             if(!attach())return ;
@@ -104,10 +104,18 @@ void TcpSession::start()
             size_t length = socket_.read_some(boost::asio::buffer(read_buffer,MSG_READ_BUFFER_LENGTH), error);
             if (error == boost::asio::error::eof){
                 combined_logger->info("session close cleany,session id:{0}",getSessionID());
+                if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT && _agvPtr != nullptr)
+                {
+                    std::static_pointer_cast<DyForklift>(_agvPtr)->setQyhTcp(nullptr);
+                }
                 break;
             }
             else if (error){
                 combined_logger->info("session error!session id:{0},error:{1}",getSessionID(),error.message());
+                if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT && _agvPtr != nullptr)
+                {
+                    std::static_pointer_cast<DyForklift>(_agvPtr)->setQyhTcp(nullptr);
+                }
                 break;
             }
             buffer.append(read_buffer,length);
@@ -122,7 +130,6 @@ void TcpSession::start()
                     returnValue = ProtocolProcess();
                 }while(buffer.size() >12 && (returnValue == 0||returnValue == 2||returnValue == 1 ));
             }
-
         }
         SessionManager::getInstance()->removeSession(shared_from_this());
     }).detach();
@@ -171,7 +178,7 @@ int TcpSession::ProtocolProcess()
         {
             std::static_pointer_cast<AtForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
         }
-        else
+        else if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO)
         {
             std::static_pointer_cast<DyForklift>(_agvPtr)->onRead(FrameData.c_str(), FrameLength);
         }
@@ -233,20 +240,43 @@ void TcpSession::packageProcess()
 
 bool TcpSession::attach()
 {
-    auto agv = std::static_pointer_cast<AtForklift>(AgvManager::getInstance()->getAgvByIP(socket_.remote_endpoint().address().to_string()));
-    if(agv!=nullptr){
-        agv->setPosition(0, 0, 0);
-        agv->status = Agv::AGV_STATUS_NOTREADY;
-        agv->setQyhTcp(shared_from_this());
-        agv->setPort(socket_.remote_endpoint().port());
-        //start report
-        agv->startReport(100);
-        setAGVPtr(agv);
+    if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT)
+    {
+        auto agv = std::static_pointer_cast<DyForklift> (AgvManager::getInstance()->getAgvByIP(socket_.remote_endpoint().address().to_string()));
 
-        return true;
-    }else{
-        combined_logger->info("there is no agv with this ip:{}",socket_.remote_endpoint().address().to_string());
+        if(agv)
+        {
+            agv->setPosition(0, 0, 0);
+            agv->status = Agv::AGV_STATUS_NOTREADY;
+            agv->setQyhTcp(shared_from_this());
+            agv->setPort(socket_.remote_endpoint().port());
+            //start report
+            agv->startReport(100);
+            setAGVPtr(agv);
+            return true;
+        }
+        else
+        {
+            combined_logger->warn("AGV is not in the list::ip={}.", socket_.remote_endpoint().address().to_string());
+            return false;
+        }
     }
+    else if(AGV_PROJECT_ANTING == GLOBAL_AGV_PROJECT)
+    {
+        auto agv = std::static_pointer_cast<AtForklift>(AgvManager::getInstance()->getAgvByIP(socket_.remote_endpoint().address().to_string()));
+        if(agv!=nullptr){
+            agv->setPosition(0, 0, 0);
+            agv->status = Agv::AGV_STATUS_NOTREADY;
+            agv->setQyhTcp(shared_from_this());
+            agv->setPort(socket_.remote_endpoint().port());
+            //start report
+            agv->startReport(100);
+            setAGVPtr(agv);
 
+            return true;
+        }else{
+            combined_logger->info("there is no agv with this ip:{}",socket_.remote_endpoint().address().to_string());
+        }
+    }
     return false;
 }

@@ -47,18 +47,20 @@ void DyForkliftThingFork::doing(AgvPtr agv)
 
     combined_logger->info("dothings-fork={0} end",forkParams);
 
+    bresult = true;
+
 }
 
 
 void DyForkliftThingFork::afterDoing(AgvPtr agv)
 {
-    DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
+    //DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
 
-    Pose4D pos = forklift->getPos();
+    //Pose4D pos = forklift->getPos();
     //update station
-    forklift->setPosition(forklift->getNowStation(), forklift->nearestStation(pos.m_x*100, -pos.m_y*100, pos.m_floor), forklift->getNextStation());
-    combined_logger->info("current station:{0}", forklift->getNowStation());
-    bresult = true;
+    //forklift->setPosition(forklift->getNowStation(), forklift->nearestStation(pos.m_x*100, -pos.m_y*100, pos.m_floor), forklift->getNextStation());
+    //combined_logger->info("current station:{0}", forklift->getNowStation());
+    //bresult = true;
 }
 
 bool DyForkliftThingFork::result(AgvPtr agv)

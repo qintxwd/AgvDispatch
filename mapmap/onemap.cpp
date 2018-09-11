@@ -201,14 +201,16 @@ std::list<MapBlock *> OneMap::getBlocks()
     return blocks;
 }
 
-std::list<MapGroup *> OneMap::getGroups()
+std::list<MapGroup *> OneMap::getGroups(int groupType)
 {
     std::list<MapGroup *> groups;
     for(auto s:all_element)
     {
         if(s->getSpiritType() == MapSpirit::Map_Sprite_Type_Group)
         {
-            groups.push_back(static_cast<MapGroup *>(s));
+            MapGroup* group = static_cast<MapGroup *>(s);
+            if(group->getGroupType() == groupType)
+                groups.push_back(group);
         }
     }
     return groups;

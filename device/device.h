@@ -1,4 +1,4 @@
-#ifndef DEVICE_H
+﻿#ifndef DEVICE_H
 #define DEVICE_H
 #include <string>
 #include <vector>
@@ -16,10 +16,15 @@ class Device
 {
 public:
     Device(int id,std::string name,std::string ip,int port);
+    Device();
     virtual ~Device();
     bool init();
     void unInit();
+    void start();
     int getId(){return id;}
+    string getIp(){return ip;}
+    int getType(){return deviceType;}
+    int setType(int _type){deviceType = _type;}
 
     bool isConnected()
     {
@@ -43,7 +48,8 @@ protected:
     std::string ip;
     int port;
     bool connected;
-
+    int deviceType;
+    bool runFlag;
     TcpClient *tcpClient;
 };
 

@@ -2,8 +2,8 @@
 #include "../taskmanager.h"
 #include "../mapmap/mapmanager.h"
 #include "../agvmanager.h"
-#include "dyforkliftthingturn.h"
 #include "dyforkliftthingfork.h"
+#include "dyforkliftthingcharge.h"
 #include "dyforkliftupdwms.h"
 #include "dyforklift.h"
 #include "../userlogmanager.h"
@@ -26,14 +26,58 @@ void DyTaskMaker::init()
     TcpClient::ClientDisconnectCallback ondisconnect = std::bind(&DyTaskMaker::onDisconnect, this);
 
     m_wms_tcpClient = new TcpClient(m_ip, m_port, onread, onconnect, ondisconnect);
-
-    combined_logger->info(typeid(TaskMaker::getInstance()).name());
+    m_wms_tcpClient->start();
+    //combined_logger->info(typeid(TaskMaker::getInstance()).name());
 }
 
+int DyTaskMaker::msgProcess()
+{
+    int StartIndex,EndIndex;
+    std::string FrameData;
+    int start_byteFlag = buffer.find('*');
+    int end_byteFlag = buffer.find('#');
+    if((start_byteFlag ==-1)&&(end_byteFlag ==-1))
+    {
+        buffer.clear();
+        return 5;
+    }
+    else if((start_byteFlag == -1)&&(end_byteFlag != -1))
+    {
+        buffer.clear();
+        return 6;
+    }
+    else if((start_byteFlag != -1)&&(end_byteFlag == -1))
+    {
+        buffer.removeFront(start_byteFlag);
+        return 7;
+    }
+    StartIndex = buffer.find('*')+1;
+    EndIndex = buffer.find('#');
+    if(EndIndex>StartIndex)
+    {
+        FrameData = buffer.substr(StartIndex,EndIndex-StartIndex);
+        if(FrameData.find('*') != std::string::npos)
+            FrameData = FrameData.substr(FrameData.find_last_of('*')+1);
+        buffer.removeFront(buffer.find('#')+1);
+    }
+    else
+    {
+        //remove unuse message
+        buffer.removeFront(buffer.find('*'));
+        return 2;
+    }
+
+    unsigned int FrameLength = std::stoi(FrameData.substr(0,4));
+    if(FrameLength == FrameData.length())
+    {
+        receiveTask(FrameData.substr(4));
+    }
+}
 
 void DyTaskMaker::onRead(const char *data, int len)
 {
-    receiveTask(data);
+    buffer.append(data, len);
+    msgProcess();
 }
 
 void DyTaskMaker::onConnect()
@@ -70,9 +114,8 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
         task->setRunTimes(runTimes);
     }
 
-    //4.额外的参数
-    if (!request["extra_params"].isNull())
-    {
+    //3.额外的参数
+    if (!request["extra_params"].isNull()) {
         Json::Value extra_params = request["extra_params"];
         Json::Value::Members mem = extra_params.getMemberNames();
         for (auto iter = mem.begin(); iter != mem.end(); iter++)
@@ -106,7 +149,7 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
             node_node->setStation(station);
             std::vector<AgvTaskNodeDoThingPtr> doThings;
 
-            if (doWhat == 0) {
+            if (doWhat == TASK_PICK) {
 
                 task_describe.append("[↑] ");
                 //liftup
@@ -126,7 +169,7 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
 
                 node_node->setTaskType(TASK_PICK);
                 node_node->setDoThings(doThings);
-            }else if (doWhat == 1) {
+            }else if (doWhat == TASK_PUT) {
 
                 task_describe.append("[↓] ");
 
@@ -137,11 +180,23 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
                 node_node->setTaskType(TASK_PUT);
                 node_node->setDoThings(doThings);
 
-            }else if (doWhat == 2) {
-                //                AgvTaskNodeDoThingPtr chargeThing(new QingdaoNodeTingCharge(node_params));
-                //                node_node->push_backDoThing(chargeThing);
+            }else if (doWhat == TASK_CHARGE) {
+                task_describe.append("[+] ");
+
+                //charge
+                std::vector<std::string> _paramscharge;
+                MapSpirit *spirit = MapManager::getInstance()->getMapSpiritById(station);
+                if (spirit == nullptr || spirit->getSpiritType() != MapSpirit::Map_Sprite_Type_Point)continue;
+                MapPoint *point = static_cast<MapPoint *>(spirit);
+                _paramscharge.push_back(point->getLineId());  //充电桩id
+                _paramscharge.push_back(point->getIp());
+                _paramscharge.push_back(intToString(point->getPort()));
+
+                doThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingCharge(_paramscharge)));
+                node_node->setTaskType(TASK_CHARGE);
+                node_node->setDoThings(doThings);
             }
-            else if(doWhat == 3)
+            else if(doWhat == TASK_MOVE)
             {
                 task_describe.append("[--] ");
 
@@ -168,129 +223,6 @@ void DyTaskMaker::makeTask(SessionPtr conn, const Json::Value &request)
     response["todo"] = request["todo"];
     response["queuenumber"] = request["queuenumber"];
     response["result"] = RETURN_MSG_RESULT_SUCCESS;
-
-    //UserLogManager::getInstance()->push(conn->getUserName()+" make one task");
-
-    //    std::vector<std::string> all = split("0 2 get_good 6 put_good 23"," ");
-    /*    std::vector<std::string> all = split("0 2 get_good 5 put_good 8"," ");
-
-    //std::vector<std::string> all = split("0 2 get_good 6 put_good 110"," ");
-    //    std::vector<std::string> all = split("0 2 get_good 4 put_good 3"," ");
-
-
-    //        std::vector<std::string> all = splite(str," ");
-    //all助成部分:
-    //[agvid] [优先级] [do] [where] [do] [where]
-
-    //例如一个任务是指定 AGV 到A点取货，放到B点
-    //[0] [2] [get_good] [aId] [put_good] [bId]
-
-    int agvId = stringToInt( all[0]);
-    // AgvPtr agv = AgvManager::getInstance()->getAgvById(agvId);
-    int priority = stringToInt(all[1]);
-
-    if(all.size()<4){
-        //参数不够
-        response["result"] = RETURN_MSG_RESULT_FAIL;
-        //TODO//response.return_head.error_code = RETURN_MSG_ERROR_NO_ERROR;
-    }else{
-        //产生一个任务
-        std::vector<AgvTaskNodePtr> nodes;
-        for(int i=2;i<all.size();){
-            if(all[i] == "get_good")
-            {
-                AgvTaskNodePtr node(new AgvTaskNode());
-                int stationId = stringToInt(all[i+1]);
-                node->setStation(stationId);
-
-                std::vector<AgvTaskNodeDoThingPtr> getGoodDoThings;
-
-                //前进到目标点
-                /*std::vector<std::string> _params1;
-                _params1.push_back("move ");
-                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingMove(_params1)));
-*/
-    //旋转
-    /*               std::vector<std::string> _params2;
-                _params2.push_back("turn ");
-                _params2.push_back(intToString(90));
-                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params2)));
-*/
-    //取货
-
-    //后退
-    /*std::vector<std::string> _params4;
-                    _params4.push_back("backward ");
-                    _params4.push_back(intToString(100));
-                    getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params4)));
-
-                    //回身
-                    std::vector<std::string> _params5;
-                    _params5.push_back("turn 0 ");
-                    _params5.push_back(intToString(90));
-                    getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params5)));
-*/
-    /*                node->setDoThings(getGoodDoThings);
-                nodes.push_back(node);
-            }
-            else  if(all[i] == "put_good"){
-                AgvTaskNodePtr node(new AgvTaskNode());
-                int stationId = stringToInt(all[i+1]);
-                node->setStation(stationId);
-
-                std::vector<AgvTaskNodeDoThingPtr> getGoodDoThings;
-
-                //转身
-                /*  std::vector<std::string> _params1;
-                    _params1.push_back("turn 1 ");
-                    _params1.push_back(intToString(90));
-                    getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params1)));
-*/
-    //前进
-    /* std::vector<std::string> _params2;
-                _params2.push_back("forward ");
-                _params2.push_back(intToString(100));
-                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params2)));
-*/
-    //放货货
-
-    //后退
-    /*std::vector<std::string> _params4;
-                    _params4.push_back("backward ");
-                    _params4.push_back(intToString(100));
-                    getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params4)));
-
-                    //回身
-                    std::vector<std::string> _params5;
-                    _params5.push_back("turn 0 ");
-                    _params5.push_back(intToString(90));
-                    getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params5)));
-*/
-    /*                node->setDoThings(getGoodDoThings);
-                nodes.push_back(node);
-            }else{
-                //其他参数，无法识别，返回错误
-                //TODO:...
-            }
-
-            i+=2;
-        }
-
-        AgvTaskPtr task(new AgvTask());
-        task->setAgv(agvId);
-        task->setTaskNodes(nodes);
-        task->setPriority(priority);
-
-        //放入未分配的队列中
-        TaskManager::getInstance()->addTask(task);
-        int id = task->getId();
-
-        //返回产生任务的ID
-        //response.head.body_length = sizeof(int32_t);
-        //memcpy_s(response.body,MSG_RESPONSE_BODY_MAX_SIZE,&id,sizeof(int32_t));
-    }
-
-    //conn->send(response);*/
 }
 
 void DyTaskMaker::receiveTask(std::string str_task)
@@ -305,6 +237,9 @@ void DyTaskMaker::receiveTask(std::string str_task)
     //[0] [2] [get_good] [aId] [put_good] [bId]
 
     if(all.size()<4){
+        combined_logger->warn("dytaskmaker recv task msg format error");
+        //TODO
+        //tell wms task make error to roll back database changes!
         return;
     }else{
         int agvId = stringToInt( all[0]);
@@ -321,15 +256,7 @@ void DyTaskMaker::receiveTask(std::string str_task)
                 int stationId = stringToInt(all[i+1]);
                 node->setStation(stationId);
 
-
                 std::vector<AgvTaskNodeDoThingPtr> getGoodDoThings;
-
-                //旋转
-                //                std::vector<std::string> _params2;
-                //                _params2.push_back("50");
-                //                _params2.push_back("-10");
-                //                _params2.push_back(intToString(90));
-                //                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params2)));
 
                 //liftup
                 std::vector<std::string> _paramsfork;
@@ -344,8 +271,8 @@ void DyTaskMaker::receiveTask(std::string str_task)
                 _paramswms.push_back("0");
                 _paramswms.push_back(all[i+4]);
                 task_describe.append(all[i+2]).append("[").append(all[i+3]).append("]↑ ");
-                DyForkliftUpdWMS* test= new DyForkliftUpdWMS(_paramswms);
-                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(test));
+                DyForkliftUpdWMS* wms_task= new DyForkliftUpdWMS(_paramswms);
+                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(wms_task));
 
 
                 //取货
@@ -361,12 +288,6 @@ void DyTaskMaker::receiveTask(std::string str_task)
                 std::vector<AgvTaskNodeDoThingPtr> getGoodDoThings;
 
                 //前进
-                /*  std::vector<std::string> _params2;
-                _params2.push_back("forward ");
-                _params2.push_back(intToString(100));
-                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(new DyForkliftThingTurn(_params2)));
-*/
-
                 //setdown
                 std::vector<std::string> _paramsfork;
                 _paramsfork.push_back("00");
@@ -381,19 +302,28 @@ void DyTaskMaker::receiveTask(std::string str_task)
                 _paramswms.push_back(all[i+4]);
                 task_describe.append(all[i+2]).append("[").append(all[i+3]).append("]↓");
 
-                DyForkliftUpdWMS* test= new DyForkliftUpdWMS(_paramswms);
-                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(test));
+                DyForkliftUpdWMS* wms_task= new DyForkliftUpdWMS(_paramswms);
+                getGoodDoThings.push_back(AgvTaskNodeDoThingPtr(wms_task));
 
                 //放货
                 node->setDoThings(getGoodDoThings);
                 nodes.push_back(node);
                 i+=5;
-            }else{
+            }else  if(all[i] == "move"){
+                AgvTaskNodePtr node(new AgvTaskNode());
+                int stationId = stringToInt(all[i+1]);
+                node->setStation(stationId);
+                nodes.push_back(node);
+                i+=2;
+            }
+            else{
                 //其他参数，无法识别，返回错误
                 //TODO:...
+                combined_logger->warn("dytaskmaker recv task msg format error");
+                //TODO
+                //tell wms task make error to roll back database changes!
+                return ;
             }
-
-
         }
 
         AgvTaskPtr task(new AgvTask());
@@ -406,7 +336,8 @@ void DyTaskMaker::receiveTask(std::string str_task)
         //放入未分配的队列中
         TaskManager::getInstance()->addTask(task);
         int id = task->getId();
-
+        //tell wms task make success and the task id
+        //TODO:
     }
 }
 
@@ -442,7 +373,3 @@ void DyTaskMaker::finishTask(std::string store_no, std::string storage_no, int t
 
 }
 
-//void makeTask(std::string from ,std::string to,std::string dispatch_id,int ceid,std::string line_id, int agv_id, int all_floor_info)
-//{
-
-//}

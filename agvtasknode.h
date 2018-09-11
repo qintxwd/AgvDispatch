@@ -13,7 +13,8 @@ enum TASK_TYPE
     TASK_PICK = 0,
     TASK_PUT = 1,
     TASK_MOVE = 2,
-    TASK_TURN = 3
+    TASK_TURN = 3,
+    TASK_CHARGE = 4
 };
 //一个任务节点由[零个或者一个]目的地 和 到达目的地后要做的多个事情助成
 class AgvTaskNode : public std::enable_shared_from_this<AgvTaskNode>

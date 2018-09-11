@@ -11,7 +11,8 @@
 #include "agvImpl/ros/agv/rosAgv.h"
 #include "qunchuang/chipmounter/chipmounter.h"
 #include "device/elevator/elevator.h"
-
+#include "device/elevator/elevatorManager.h"
+#include "device/devicemanager.h"
 #include "Dongyao/dyforklift.h"
 #include "Dongyao/dytaskmaker.h"
 
@@ -215,11 +216,15 @@ int main(int argc, char *argv[])
     //rosAgvPtr agv(new rosAgv(1,"robot_0","127.0.0.1",7070));
     //agv->init();
 
-    //8.初始化任务生成
+    //8.初始化电梯
+    ElevatorManager::getInstance()->init();
+
+
+    //9.初始化任务生成
     TaskMaker::getInstance()->init();
 
 
-    //8.初始化tcp/ip 接口
+    //    10.初始化tcp/ip 接口
 
 
     //tcpip服务

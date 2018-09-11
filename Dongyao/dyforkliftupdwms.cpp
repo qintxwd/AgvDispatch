@@ -26,11 +26,11 @@ void DyForkliftUpdWMS::beforeDoing(AgvPtr agv)
 
 void DyForkliftUpdWMS::doing(AgvPtr agv)
 {
-    DyForkliftPtr jap = std::static_pointer_cast<DyForklift>(agv);
-    bresult = false;
+    //DyForkliftPtr jap = std::static_pointer_cast<DyForklift>(agv);
     combined_logger->info("dothings-updatewms={0}_{1}:{2}", m_store_no, m_storage_no, m_type);
     DyTaskMaker* dytaskmaker =(DyTaskMaker*)(TaskMaker::getInstance());
     dytaskmaker->finishTask(m_store_no, m_storage_no, m_type, m_key_part_no, agv->getId());
+    bresult = true;
 }
 
 

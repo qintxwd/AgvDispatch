@@ -7,6 +7,7 @@
 #include "userlogmanager.h"
 #include "taskmanager.h"
 #include "common.h"
+#include "device/devicemanager.h"
 
 MsgProcess::MsgProcess()
 {
@@ -376,6 +377,7 @@ void MsgProcess::processOneMsg(const Json::Value &request, SessionPtr session)
         UserManagerPtr userManager = UserManager::getInstance();
         MapManagerPtr mapManager = MapManager::getInstance();
         AgvManagerPtr agvManager = AgvManager::getInstance();
+        DeviceManagerPtr deviceManager = DeviceManager::getInstance();
         MsgProcessPtr msgProcess = shared_from_this();
         UserLogManagerPtr userLogManager = UserLogManager::getInstance();
         TaskManagerPtr taskManager = TaskManager::getInstance();
@@ -419,8 +421,11 @@ void MsgProcess::processOneMsg(const Json::Value &request, SessionPtr session)
         { MSG_TODO_TRAFFIC_CONTROL_LINE,std::bind(&MapManager::interTrafficControlLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_TRAFFIC_RELEASE_STATION,std::bind(&MapManager::interTrafficReleaseStation,mapManager,std::placeholders::_1,std::placeholders::_2) },
         { MSG_TODO_TRAFFIC_RELEASE_LINE,std::bind(&MapManager::interTrafficReleaseLine,mapManager,std::placeholders::_1,std::placeholders::_2) },
-    };
-        table[request["todo"].asInt()].f(session, request);
+        { MSG_TODO_AGV_MANAGE_STOP,std::bind(&AgvManager::interStop,agvManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_QUERY_DEVICE_LOG,std::bind(&DeviceManager::getDeviceLog,deviceManager,std::placeholders::_1,std::placeholders::_2) },
+        { MSG_TODO_ELEVATOR_CONTROL,std::bind(&DeviceManager::interElevatorControl,deviceManager,std::placeholders::_1,std::placeholders::_2) }
+		};
+		table[request["todo"].asInt()].f(session, request);
 
 //        t.end();
 //        combined_logger->debug("msg process time used:{0} ms",t.getUsed()*1000.0);

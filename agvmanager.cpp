@@ -72,6 +72,7 @@ bool AgvManager::init()
             {
                 AgvPtr agv(new rosAgv(id,name,ip,port,agvType,agvClass,lineName));
                 agv->init();
+                agv->setType(agvType);
                 agv->setPosition(lastStation, nowStation, nextStation);
                 agvs.push_back(agv);
             }
@@ -80,12 +81,15 @@ bool AgvManager::init()
                 if(1 == agvType)
                 {
                     AgvPtr agv(new VirtualRosAgv(id, name));
+                    agv->setType(agvType);
                     agv->init();
+                    agv->setPosition(lastStation, nowStation, nextStation);
                     agvs.push_back(agv);
                 }
                 else
                 {
                     DyForkliftPtr agv(new DyForklift(id, name, ip, port));
+                    agv->setType(agvType);
                     agv->status = Agv::AGV_STATUS_NOTREADY;
                     agv->setPosition(0,0,0);
                     agvs.push_back(agv);
@@ -96,6 +100,7 @@ bool AgvManager::init()
                 if(AGV_TYPE_ANTING_FORKLIFT == agvType)
                 {
                     AtForkliftPtr agv(new AtForklift(id, name, ip, port));
+                    agv->setType(agvType);
                     agv->status = Agv::AGV_STATUS_NOTREADY;
                     agv->setPosition(0,0,0);
                     agvs.push_back(agv);
@@ -106,6 +111,7 @@ bool AgvManager::init()
                 if(AGV_TYPE_VIRTUAL_ROS_AGV == agvType)
                 {
                     AgvPtr agv(new VirtualRosAgv(id, name));
+                    agv->setType(agvType);
                     agv->init();
                     agv->setPosition(lastStation, nowStation, nextStation);
                     agvs.push_back(agv);
@@ -219,24 +225,8 @@ void AgvManager::getPositionJson(Json::Value &json)
             json_one_agv["theta"] = agv->getTheta();
             
             //发布agv所属楼层ID
-            json_one_agv["floor"] = -1;
-            if (agv->getNowStation() > 0) {
-                json_one_agv["floor"] = mapmanagerptr->getFloor(agv->getNowStation());
-            }
-            else {
-                if(agv->getLastStation()>0 && agv->getNextStation()>0){
-                    auto path = mapmanagerptr->getPathByStartEnd(agv->getLastStation(), agv->getNextStation());
-                    if(path!=nullptr){
-                        json_one_agv["floor"] = mapmanagerptr->getFloor(path->getId());
-                    }
-                }else{
-                    if(agv->getLastStation()>0){
-                        json_one_agv["floor"] = mapmanagerptr->getFloor(agv->getLastStation());
-                    }else if(agv->getNextStation()>0){
-                        json_one_agv["floor"] = mapmanagerptr->getFloor(agv->getNextStation());
-                    }
-                }
-            }
+            json_one_agv["floor"] = agv->getFloor();
+            json_one_agv["nowStation"] = agv->getNowStation();
 
             //发布占用道路和站点信息[用于绘制不同的线路和站点的颜色]
             auto sps = mapmanagerptr->getOccuSpirit(agv->getId());
@@ -384,6 +374,33 @@ void AgvManager::interDelete(SessionPtr conn, const Json::Value &request)
     conn->send(response);
 }
 
+void AgvManager::interStop(SessionPtr conn, const Json::Value &request)
+{
+    Json::Value response;
+    response["type"] = MSG_TYPE_RESPONSE;
+    response["todo"] = request["todo"];
+    response["queuenumber"] = request["queuenumber"];
+    response["result"] = RETURN_MSG_RESULT_SUCCESS;
+
+    int id = request["id"].asInt();
+    int params = request["params"].asInt();
+
+    //TODO 如果节点发生变化需下发给小车当前位置 AGVTYPE需要修正
+    if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT)
+    {
+        AgvPtr agv = getAgvById(id);
+        if(agv==nullptr){
+            DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
+            forklift->stopEmergency(params);
+        }else{
+            response["result"] = RETURN_MSG_RESULT_FAIL;
+            response["error_code"] = RETURN_MSG_ERROR_CODE_UNKNOW;
+        }
+    }
+    conn->send(response);
+}
+
+
 void AgvManager::interModify(SessionPtr conn, const Json::Value &request)
 {
     Json::Value response;
@@ -397,7 +414,7 @@ void AgvManager::interModify(SessionPtr conn, const Json::Value &request)
             request["name"].isNull() ||
             request["ip"].isNull() ||
             request["port"].isNull() ||
-            request["type"].isNull() ||
+            //            request["type"].isNull() ||
             request["lastStation"].isNull() ||
             request["nowStation"].isNull() ||
             request["nextStation"].isNull()) {
@@ -405,7 +422,7 @@ void AgvManager::interModify(SessionPtr conn, const Json::Value &request)
         response["error_code"] = RETURN_MSG_ERROR_CODE_PARAMS;
     }
     else {
-        int id = request["name"].asInt();
+        int id = request["id"].asInt();
         std::string name = request["name"].asString();
         int port = request["port"].asInt();
         std::string ip = request["ip"].asString();
@@ -413,13 +430,24 @@ void AgvManager::interModify(SessionPtr conn, const Json::Value &request)
         int nowStation = request["nowStation"].asInt();
         int nextStation = request["nextStation"].asInt();
 
+        //TODO 如果节点发生变化需下发给小车当前位置 AGVTYPE需要修正
+        AgvPtr agv = getAgvById(id);
+
+        if(agv->getNowStation() != nowStation)
+        {
+            if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT)
+            {
+                DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
+                forklift->setInitPos(nowStation);
+            }
+        }
         int agvType = -1;
         int agvClass = 0;
         std::string lineName = "";
 
         UserLogManager::getInstance()->push(conn->getUserName() + " modify AGV.ID:" + intToString(id) + " newname:" + name + " newip:" + ip + " newport:" + intToString(port)+ " lastStation:" + intToString(lastStation)+ " nowStation:" + intToString(nowStation) + " nextStation:" + intToString(nextStation));
         char buf[SQL_MAX_LENGTH];
-        snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set name='%s',ip='%s',port=%d,lastStation=%d,nowStation=%d,nextStation=%d,agvType=%d,agvClass=%d,lineName='%s'  where id = %d;", name.c_str(), ip.c_str(), port, lastStation, nowStation, nextStation,agvType,agvClass,lineName.c_str(),id);
+        snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set name='%s',ip='%s',port=%d,lastStation=%d,nowStation=%d,nextStation=%d,agvClass=%d,lineName='%s'  where id = %d;", name.c_str(), ip.c_str(), port, lastStation, nowStation, nextStation,agvClass,lineName,id);
 
         try{
             g_db.execDML(buf);
@@ -449,8 +477,6 @@ void AgvManager::interModify(SessionPtr conn, const Json::Value &request)
 AgvPtr AgvManager::getAgvByIP(std::string ip)
 {
     for(auto agv:agvs){
-        //TODO TESTONLY
-        //        if (agv->getIp() == ip && agv->status == Agv::AGV_STATUS_NOTREADY)
         if (agv->getIp() == ip)
             return agv;
     }

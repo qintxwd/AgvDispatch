@@ -65,13 +65,15 @@ void TcpClient::threadProcess()
                         readcallback(recvBuf,recv_length);
                     }
                 }
-            }
+            }            
             if(disconnectcallback)disconnectcallback();
         }catch (...)
         {
             //
             if(disconnectcallback)disconnectcallback();
         }
+        //re connect duration: 2000ms
+        std::this_thread::sleep_for(std::chrono::duration<int,std::milli>(2000));
     }
 }
 

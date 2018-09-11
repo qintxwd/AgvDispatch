@@ -1,4 +1,4 @@
-#include "elevator.h"
+﻿#include "elevator.h"
 #include <chrono>
 #include <future>
 #include <atomic>            
@@ -28,6 +28,7 @@ Elevator::Elevator(int _id, std::string _name, std::string _ip, int _port, bool 
     , connected_(false)
 {
     agv_num = 0;
+    send_cmd = false;
 
     left_pos_enabled = _leftEnabled;  //启用电梯左侧位置
     right_pos_enabled = _rightEnabled; //启用电梯右侧位置
@@ -64,6 +65,8 @@ Elevator::Elevator(int _id, std::string _name, std::string _ip, int _port, bool 
 
         waitingPoints.push_back(intp);
     }
+
+    resetFlag = false;
 }
 
 Elevator::~Elevator()
@@ -84,28 +87,33 @@ Elevator::~Elevator()
 // timeout  -> 超时时间
 // 返回响应内容
 std::shared_ptr<Elevator::EleParam> Elevator::request(const Elevator::EleParam& p,
-                                                    int cmd,
-                                                    int timeout)
+                                                      int cmd,
+                                                      int timeout)
 {
     combined_logger->info("[Elevator {0}] [{1}], Agv {2} Send Request: {3}"
-            " Expected Get Cmd {4}", name,
+                          " Expected Get Cmd {4}", name,
                           (connected_ ? "Connected" : "Disconnected"),
                           p.robot_no, p.debug(), cmd);
     if (!connected_) return nullptr;
     auto data = p.serialize();
 
+
     // send and recv (忽略发送延时)
     if (send((char *)(data.data()), data.size())) {
         std::unique_lock<std::mutex> lck(ctx_->mtx);
+
         auto pred = [&, p, cmd]() {
             if (ctx_->err == empty_string) {
                 // 响应的agv id == 0, 表示询问, 任意agv都可以接收
+
                 int agv_resp = (int)ctx_->param.robot_no;
+                int ele_resp = (int)ctx_->param.elevator_no;
+                bool ele_as_expect = (ele_resp == p.elevator_no);
                 bool agv_as_expect = (agv_resp == p.robot_no);
                 bool cmd_as_expect = (ctx_->param.cmd == cmd);
 
                 if (agv_resp == 0) {
-                    if (!ctx_->is_handled && cmd_as_expect) {
+                    if (!ctx_->is_handled && cmd_as_expect && ele_as_expect) {
                         ctx_->is_handled = true;
                         return true;
                     }
@@ -119,12 +127,14 @@ std::shared_ptr<Elevator::EleParam> Elevator::request(const Elevator::EleParam& 
                 return false;
             }
         };
-        auto res = ctx_->cv.wait_for(lck, 
-                                    std::chrono::seconds(timeout),
-                                    pred);
+
+        auto res = ctx_->cv.wait_for(lck,
+                                     std::chrono::seconds(timeout),
+                                     pred);
+
         if (res) {
             combined_logger->info("[Elevator {0}] [{1}], Agv {2} Get Response",
-                                  name, 
+                                  name,
                                   (connected_ ? "Connected" : "Disconnected"),
                                   p.robot_no);
             std::shared_ptr<lynx::elevator::Param> p(new lynx::elevator::Param);
@@ -133,10 +143,10 @@ std::shared_ptr<Elevator::EleParam> Elevator::request(const Elevator::EleParam& 
         }
         else {
             combined_logger->info("[Elevator {0}] [{1}], Agv {2} Request {3} Timeout"
-                                      , name
-                                      , (connected_ ? "Connected" : "Disconnected")
-                                      , p.robot_no
-                                      , p.cmd);
+                                  , name
+                                  , (connected_ ? "Connected" : "Disconnected")
+                                  , p.robot_no
+                                  , p.cmd);
             return nullptr;
         }
     }
@@ -192,14 +202,16 @@ std::shared_ptr<lynx::elevator::Param> Elevator::waitfor(int agv_id, lynx::eleva
             return false;
         }
     };
-    auto res = ctx_->cv.wait_for(lck, 
-                                std::chrono::seconds(timeout),
-                                pred);
+
+    auto res = ctx_->cv.wait_for(lck,
+                                 std::chrono::seconds(timeout),
+                                 pred);
+
 
     // 超时
     if (!res) {
         combined_logger->info("[Elevator {0}] [{1}], Agv {2} Wait For Cmd {3} Timeout",
-                              name, 
+                              name,
                               (connected_ ? "Connected" : "Disconnected"),
                               agv_id, cmd);
         return nullptr;
@@ -208,7 +220,7 @@ std::shared_ptr<lynx::elevator::Param> Elevator::waitfor(int agv_id, lynx::eleva
         std::shared_ptr<lynx::elevator::Param> p(new lynx::elevator::Param);
         *p = ctx_->param;
         combined_logger->info("[Elevator {0}] [{1}], Agv {2}  Got Cmd {3} ",
-                              name, 
+                              name,
                               (connected_ ? "Connected" : "Disconnected"),
                               agv_id,
                               cmd);
@@ -217,15 +229,15 @@ std::shared_ptr<lynx::elevator::Param> Elevator::waitfor(int agv_id, lynx::eleva
 }
 
 static lynx::elevator::Param create_param(int cmd, int from_floor, 
-                    int to_floor, int elevator_id, int agv_id)
+                                          int to_floor, int elevator_id, int agv_id)
 {
     using namespace lynx::elevator;
     return lynx::elevator::Param {
         (Param::byte_t) from_floor,
-        (Param::byte_t) to_floor,
-        (CMD)           cmd,
-        (Param::byte_t) elevator_id,
-        (Param::byte_t) agv_id,
+                (Param::byte_t) to_floor,
+                (CMD)           cmd,
+                (Param::byte_t) elevator_id,
+                (Param::byte_t) agv_id,
     };
 }
 
@@ -250,10 +262,7 @@ int Elevator::RequestTakeElevator(int from_floor, int to_floor, int elevator_id,
 
         //auto p = create_param(CallEleENQ, from_floor, to_floor, elevator_id, agv_id);
         //向内呼发送不需要to_floor
-        auto p = create_param(CallEleENQ, 0, from_floor, elevator_id, agv_id);
-
-        std::cout << "create_param ok...." << std::endl;
-
+        auto p = create_param(CallEleENQ, 0, from_floor, this->getId(), agv_id);
 
         auto resp_param = request(p, CallEleACK, timeout);
         if (resp_param == nullptr) {
@@ -265,11 +274,11 @@ int Elevator::RequestTakeElevator(int from_floor, int to_floor, int elevator_id,
 
     // 判断楼层是否相等, 是否乘梯
     // 响应消息中 目标楼层1表示电梯门开着, 0表示电梯门关闭
-    int id = (/*resp->src_floor == from_floor &&*/ resp->dst_floor == 1) ?
-            resp->elevator_no : -1;
+    int id = (resp->src_floor == from_floor && resp->dst_floor == 1 && resp->elevator_no == this->getId()) ?
+                resp->elevator_no : -1;
     combined_logger->info("[Elevator {0}] [{1}], Request Elevator Succeed, Ele ID: {2}",
-                    name, (connected_ ? "Connected" : "Disconnected"),
-                    id);
+                          name, (connected_ ? "Connected" : "Disconnected"),
+                          id);
     return id;
 }
 
@@ -285,9 +294,37 @@ bool Elevator::ConfirmEleInfo(int from_floor, int to_floor, int elevator_id, int
     //TakeEleAck(from_floor, to_floor, elevator_id, agv_id);
     auto p = waitfor(agv_id, lynx::elevator::IntoEleENQ, timeout);
 
-    auto tmp = create_param(lynx::elevator::IntoEleENQ, from_floor, 
-                        to_floor, elevator_id, agv_id);
+    auto tmp = create_param(lynx::elevator::IntoEleENQ, from_floor,
+                            to_floor, elevator_id, agv_id);
     return p && *p == tmp;
+}
+
+bool Elevator::AgvEnterConfirm(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout)
+{
+    // agv 发送进入电梯应答
+    // ele 响应进入电梯确认
+    // 如果失败退出
+    std::shared_ptr<lynx::elevator::Param> resp;
+
+    auto p = create_param(lynx::elevator::IntoEleACK, from_floor,
+                          to_floor, elevator_id, agv_id);
+    /*if (!request(p, lynx::elevator::IntoEleSet, timeout))
+         return false;*/
+
+    return notify(p);
+
+}
+
+bool Elevator::AgvWaitArrive(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout)
+{
+    //等待电梯到达指令, 如果电梯未到达, need重新发送进入电梯应答
+    std::shared_ptr<lynx::elevator::Param> resp;
+
+    resp = waitfor(agv_id, lynx::elevator::LeftEleENQ, timeout);
+    if(resp != nullptr)
+        return true;
+    else
+        return false;
 }
 
 bool Elevator::AgvEnterUntilArrive(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout)
@@ -299,7 +336,7 @@ bool Elevator::AgvEnterUntilArrive(int from_floor, int to_floor, int elevator_id
     std::shared_ptr<lynx::elevator::Param> resp;
     do {
         auto p = create_param(lynx::elevator::IntoEleACK, from_floor,
-                            to_floor, elevator_id, agv_id);
+                              to_floor, elevator_id, agv_id);
         if (!request(p, lynx::elevator::IntoEleSet, timeout))
             return false;
 
@@ -309,22 +346,66 @@ bool Elevator::AgvEnterUntilArrive(int from_floor, int to_floor, int elevator_id
     return true;
 }
 
+bool Elevator::AgvStartLeft(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout)
+{
+    auto p = create_param(lynx::elevator::LeftEleCMD, from_floor, to_floor,
+                          elevator_id, agv_id);
+
+    return nullptr !=
+            request(p, lynx::elevator::LeftCMDSet, timeout);
+}
+
+
 bool Elevator::AgvLeft(int from_floor, int to_floor, int elevator_id, int agv_id, int timeout)
 {
     auto p = create_param(lynx::elevator::LeftEleACK, from_floor, to_floor,
-                        elevator_id, agv_id);
+                          elevator_id, agv_id);
 
-    return nullptr != 
-        request(p, lynx::elevator::LeftEleSet, timeout);
+    return nullptr !=
+            request(p, lynx::elevator::LeftEleSet, timeout);
 }
 
+
+void Elevator::StartSendThread(int cmd, int from_floor, int to_floor, int elevator_id, int agv_id)
+{
+    send_cmd = true;
+
+    thread t = std::thread([&,cmd,from_floor,to_floor,elevator_id,agv_id](){
+        do
+        {
+            combined_logger->info("Elevator 发送CMD :{0}", cmd);
+
+            auto p = create_param(cmd, from_floor, to_floor, elevator_id, agv_id);
+            if(cmd == lynx::elevator::TakeEleACK)
+            {
+                combined_logger->info("AGV发送乘梯应答....", cmd);
+            }
+            else if(cmd == lynx::elevator::LeftEleCMD)
+            {
+                combined_logger->info("AGV发送离开指令....", cmd);
+            }
+
+            notify(p);
+            sleep(5);
+            combined_logger->info("AGV发送CMD end", cmd);
+        }
+        while(send_cmd);
+    });
+
+    t.detach();
+}
+
+void Elevator::StopSendThread()
+{
+    send_cmd = false;
+}
 
 // 一些测试用函数
 // 测试状态切换
 void Elevator::SwitchElevatorState(int elevator_id)
 {
     auto p = create_param(lynx::elevator::TestEleCmd,
-                    0x00, 0x00, elevator_id, 0x00);
+                          0x00, 0x00, elevator_id, 0x00);
     notify(p);
 }
 
@@ -332,8 +413,14 @@ void Elevator::SwitchElevatorState(int elevator_id)
 bool Elevator::ResetElevatorState(int elevator_id)
 {
     auto p = create_param(lynx::elevator::InitEleENQ,
-                    0x00, 0x00, elevator_id, 0x00);
-    return nullptr != request(p, lynx::elevator::InitEleACK, 30);
+                          0x00, 0x00, elevator_id, 0x00);
+    //return nullptr != request(p, lynx::elevator::InitEleACK, 10);
+    auto data = p.serialize();
+
+    // send and recv (忽略发送延时)
+    notify(p);
+    std::cout << "复位电梯状态 success...." << std::endl;
+
 }
 
 // 电梯状态询问
@@ -341,7 +428,7 @@ std::shared_ptr<Elevator::EleParam>
 Elevator::GetElevatorState(int elevator_id)
 {
     auto p = create_param(lynx::elevator::StaEleENQ,
-                         0x00, 0x00, elevator_id, 0x00);
+                          0x00, 0x00, elevator_id, 0x00);
     return request(p, lynx::elevator::StaEleACK, 30);
 }
 
@@ -349,7 +436,7 @@ Elevator::GetElevatorState(int elevator_id)
 bool Elevator::PingElevator(int elevator_id)
 {
     auto p = create_param(lynx::elevator::InComENQRobot,
-                    0xFF, 0xFF, elevator_id, 0x0);
+                          0xFF, 0xFF, elevator_id, 0x0);
     return nullptr != request(p, lynx::elevator::InComENQServ, 30);
 }
 
@@ -415,15 +502,22 @@ void Elevator::onRead(const char *data,int len)
         // 所有agv都可以接收, flag ( is_handled ) 用于限制只有一个可以接收处理
         if (p.robot_no == 0) {
             ctx_->is_handled = false;
-        } 
+        }
         ctx_->cv.notify_all();
     }
 }
 
 void Elevator::onConnect()
 {
-    combined_logger->info("[Elevator {0}] Connected", name);
     connected_ = true;
+    combined_logger->info("[Elevator {0}] Connected, 复位电梯状态", name);
+
+    if(!resetFlag)
+    {
+        //防止重连后复位电梯
+        ResetElevatorState(this->getId());
+        resetFlag = true;
+    }
 }
 
 void Elevator::onDisconnect()

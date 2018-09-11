@@ -61,7 +61,7 @@ void Agv::onArriveStation(int station)
     //add block occur station
     block = mapmanagerptr->getBlock(station);
     if(block!=-1)
-        mapmanagerptr->addBlcokOccu(block,getId(),station);
+        mapmanagerptr->addBlockOccu(block,getId(),station);
 
     //free block last path and station
     MapPoint *point = mapmanagerptr->getPointById(station);
@@ -118,26 +118,26 @@ void Agv::onArriveStation(int station)
             mapmanagerptr->freeStation(start,shared_from_this());
             block = mapmanagerptr->getBlock(start);
             if(block!=-1)
-                mapmanagerptr->addBlcokOccu(block,getId(),station);
+                mapmanagerptr->addBlockOccu(block,getId(),station);
 
             //free end station
             if(i!=findIndex){
                 mapmanagerptr->freeStation(end,shared_from_this());
                 block = mapmanagerptr->getBlock(end);
                 if(block!=-1)
-                    mapmanagerptr->addBlcokOccu(block,getId(),end);
+                    mapmanagerptr->addBlockOccu(block,getId(),end);
             }
 
             //free last line
             mapmanagerptr->freeLine(lineId,shared_from_this());
             block = mapmanagerptr->getBlock(lineId);
             if(block!=-1)
-                mapmanagerptr->addBlcokOccu(block,getId(),lineId);
+                mapmanagerptr->addBlockOccu(block,getId(),lineId);
         }
     }
 
     char buf[SQL_MAX_LENGTH];
-    snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
+    snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", lastStation, nowStation, nextStation, id);
     try {
         g_db.execDML(buf);
     }
@@ -181,14 +181,14 @@ void Agv::onLeaveStation(int stationid)
     //add block occur station
     auto block = mapmanagerptr->getBlock(stationid);
     if(block!=-1)
-        mapmanagerptr->freeBlcokOccu(block,getId(),stationid);
+        mapmanagerptr->freeBlockOccu(block,getId(),stationid);
 
     //free block last path
     auto lastpath = mapmanagerptr->getPathByStartEnd(stationid,nextStation);
     if(lastpath!=nullptr){
         block = mapmanagerptr->getBlock(lastpath->getId());
         if(block!=-1){
-            mapmanagerptr->addBlcokOccu(block,getId(),lastpath->getId());
+            mapmanagerptr->addBlockOccu(block,getId(),lastpath->getId());
         }
     }
 
@@ -204,7 +204,7 @@ void Agv::onLeaveStation(int stationid)
     if(line!=nullptr){
         auto block = mapmanagerptr->getBlock(line->getId());
         if(block!=-1){
-            mapmanagerptr->addBlcokOccu(block,getId(),line->getId());
+            mapmanagerptr->addBlockOccu(block,getId(),line->getId());
         }
     }
 
@@ -228,7 +228,7 @@ void Agv::onLeaveStation(int stationid)
     }
 
     char buf[SQL_MAX_LENGTH];
-    snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", id, lastStation, nowStation, nextStation);
+    snprintf(buf, SQL_MAX_LENGTH, "update agv_agv set lastStation=%d,nowStation=%d,nextStation=%d  where id = %d;", lastStation, nowStation, nextStation,id);
     try {
         g_db.execDML(buf);
     }

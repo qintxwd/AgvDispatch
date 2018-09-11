@@ -5,8 +5,8 @@ ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
 
 //const int GLOBAL_AGV_PROJECT = AGV_PROJECT_ANTING;
-const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
-//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_DONGYAO;
+//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
+const int GLOBAL_AGV_PROJECT = AGV_PROJECT_DONGYAO;
 //const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QUNCHUANG;
 
 std::shared_ptr<spdlog::logger> combined_logger;
@@ -258,6 +258,11 @@ double func_dis(int x1, int y1, int x2, int y2)
     return sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 }
 
+int func_angle(int a1, int a2)
+{
+    int diff = abs(a1-a2);
+    return std::min(diff, abs(360-diff));
+}
 std::string transToFullMsg(const std::string &data)
 {
     std::stringstream ss;

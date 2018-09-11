@@ -2,6 +2,7 @@
 #define DYTASKMAKER_H
 
 #include "../taskmaker.h"
+#include "../qyhbuffer.h"
 
 class TcpClient;
 
@@ -20,11 +21,12 @@ private:
     void onConnect();
     void onDisconnect();
     void receiveTask(std::string str_task);
-
+    int msgProcess();
     TcpClient *m_wms_tcpClient;
     std::string m_ip;
     int m_port;
     bool m_connectState;
+    QyhBuffer buffer;
 
 };
 

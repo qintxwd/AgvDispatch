@@ -61,6 +61,7 @@ int HexStringToInt(std::string str);
 
 //东药名匠公用
 double func_dis(int x1, int y1, int x2, int y2);
+int func_angle(int a1, int a2);
 std::string transToFullMsg(const std::string &data);
 
 class Pose4D

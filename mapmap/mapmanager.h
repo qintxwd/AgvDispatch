@@ -16,7 +16,12 @@
 
 class MapManager;
 using MapManagerPtr = std::shared_ptr<MapManager>;
-
+enum
+{
+    COMMON_GROUP = 1,//普通group
+    HALT_GROUP = 2,
+    ELEVATOR_GROUP = 3
+};
 //地图 由两部分助成： 点AgvStation 和 点之间的连线AgvLine
 class MapManager : public noncopyable, public std::enable_shared_from_this<MapManager>
 {
@@ -56,9 +61,9 @@ public:
     //如果车辆在线路的占领表中，释放出去
     void freeLine(int line, AgvPtr occuAgv);
 
-    //
-    void addBlcokOccu(int blockId,int agvId,int spiritId);
-    void freeBlcokOccu(int blockId, int agvId, int spiritId);
+    //获取最优路径
+    void addBlockOccu(int blockId,int agvId,int spiritId);
+    void freeBlockOccu(int blockId, int agvId, int spiritId);
 
     //获取最优路径
     std::vector<int> getBestPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
@@ -66,12 +71,15 @@ public:
     //获取 距离 目标点位 最近的躲避点
     int getNearestHaltStation(int agvId, int aimStation);
 
+    bool addOccuGroup(int groupid, int agvId);
+    bool freeGroup(int groupid, int agvId);
+
     std::vector<int> getStations(int floor);
 
     bool isSameFloor(int floor, int station);
     int getFloor(int spiritID);
     int getBlock(int spiritID);
-    int getGroup(int spiritID);
+    std::vector<int> getGroup(int spiritID);
 
     MapPoint *getPointById(int id) { return g_onemap.getPointById(id); }
     MapPath *getPathById(int id) { return g_onemap.getPathById(id); }

@@ -84,6 +84,7 @@ bool TaskManager::distributeTask(AgvTaskPtr task)
         if (agv != nullptr && aimStation == 0 && agv->getTask() == task)
         {
             //拿去执行//从未分配队列中拿出去agv
+            combined_logger->info("1.excuteTask={0}",task->getId());
             excuteTask(task);
             return true;
         }
@@ -260,6 +261,7 @@ bool TaskManager::distributeTask(AgvTaskPtr task)
                     //拿去执行//从未分配队列中拿出去
                     combined_logger->info(" 从未分配队列中拿出去 ");
                     agv->setTask(task);
+                    agv->onTaskStart(task);
                     task->setPath(result);
                     combined_logger->info("path={0}", task->getPath().at(0));
                     combined_logger->info("3.excuteTask={0}", task->getId());
@@ -295,7 +297,7 @@ bool TaskManager::distributeTask(AgvTaskPtr task)
                     if (distance != DISTANCE_INFINITY && result.size() > 0)
                     {
                         combined_logger->info(" 找到了去往避让点{0} 的最优线路 agv {1}", haltStation, agv->getId());
-                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING ||GLOBAL_AGV_PROJECT == AGV_PROJECT_QINGDAO ){
+                        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING ||GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO||GLOBAL_AGV_PROJECT == AGV_PROJECT_QINGDAO ){
                             mapmanagerptr->addOccuStation(haltStation, agv);
                             for (auto tline : result)
                             {
@@ -551,8 +553,9 @@ int TaskManager::cancelTask(int taskId)
         AgvPtr agv = AgvManager::getInstance()->getAgvById(task->getAgv());
         if (agv != nullptr)
         {
-            agv->setTask(nullptr);
+
             agv->cancelTask();
+            agv->setTask(nullptr);
             //TODO:
             agv->status = Agv::AGV_STATUS_IDLE;
         }
@@ -605,7 +608,6 @@ void TaskManager::excuteTask(AgvTaskPtr task)
             doingTask.erase(std::find(doingTask.begin(), doingTask.end(), task));
             doingTaskMtx.unlock();
             addTask(task);
-            combined_logger->info("task->finish");
         }
         else
         {
@@ -616,17 +618,17 @@ void TaskManager::excuteTask(AgvTaskPtr task)
 
             try
             {
-                if (station == NULL)
+                if (station == 0)
                 {
                     for (auto thing : node->getDoThings())
                     {
                         combined_logger->info("station==null for dothings");
-                        if (task->getIsCancel())
+                        if (task->getIsCancel() || task->getErrorCode()!=0)
                             break;
                         thing->beforeDoing(agv);
                         thing->doing(agv);
                         thing->afterDoing(agv);
-                        if (thing->result(agv))
+                        if (!thing->result(agv))//if one node excute fail, nodes behind this cannot excute anymore
                             break;
                     }
                 }
