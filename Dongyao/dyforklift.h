@@ -33,6 +33,12 @@ enum FORKLIFT_COMM
     FORKLIFT_WARN = 24
 };
 
+enum FORKLIFT_NOLASER_PARAMS{
+    FORKLIFT_NOLASER_RESUME = 0,
+    FORKLIST_NOLASER_PAUSE = 1,
+    FORKLIFT_NOLASER_CLEAR_TASK = 2
+};
+
 enum FORKLIFT_FORKPARAMS
 {
     FORKLIFT_UP = 11,
@@ -93,7 +99,7 @@ class DyForklift : public Agv
 public:
     DyForklift(int id,std::string name,std::string ip,int port);
 
-    enum { Type = Agv::Type+2 };
+    enum { Type = Agv::Type+4 };
 
     int type(){return Type;}
 
@@ -136,6 +142,8 @@ public:
 	
 	virtual bool pause();
     virtual bool resume();
+
+    virtual void onTaskCanceled(AgvTaskPtr _task);
 private:
     static const int maxResendTime = 10;
 
@@ -160,7 +168,7 @@ private:
     SessionPtr m_qTcp;
     WarnSt m_warn;
 	bool pausedFlag;//是否暂停了
-    bool sendPause;//发送的是暂停的指令，还是继续的指令
+    bool sendPause;//发送的是暂停的指令，还是继续的指令.true:send pause  false:send resume
 };
 
 #endif // DYFORKLIFT_H

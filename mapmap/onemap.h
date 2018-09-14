@@ -37,6 +37,7 @@ public:
     std::list<MapPath *> getPaths();
     std::list<MapBlock *> getBlocks();
     std::list<MapGroup *> getGroups(int groupType);
+    std::list<MapGroup *> getGroups();
     std::list<MapSpirit *> getAllElement(){return all_element;}
 
     MapSpirit *getSpiritById(int id);

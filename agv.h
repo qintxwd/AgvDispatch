@@ -89,6 +89,7 @@ public:
 
     virtual void onTaskStart(AgvTaskPtr _task){}
     virtual void onTaskFinished(AgvTaskPtr _task){}
+    virtual void onTaskCanceled(AgvTaskPtr _task){}
 
     virtual void goStation(int station, bool stop = false);
     virtual void stop();

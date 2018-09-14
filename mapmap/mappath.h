@@ -14,7 +14,7 @@ public:
         Map_Path_Type_Between_Floor,//楼层间线路
     };
 
-    MapPath(int _id, std::string _name, int _start, int _end, Map_Path_Type _type, int _length, int _p1x = 0, int _p1y = 0, int _p2x=0, int _p2y = 0, bool _locked = false, double _speed = 0.2);
+    MapPath(int _id, std::string _name, int _start, int _end, Map_Path_Type _type, int _length, int _p1x = 0, int _p1y = 0, int _p2x=0, int _p2y = 0, bool _locked = false, double _speed = 0.3);
     virtual ~MapPath();
     virtual MapSpirit *clone();
     MapPath(const MapPath &p) = delete;

@@ -82,6 +82,7 @@ bool AgvManager::init()
                 {
                     AgvPtr agv(new VirtualRosAgv(id, name));
                     agv->setType(agvType);
+                    agv->status = Agv::AGV_STATUS_IDLE;
                     agv->init();
                     agv->setPosition(lastStation, nowStation, nextStation);
                     agvs.push_back(agv);
@@ -90,7 +91,7 @@ bool AgvManager::init()
                 {
                     DyForkliftPtr agv(new DyForklift(id, name, ip, port));
                     agv->setType(agvType);
-                    agv->status = Agv::AGV_STATUS_NOTREADY;
+                    agv->status = Agv::AGV_STATUS_UNCONNECT;
                     agv->setPosition(0,0,0);
                     agvs.push_back(agv);
                 }
@@ -389,7 +390,7 @@ void AgvManager::interStop(SessionPtr conn, const Json::Value &request)
     if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT)
     {
         AgvPtr agv = getAgvById(id);
-        if(agv==nullptr){
+        if(agv==nullptr && agv->type() == DyForklift::Type){
             DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
             forklift->stopEmergency(params);
         }else{
@@ -435,7 +436,7 @@ void AgvManager::interModify(SessionPtr conn, const Json::Value &request)
 
         if(agv->getNowStation() != nowStation)
         {
-            if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT)
+            if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT && agv->type() == DyForklift::Type)
             {
                 DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
                 forklift->setInitPos(nowStation);

@@ -15,6 +15,7 @@ public:
         Map_Point_Type_UNLOAD,//下货点
         Map_Point_Type_LOAD_UNLOAD,//上下货点【多数上下货的点是这种点】
         Map_Point_Type_ORIGIN,//原点
+        Map_Point_Type_NO_UTURN
     };
 
     MapPoint(int _id, std::string _name,Map_Point_Type _type, int _x, int _y,int _realX = 0,int _realY = 0,int _realA = 0,int _labelXoffset = 0,int _labelYoffset = -40,bool _mapChange = false,bool _locked = false, std::string _ip = "", int _port = 0, int _agvType = -1, std::string _lineId = "");

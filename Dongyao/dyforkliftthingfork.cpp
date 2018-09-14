@@ -15,27 +15,20 @@ DyForkliftThingFork::DyForkliftThingFork(std::vector<std::string> _params):
 
 void DyForkliftThingFork::beforeDoing(AgvPtr agv)
 {
-    //DONOTHING
-//    Q_UNUSED(agv)
 
 }
 
 void DyForkliftThingFork::doing(AgvPtr agv)
 {
+    if(agv->type() != DyForklift::Type){
+        //other agv,can not excute dy forklift fork
+        bresult = true;
+        return ;
+    }
+//    combined_logger->debug("agv->type = {0},dyforklifttype = {1}",agv->type(),DyForklift::Type);
+
     DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
 
-    /*
-    //TEST BEGIN
-    bool sendResult = forklift->fork(!forkParams);
-
-    combined_logger->info("dothings-fork={0}",forkParams);
-
-    do
-    {
-        sleep(1);
-    }while(!forklift->isFinish());
-    //TEST END
-    */
     bool sendResult = forklift->fork(forkParams);
 
     combined_logger->info("dothings-fork={0}",forkParams);
@@ -54,17 +47,10 @@ void DyForkliftThingFork::doing(AgvPtr agv)
 
 void DyForkliftThingFork::afterDoing(AgvPtr agv)
 {
-    //DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
-
-    //Pose4D pos = forklift->getPos();
-    //update station
-    //forklift->setPosition(forklift->getNowStation(), forklift->nearestStation(pos.m_x*100, -pos.m_y*100, pos.m_floor), forklift->getNextStation());
-    //combined_logger->info("current station:{0}", forklift->getNowStation());
-    //bresult = true;
 }
 
 bool DyForkliftThingFork::result(AgvPtr agv)
 {
-//    Q_UNUSED(agv)
+    //    Q_UNUSED(agv)
     return bresult;
 }

@@ -255,12 +255,9 @@ void AtForklift::onRead(const char *data, int len)
         msgMtx.unlock();
 
         if (std::stoi(msg.substr(0, 7)) == 0){
-            if (sendPause) {
-                pausedFlag = true;
-            }
-            else {
-                pausedFlag = false;
-            }
+            pausedFlag = false;
+        }else  if (std::stoi(msg.substr(0, 7)) == 1){
+            pausedFlag = true;
         }
         break;
     }
@@ -596,7 +593,7 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
         {
             usleep(500000);
             //判断block是否可以进入
-            int b;
+            std::vector<int> bs;
             if(nowStation!=0){
                 int pId = -1;
                 stationMtx.lock();
@@ -608,15 +605,20 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
                     }
                 }
                 stationMtx.unlock();
-                b = mapmanagerptr->getBlock(pId);
+                bs = mapmanagerptr->getBlocks(pId);
             }
             else {
-                b = mapmanagerptr->getBlock(nextStation);
+                bs = mapmanagerptr->getBlocks(nextStation);
             }
-
-            if (mapmanagerptr->blockPassable(b,getId())) {
+            bool canResume = true;
+            for(auto b:bs){
+                if (!mapmanagerptr->blockPassable(b,getId())) {
+                    canResume = false;
+                    break;
+                }
+            }
+            if(canResume)
                 resume();
-            }
 
         }
     } while (this->nowStation != endId || !isFinish(ATFORKLIFT_MOVE));

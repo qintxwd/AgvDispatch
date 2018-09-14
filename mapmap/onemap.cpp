@@ -216,3 +216,17 @@ std::list<MapGroup *> OneMap::getGroups(int groupType)
     return groups;
 }
 
+std::list<MapGroup *> OneMap::getGroups()
+{
+    std::list<MapGroup *> groups;
+    for(auto s:all_element)
+    {
+        if(s->getSpiritType() == MapSpirit::Map_Sprite_Type_Group)
+        {
+            MapGroup* group = static_cast<MapGroup *>(s);
+            groups.push_back(group);
+        }
+    }
+    return groups;
+}
+

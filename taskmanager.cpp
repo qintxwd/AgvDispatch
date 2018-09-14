@@ -643,11 +643,13 @@ void TaskManager::excuteTask(AgvTaskPtr task)
                     for (auto thing : node->getDoThings())
                     {
                         combined_logger->info("for dothings nodesize={0}", node->getDoThings().size());
-                        if (task->getIsCancel())
+                        if (task->getIsCancel() || task->getErrorCode()!=0)
                             break;
                         thing->beforeDoing(agv);
                         thing->doing(agv);
                         thing->afterDoing(agv);
+                        if (!thing->result(agv))//if one node excute fail, nodes behind this cannot excute anymore
+                            break;
                     }
                 }
                 //完成以后,从正在执行，返回到 分配队列中

@@ -149,7 +149,7 @@ void MapManager::addOccuLine(int line, AgvPtr occuAgv)
     }
     combined_logger->debug("occupy line:{0} agv:{1}", line, occuAgv->getId());
 
-        //同一条line可能属于多个Group
+    //同一条line可能属于多个Group
     std::vector<int> groupIds = getGroup(line);
     for(auto groupId:groupIds)
     {
@@ -327,7 +327,7 @@ bool MapManager::save()
 
         g_db.execDML("delete from agv_group;");
 
-        //g_db.execDML("begin transaction;");
+        g_db.execDML("begin transaction;");
 
         std::list<MapSpirit *> spirits = g_onemap.getAllElement();
 
@@ -388,7 +388,7 @@ bool MapManager::save()
             }
         }
 
-        //g_db.execDML("commit transaction;");
+        g_db.execDML("commit transaction;");
     }
     catch (CppSQLite3Exception &e) {
         combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
@@ -463,31 +463,6 @@ bool MapManager::loadFromDb()
             MapPath *path = new MapPath(id, name, start, end, t, length, p1x, p1y, p2x, p2y, locked,speed);
             g_onemap.addSpirit(path);
         }
-
-        //        CppSQLite3Table table_dy_line = g_db.getTable("select id,name,type,start,end,p1x,p1y,p1a,p1f,p2x,p2y,p2a,p2f,speed from agv_line_dy;");
-        //        if (table_dy_line.numRows() > 0 && table_dy_line.numFields() != 14)return false;
-        //        for (int row = 0; row < table_dy_line.numRows(); row++)
-        //        {
-        //            table_dy_line.setRow(row);
-
-        //            int id = atoi(table_dy_line.fieldValue(0));
-        //            std::string name = std::string(table_dy_line.fieldValue(1));
-        //            int type = atoi(table_dy_line.fieldValue(2));
-        //            int start = atoi(table_dy_line.fieldValue(3));
-        //            int end = atoi(table_dy_line.fieldValue(4));
-        //            int p1x = atoi(table_dy_line.fieldValue(5));
-        //            int p1y = atoi(table_dy_line.fieldValue(6));
-        //            int p1a = atoi(table_dy_line.fieldValue(7));
-        //            int p1f = atoi(table_dy_line.fieldValue(8));
-        //            int p2x = atoi(table_dy_line.fieldValue(9));
-        //            int p2y = atoi(table_dy_line.fieldValue(10));
-        //            int p2a = atoi(table_dy_line.fieldValue(11));
-        //            int p2f = atoi(table_dy_line.fieldValue(12));
-        //            double speed = atof(table_dy_line.fieldValue(13));
-
-        //            DyMapPath *path = new DyMapPath(id, name, start, end, (DyMapPath::Map_DyPath_Type)type, p1x, p1y, p1a, p1f, p2x, p2y, p2a, p2f, speed);
-        //            g_onemap.addSpirit(path);
-        //        }
 
         CppSQLite3Table table_bkg = g_db.getTable("select id,name,data,data_len,x,y,width,height,filename from agv_bkg;");
         if (table_bkg.numRows() > 0 && table_bkg.numFields() != 9)return false;
@@ -617,10 +592,7 @@ bool MapManager::loadFromDb()
         g_onemap.setMaxId(max_id);
         getReverseLines();
         getAdj();
-        //        if(GLOBAL_AGV_PROJECT == AGV_PROJECT_DONGYAO || GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)
-        //        {
-        //            init_task_splitinfo();
-        //        }
+        check();
     }
     catch (CppSQLite3Exception &e) {
         combined_logger->error("sqlerr code:{0} msg:{1}", e.errorCode(), e.errorMessage());
@@ -708,6 +680,51 @@ std::vector<int> MapManager::getBestPath(int agv, int lastStation, int startStat
     return b;
 }
 
+bool MapManager::pathPassable(MapPath *line, int agvId, std::vector<int> passable_uturnPoints) {
+
+    auto pend = getPointById(line->getEnd());
+    if(pend == nullptr)return false;
+
+    if(std::find(passable_uturnPoints.begin(),passable_uturnPoints.end(), line->getStart()) == passable_uturnPoints.end() &&
+            std::find(passable_uturnPoints.begin(), passable_uturnPoints.end(), line->getEnd()) == passable_uturnPoints.end())
+    {
+        //忽略起点和终点直连装卸货点及不可调头的判断
+        if(pend->getPointType() == MapPoint::Map_Point_Type_CHARGE ||
+                pend->getPointType() == MapPoint::Map_Point_Type_LOAD ||
+                pend->getPointType() == MapPoint::Map_Point_Type_UNLOAD ||
+                pend->getPointType() == MapPoint::Map_Point_Type_NO_UTURN ||
+                pend->getPointType() == MapPoint::Map_Point_Type_LOAD_UNLOAD)return false;
+    }
+    //判断反向线路占用
+    int reverse = m_reverseLines[line->getId()];
+    if (reverse > 0) {
+        if (line_occuagvs[reverse].size() > 1 || (line_occuagvs[reverse].size() == 1 && *(line_occuagvs[reverse].begin()) != agvId))
+            return false;
+    }
+
+    //判断终点占用
+    if (station_occuagv[line->getEnd()] != 0 && station_occuagv[line->getEnd()] != agvId)
+        return false;
+
+
+    //判断group占用
+    auto groups = g_onemap.getGroups(COMMON_GROUP);
+    UNIQUE_LCK(groupMtx);
+    for (auto group : groups) {
+        auto sps = group->getSpirits();
+        if (std::find(sps.begin(), sps.end(), line->getId()) != sps.end() ||
+                std::find(sps.begin(), sps.end(), line->getEnd()) != sps.end())
+        {
+            //该线路/线路终点属于这个block
+            //判断该block是否有agv以外的其他agv
+            if (group_occuagv.find(group->getId()) != group_occuagv.end() && group_occuagv[group->getId()].first != agvId)
+                return false;
+        }
+    }
+
+    return true;
+}
+
 bool MapManager::pathPassable(MapPath *line, int agvId) {
     //TODO: to delete
     if (line_occuagvs[line->getId()].size() > 1 || (line_occuagvs[line->getId()].size() == 1 && *(line_occuagvs[line->getId()].begin()) != agvId))
@@ -719,7 +736,9 @@ bool MapManager::pathPassable(MapPath *line, int agvId) {
     if(pend->getPointType() == MapPoint::Map_Point_Type_CHARGE ||
             pend->getPointType() == MapPoint::Map_Point_Type_LOAD ||
             pend->getPointType() == MapPoint::Map_Point_Type_UNLOAD ||
-            pend->getPointType() == MapPoint::Map_Point_Type_LOAD_UNLOAD)return false;
+            pend->getPointType() == MapPoint::Map_Point_Type_LOAD_UNLOAD||
+            pend->getPointType() == MapPoint::Map_Point_Type_NO_UTURN)return false;
+
 
     //判断反向线路占用
     int reverse = m_reverseLines[line->getId()];
@@ -923,10 +942,10 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
     auto paths = g_onemap.getPaths();
 
     //判断station是否正确
-    if (lastStation <= 0) lastStation = startStation;
-    if (lastStation <= 0)return result;
-    if (startStation <= 0)return result;
+    if(lastStation <=0 && startStation <=0 )return result;
     if (endStation <= 0)return result;
+    if (lastStation <= 0) lastStation = startStation;
+    if (startStation <= 0) startStation = lastStation;
 
     auto lastStationPtr = g_onemap.getSpiritById(lastStation);
     auto startStationPtr = g_onemap.getSpiritById(startStation);
@@ -967,11 +986,36 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
     };
     std::map<int, LineDijkInfo> lineDistanceColors;
 
+    std::vector<int> passable_uturnPoints;
+    passable_uturnPoints.push_back(startStation);
+    passable_uturnPoints.push_back(endStation);
+
     //初始化，所有线路 距离为无限远、color为尚未标记
     for (auto path : paths) {
         lineDistanceColors[path->getId()].father = 0;
         lineDistanceColors[path->getId()].distance = DISTANCE_INFINITY;
         lineDistanceColors[path->getId()].color = AGV_LINE_COLOR_WHITE;
+
+        if(path->getStart() == startStation)
+        {
+            auto pend = getPointById(path->getEnd());
+            if(pend == nullptr)continue;
+            if(MapPoint::Map_Point_Type_NO_UTURN == pend->getPointType() || MapPoint::Map_Point_Type_LOAD == pend->getPointType()
+                    || MapPoint::Map_Point_Type_LOAD == pend->getPointType() || MapPoint::Map_Point_Type_LOAD_UNLOAD == pend->getPointType())
+            {
+                passable_uturnPoints.push_back(pend->getId());
+            }
+        }
+        else if(path->getEnd() == endStation)
+        {
+            auto pstart = getPointById(path->getStart());
+            if(pstart == nullptr)continue;
+            if(MapPoint::Map_Point_Type_NO_UTURN == pstart->getPointType()|| MapPoint::Map_Point_Type_LOAD == pstart->getPointType()
+                    || MapPoint::Map_Point_Type_LOAD == pstart->getPointType() || MapPoint::Map_Point_Type_LOAD_UNLOAD == pstart->getPointType())
+            {
+                passable_uturnPoints.push_back(pstart->getId());
+            }
+        }
     }
 
 
@@ -995,7 +1039,7 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
     if (lastStation == startStation) {
         for (auto line : paths) {
             if (line->getStart() == lastStation) {
-                if (pathPassable(line, agv)) {
+                if (pathPassable(line, agv,passable_uturnPoints)) {
                     if (lineDistanceColors[line->getId()].color == AGV_LINE_COLOR_BLACK)continue;
                     lineDistanceColors[line->getId()].distance = line->getLength();
                     lineDistanceColors[line->getId()].color = AGV_LINE_COLOR_GRAY;
@@ -1008,7 +1052,7 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
         for (auto line : paths) {
             if (line->getStart() == startStation) {
                 //            if (line->getStart() == startStation && line->getEnd() != lastStation) {
-                if (pathPassable(line, agv)) {
+                if (pathPassable(line, agv,passable_uturnPoints)) {
                     if (lineDistanceColors[line->getId()].color == AGV_LINE_COLOR_BLACK)continue;
                     lineDistanceColors[line->getId()].distance = line->getLength();
                     lineDistanceColors[line->getId()].color = AGV_LINE_COLOR_GRAY;
@@ -1029,7 +1073,7 @@ std::vector<int> MapManager::getPath(int agv, int lastStation, int startStation,
 
             MapPath *path = g_onemap.getPathById(adj);
             if (path == nullptr)continue;
-            if (!pathPassable(path, agv))continue;
+            if (!pathPassable(path, agv,passable_uturnPoints))continue;
             if (lineDistanceColors[adj].color == AGV_LINE_COLOR_WHITE) {
                 lineDistanceColors[adj].distance = lineDistanceColors[startLine].distance + path->getLength();
                 lineDistanceColors[adj].color = AGV_LINE_COLOR_GRAY;
@@ -1135,22 +1179,22 @@ void MapManager::getReverseLines()
             MapPoint *pAStart = static_cast<MapPoint *>(aStart);
 
 
-//            if((a->getId() == 239 && b->getId() == 249)||
-//                    (b->getId() == 239 && a->getId() == 249)){
-//                combined_logger->debug("aid={0},aname={1},  bid={2},bname={3}",a->getId(),a->getName(),b->getId(),b->getName());
-//                combined_logger->debug("pAStart={0} ,pAStart name={1},  pAEnd={2},pAEnd name={3}",pAStart->getId(),pAStart->getName(),pAEnd->getId(),pAEnd->getName());
-//                combined_logger->debug("pBStart={0} ,pBStart name={1},  pBEnd={2},pBEnd name={3}",pBStart->getId(),pBStart->getName(),pBEnd->getId(),pBEnd->getName());
+            //            if((a->getId() == 239 && b->getId() == 249)||
+            //                    (b->getId() == 239 && a->getId() == 249)){
+            //                combined_logger->debug("aid={0},aname={1},  bid={2},bname={3}",a->getId(),a->getName(),b->getId(),b->getName());
+            //                combined_logger->debug("pAStart={0} ,pAStart name={1},  pAEnd={2},pAEnd name={3}",pAStart->getId(),pAStart->getName(),pAEnd->getId(),pAEnd->getName());
+            //                combined_logger->debug("pBStart={0} ,pBStart name={1},  pBEnd={2},pBEnd name={3}",pBStart->getId(),pBStart->getName(),pBEnd->getId(),pBEnd->getName());
 
-//                combined_logger->debug("pAStart x ={0} ,pAStart y={1},  pBEnd x={2},pBEnd y={3}",pAStart->getRealX(),pAStart->getRealY(),pBEnd->getRealX(),pBEnd->getRealY());
-//                combined_logger->debug("pBStart x ={0} ,pBStart y={1},  pAEnd x={2},pAEnd y={3}",pBStart->getRealX(),pBStart->getRealY(),pAEnd->getRealX(),pAEnd->getRealY());
+            //                combined_logger->debug("pAStart x ={0} ,pAStart y={1},  pBEnd x={2},pBEnd y={3}",pAStart->getRealX(),pAStart->getRealY(),pBEnd->getRealX(),pBEnd->getRealY());
+            //                combined_logger->debug("pBStart x ={0} ,pBStart y={1},  pAEnd x={2},pAEnd y={3}",pBStart->getRealX(),pBStart->getRealY(),pAEnd->getRealX(),pAEnd->getRealY());
 
-//                combined_logger->debug("pAStart x ==pBEnd x {0} ,pAStart y== pBEnd y {1}",pAStart->getRealX() == pBEnd->getRealX(),pAStart->getRealY() == pBEnd->getRealY());
-//                combined_logger->debug("pBStart x ==pAEnd x {0} ,pBStart y== pAEnd y {1}",pBStart->getRealX()== pAEnd->getRealX(),pBStart->getRealY()==pAEnd->getRealY());
+            //                combined_logger->debug("pAStart x ==pBEnd x {0} ,pAStart y== pBEnd y {1}",pAStart->getRealX() == pBEnd->getRealX(),pAStart->getRealY() == pBEnd->getRealY());
+            //                combined_logger->debug("pBStart x ==pAEnd x {0} ,pBStart y== pAEnd y {1}",pBStart->getRealX()== pAEnd->getRealX(),pBStart->getRealY()==pAEnd->getRealY());
 
-//                combined_logger->debug("{0}=={1},{2}=={3},{4}=={5},{6}=={7}",pAEnd->getRealX(),pBStart->getRealX() ,pAEnd->getRealY(), pBStart->getRealY()
-//                                       ,pBEnd->getRealX(), pAStart->getRealX() , pBEnd->getRealY() ,pAStart->getRealY());
-//                combined_logger->debug("qyh");
-//            }
+            //                combined_logger->debug("{0}=={1},{2}=={3},{4}=={5},{6}=={7}",pAEnd->getRealX(),pBStart->getRealX() ,pAEnd->getRealY(), pBStart->getRealY()
+            //                                       ,pBEnd->getRealX(), pAStart->getRealX() , pBEnd->getRealY() ,pAStart->getRealY());
+            //                combined_logger->debug("qyh");
+            //            }
 
             if (a->getEnd() == b->getStart() && a->getStart() == b->getEnd()) {
                 m_reverseLines[a->getId()] = b->getId();
@@ -1161,6 +1205,84 @@ void MapManager::getReverseLines()
         }
     }
     return ;
+}
+
+//check if exists all element
+void MapManager::check()
+{
+    //check lines!
+    bool changed = false;
+    auto paths = g_onemap.getPaths();
+    for(auto path:paths){
+        auto start = path->getStart();
+        auto end = path->getEnd();
+        if(g_onemap.getPointById(start) == nullptr
+                ||g_onemap.getPointById(end) == nullptr){
+            g_onemap.removeSpiritById(path->getId());
+            changed = true;
+        }
+    }
+    if(changed){
+        save();
+        changed = false;
+    }
+
+    //check floor!
+    auto floors = g_onemap.getFloors();
+    for(auto floor:floors){
+        auto points = floor->getPoints();
+        for(auto p:points){
+            if(g_onemap.getPointById(p) == nullptr){
+                floor->removePoint(p);
+                changed = true;
+            }
+        }
+        auto pathss = floor->getPaths();
+        for(auto pp:pathss){
+            if(g_onemap.getPathById(pp) == nullptr){
+                floor->removePath(pp);
+                changed = true;
+            }
+        }
+    }
+    if(changed){
+        save();
+        changed = false;
+    }
+
+    //check group!
+    auto groups = g_onemap.getGroups();
+    for(auto group:groups){
+        auto ps = group->getSpirits();
+        for(auto p:ps){
+            if(g_onemap.getPointById(p)==nullptr
+                    &&g_onemap.getPathById(p) == nullptr){
+                group->removeSpirit(p);
+                changed = true;
+            }
+        }
+    }
+    if(changed){
+        save();
+        changed = false;
+    }
+
+    //check block!
+    auto blocks = g_onemap.getBlocks();
+    for(auto block:blocks){
+        auto ps = block->getSpirits();
+        for(auto p:ps){
+            if(g_onemap.getPointById(p)==nullptr
+                    &&g_onemap.getPathById(p) == nullptr){
+                block->removeSpirit(p);
+                changed = true;
+            }
+        }
+    }
+    if(changed){
+        save();
+        changed = false;
+    }
 }
 
 void MapManager::getAdj()
@@ -1238,21 +1360,20 @@ std::vector<int> MapManager::getGroup(int spiritID)
     return group;
 }
 
-int MapManager::getBlock(int spiritID)
+std::vector<int> MapManager::getBlocks(int spiritID)
 {
-    int block = -1;
-    std::list<MapBlock *> blocks = g_onemap.getBlocks();
-    for(auto oneblock:blocks)
+    std::vector<int> blocks;
+    std::list<MapBlock *> bs = g_onemap.getBlocks();
+    for(auto oneblock:bs)
     {
         std::list<int> spiritslist = oneblock->getSpirits();
 
         if(std::find(spiritslist.begin(), spiritslist.end(), spiritID) != spiritslist.end())
         {
-            block = oneblock->getId();
-            break;
+            blocks.push_back(oneblock->getId());
         }
     }
-    return block;
+    return blocks;
 }
 
 std::list<int> MapManager::getOccuSpirit(int agvId)
@@ -1343,7 +1464,7 @@ void MapManager::interSetMap(SessionPtr conn, const Json::Value &request)
                 Json::Value station = request["points"][i];
                 int id = station["id"].asInt();
                 std::string name = station["name"].asString();
-                int station_type = station["point_type"].asInt();
+                int station_type = station["type"].asInt();
                 int x = station["x"].asInt();
                 int y = station["y"].asInt();
                 int realX = station["realX"].asInt();

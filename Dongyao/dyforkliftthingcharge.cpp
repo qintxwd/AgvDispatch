@@ -33,6 +33,10 @@ void DyForkliftThingCharge::doing(AgvPtr agv)
     if(!cm.checkConnection())
         return;
 
+    if(agv->type() != DyForklift::Type){
+        bresult = true;
+        return;
+    }
     DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
     //叉尺抬升
     combined_logger->info("charge fork up start");
@@ -73,6 +77,11 @@ void DyForkliftThingCharge::doing(AgvPtr agv)
 
 void DyForkliftThingCharge::afterDoing(AgvPtr agv)
 {
+    if(agv->type() != DyForklift::Type){
+        //other agv,can not excute dy forklift charge
+        bresult = true;
+        return ;
+    }
     //通知小车退出充电
     DyForkliftPtr forklift = std::static_pointer_cast<DyForklift>(agv);
 

@@ -15,6 +15,8 @@ DyForklift::DyForklift(int id, std::string name, std::string ip, int port):
 {
     //    startpoint = -1;
     //    actionpoint = -1;
+    pausedFlag = false;
+    sendPause = true;//表示发送了暂停指令、false表示发送了暂停指令
     status = Agv::AGV_STATUS_UNCONNECT;
     init();
     //    充电机测试代码
@@ -48,7 +50,7 @@ void DyForklift::init(){
                         //TODO 判断连接是否有效
                         if(m_qTcp)
                         {
-                            m_qTcp->doSend(iter->second.msg.c_str(), iter->second.msg.length());
+                            int ret = m_qTcp->doSend(iter->second.msg.c_str(), iter->second.msg.length());
                             combined_logger->info("resend:{0}, waitTime:{1}, result:{2}", iter->first, iter->second.waitTime, ret ? "success" : "fail");
                             iter->second.waitTime = 0;
                         }
@@ -155,6 +157,9 @@ int DyForklift::nearestStation(int x, int y, int a, int floor)
 void DyForklift::onRead(const char *data,int len)
 {
     if(data == NULL || len <= 0)return ;
+
+
+
 
     std::string msg(data,len);
     int length = std::stoi(msg.substr(6, 4));
@@ -278,6 +283,24 @@ void DyForklift::onRead(const char *data,int len)
         msgMtx.unlock();
         break;
     }
+    case FORKLIFT_MOVE_NOLASER:
+    {
+        msgMtx.lock();
+        //command response
+        std::map<int, DyMsg>::iterator iter = m_unRecvSend.find(std::stoi(msg.substr(0, 6)));
+        if (iter != m_unRecvSend.end())
+        {
+            m_unRecvSend.erase(iter);
+        }
+        msgMtx.unlock();
+
+        if (std::stoi(msg.substr(0, 7)) == 0){
+            pausedFlag = false;//
+        }else  if (std::stoi(msg.substr(0, 7)) == 1){
+            pausedFlag = true;
+        }
+        break;
+    }
     default:
         break;
     }
@@ -352,8 +375,8 @@ void DyForklift::excutePath(std::vector<int> lines)
 
     combined_logger->info("excutePath: {0}", ss.str());
     //    actionpoint = 0;
-    MapPoint *startstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.front()));
-    MapPoint *endstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.back()));
+    //MapPoint *startstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.front()));
+    //MapPoint *endstation = static_cast<MapPoint *>(MapManager::getInstance()->getMapSpiritById(excutestations.back()));
     //    startpoint = startstation->getId();
     //TODO
     //    startLift = true;
@@ -674,8 +697,8 @@ void DyForklift::goStation(std::vector<int> lines,  bool stop, FORKLIFT_COMM cmd
         }
         int type = 1;
         if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier
-                ||path->getPathType() == MapPath::Map_Path_Type_Cubic_Bezier)type = 2;
-        if(path->getPathType() == MapPath::Map_Path_Type_Between_Floor)type = 3;
+                ||path->getPathType() == MapPath::Map_Path_Type_Cubic_Bezier)type = 3;
+        if(path->getPathType() == MapPath::Map_Path_Type_Between_Floor)type = 1;
         body<<type<<"|"<<speed<<","<<end->getRealX() / 100.0<<","<< -end->getRealY() / 100.0<<","<<end->getRealA() / 10.0<<","<<mapmanagerptr->getFloor(endId)<<",";
     }
     body<<"1";
@@ -694,7 +717,7 @@ void DyForklift::goStation(std::vector<int> lines,  bool stop, FORKLIFT_COMM cmd
         {
             usleep(500000);
             //判断block是否可以进入
-            int b;
+            std::vector<int> bs;
             if(nowStation!=0){
                 int pId = -1;
                 stationMtx.lock();
@@ -706,16 +729,20 @@ void DyForklift::goStation(std::vector<int> lines,  bool stop, FORKLIFT_COMM cmd
                     }
                 }
                 stationMtx.unlock();
-                b = mapmanagerptr->getBlock(pId);
+                bs = mapmanagerptr->getBlocks(pId);
             }
             else {
-                b = mapmanagerptr->getBlock(nextStation);
+                bs = mapmanagerptr->getBlocks(nextStation);
             }
-
-            if (mapmanagerptr->blockPassable(b,getId())) {
+            bool canResume = true;
+            for(auto b:bs){
+                if (!mapmanagerptr->blockPassable(b,getId())) {
+                    canResume = false;
+                    break;
+                }
+            }
+            if(canResume)
                 resume();
-            }
-
         }
     }while(this->nowStation != endId || !isFinish());
     combined_logger->info("nowStation = {0}, endId = {1}", this->nowStation, endId);
@@ -1103,7 +1130,7 @@ bool DyForklift::pause()
     combined_logger->debug("==============agv:{0} paused!",getId());
     std::stringstream body;
     body << FORKLIFT_MOVE_NOLASER;
-    body << 1;
+    body << FORKLIST_NOLASER_PAUSE;
     sendPause = true;
     return resend(body.str());
 }
@@ -1113,8 +1140,36 @@ bool DyForklift::resume()
     combined_logger->debug("==============agv:{0} resume!",getId());
     std::stringstream body;
     body << FORKLIFT_MOVE_NOLASER;
-    body << 0;
+    body << FORKLIFT_NOLASER_RESUME;
     sendPause = false;
     return resend(body.str());
+}
+
+void DyForklift::onTaskCanceled(AgvTaskPtr _task)
+{
+    combined_logger->debug("==============agv:{0} task cancel! clear path!",getId());
+    std::stringstream body;
+    body << FORKLIFT_MOVE_NOLASER;
+    body << FORKLIFT_NOLASER_CLEAR_TASK;
+    resend(body.str());
+
+    //release the end station occu and lines occs
+    auto mapmanagerptr = MapManager::getInstance();
+    if(currentTask!=nullptr){
+        auto nodes = currentTask->getTaskNodes();
+        auto index = currentTask->getDoingIndex();
+        if(index<nodes.size())
+        {
+            auto node = nodes[index];
+            mapmanagerptr->freeStation(node->getStation(),shared_from_this());
+            auto paths = currentTask->getPath();
+            for(auto p:paths){
+                mapmanagerptr->freeLine(p,shared_from_this());
+            }
+        }
+    }
+
+    //TODO:
+    //occu current station or  current path
 }
 

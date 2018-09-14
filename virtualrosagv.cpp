@@ -57,9 +57,18 @@ void VirtualRosAgv::excutePath(std::vector<int> lines)
 
     int next = 0;//下一个要去的位置
     MapPoint *currentPoint = mapmanagerptr->getPointById(nowStation);
-
-    if(currentPoint == nullptr)
-        return;
+    MapPoint *nextPoint = mapmanagerptr->getPointById(nextStation);
+    MapPoint *lastPoint = mapmanagerptr->getPointById(lastStation);
+    if(currentPoint==nullptr && lastPoint!=nullptr){
+        currentPoint = lastPoint;
+    }
+    if(currentPoint == nullptr &&lastPoint==nullptr && nextPoint!=nullptr){
+        currentPoint = nextPoint;
+    }
+    if(currentPoint == nullptr){
+        combined_logger->debug("agv position lost! can not excute path");
+        return ;
+    }
     bool in_elevator = currentPoint->getMapChange();
     for(unsigned int i=0;i<excutestations.size();++i)
     {
@@ -211,7 +220,11 @@ void VirtualRosAgv::goStation(int station, bool stop)
             //前移10
             x = startPoint->getX()+(endPoint->getX()-startPoint->getX()) * currentT;
             y = startPoint->getY() + (endPoint->getY() - startPoint->getY()) * currentT;
-            theta = atan2(endPoint->getY()-y,endPoint->getX()-x)*180/M_PI;
+            if(path->getSpeed()<0){
+                theta =180-atan2(endPoint->getY()-y,endPoint->getX()-x)*180/M_PI;
+            }else{
+                theta = atan2(endPoint->getY()-y,endPoint->getX()-x)*180/M_PI;
+            }
         }else if(path->getPathType() == MapPath::Map_Path_Type_Quadratic_Bezier){
             //前移10
             currentT += 10.0/path_length;
@@ -220,7 +233,11 @@ void VirtualRosAgv::goStation(int station, bool stop)
             BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,d,currentT);
             x = pp.pos.x();
             y = pp.pos.y();
-            theta = pp.angle;
+            if(path->getSpeed()<0){
+                theta = 180 -pp.angle;
+            }else{
+                theta = pp.angle;
+            }
         }else if(path->getPathType() == MapPath::Map_Path_Type_Cubic_Bezier){
             //前移10
             currentT += 10.0/path_length;
@@ -229,7 +246,11 @@ void VirtualRosAgv::goStation(int station, bool stop)
             BezierArc::POSITION_POSE pp = BezierArc::BezierArcPoint(a,b,c,d,currentT);
             x = pp.pos.x();
             y = pp.pos.y();
-            theta = pp.angle;
+            if(path->getSpeed()<0){
+                theta =180 -pp.angle;
+            }else{
+                theta = pp.angle;
+            }
         }
         //2.初次移动，调用离开上一站
         if(firstMove){

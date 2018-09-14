@@ -132,6 +132,10 @@ void TcpSession::start()
             }
         }
         SessionManager::getInstance()->removeSession(shared_from_this());
+        if(AGV_PROJECT_DONGYAO == GLOBAL_AGV_PROJECT && _agvPtr != nullptr)
+        {
+            std::static_pointer_cast<DyForklift>(_agvPtr)->setQyhTcp(nullptr);
+        }
     }).detach();
 }
 

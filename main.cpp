@@ -225,8 +225,6 @@ int main(int argc, char *argv[])
 
 
     //    10.初始化tcp/ip 接口
-
-
     //tcpip服务
     auto aID = SessionManager::getInstance()->addTcpAccepter(9999);
     SessionManager::getInstance()->openTcpAccepter(aID);

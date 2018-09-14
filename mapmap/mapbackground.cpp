@@ -27,6 +27,8 @@ MapSpirit* MapBackground::clone()
     char *copy = new char[img_data_len];
     memcpy(copy,img_data,img_data_len);
     MapBackground *b = new MapBackground(getId(),getName(),copy,getImgDataLen(),getWidth(),getHeight(),getFileName());
+    b->setX(x);
+    b->setY(y);
     return b;
 }
 

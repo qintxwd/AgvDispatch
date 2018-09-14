@@ -78,7 +78,7 @@ public:
 
     bool isSameFloor(int floor, int station);
     int getFloor(int spiritID);
-    int getBlock(int spiritID);
+    std::vector<int> getBlocks(int spiritID);
     std::vector<int> getGroup(int spiritID);
 
     MapPoint *getPointById(int id) { return g_onemap.getPointById(id); }
@@ -129,9 +129,10 @@ private:
 
     void getReverseLines();
     void getAdj();
+    void check();
 
     bool pathPassable(MapPath *line, int agvId);
-
+    bool pathPassable(MapPath *line, int agvId, std::vector<int> passable_uturnPoints);
     void printGroup();
     //void init_task_splitinfo();
     std::atomic_bool mapModifying;
