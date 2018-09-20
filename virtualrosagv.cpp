@@ -116,7 +116,7 @@ void VirtualRosAgv::excutePath(std::vector<int> lines)
             callMapChange(now);
         }
     }
-    if(currentTask!=nullptr && currentTask->getIsCancel())cancelTask();
+    //if(currentTask!=nullptr && currentTask->getIsCancel())cancelTask();
     if(status == AGV_STATUS_HANDING || status == AGV_STATUS_ERROR)cancelTask();
 }
 

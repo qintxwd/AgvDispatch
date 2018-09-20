@@ -192,7 +192,6 @@ void MsgProcess::publisher_agv_position()
             UNIQUE_LCK(psMtx);
             for (auto c : agvPositionSubers) {
                 SessionManager::getInstance()->sendSessionData(c, aps);
-
             }
         }
     }

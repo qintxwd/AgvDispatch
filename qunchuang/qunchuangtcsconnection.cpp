@@ -162,14 +162,14 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
         std::string to      = msg_data["DESTINATION"].string_value();
         //std::string to    = "2000";
 
-        int ceid            = std::stoi(msg_data["CEID"].string_value());
+        int ceid            = stringToInt(msg_data["CEID"].string_value());
         std::string dispatch_id  = msg_data["DISPATCH_ID"].string_value();
 
         std::string agv_id_str  = msg_data["AGV_ID"].string_value();
         int agv_id = -1;
         try
         {
-            agv_id = std::stoi(agv_id_str);
+            agv_id = stringToInt(agv_id_str);
         }
         catch(std::exception e)
         {
@@ -196,15 +196,15 @@ void QunChuangTcsConnection::onRead(const char *data, int len)
             {
                 std::string str = msg_data[12][0]["SLOTNO"].string_value();
                 if(str=="0" || str=="1")
-                    firstFloorInfo = std::stoi(str);
+                    firstFloorInfo = stringToInt(str);
 
                 str = msg_data[12][1]["SLOTNO"].string_value();
                 if(str=="0" || str=="1")
-                    secondFloorInfo = std::stoi(str);
+                    secondFloorInfo = stringToInt(str);
 
                 str = msg_data[12][2]["SLOTNO"].string_value();
                 if(str=="0" || str=="1")
-                    thirdFloorInfo = std::stoi(str);
+                    thirdFloorInfo = stringToInt(str);
 
                 std::cout<< " 3层升降货架第1层是否有料信息 : " << firstFloorInfo << std::endl;
                 std::cout<< " 3层升降货架第2层是否有料信息 : " << secondFloorInfo << std::endl;

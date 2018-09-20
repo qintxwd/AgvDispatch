@@ -15,6 +15,7 @@
 #include "device/devicemanager.h"
 #include "Dongyao/dyforklift.h"
 #include "Dongyao/dytaskmaker.h"
+#include "mapmap/blockmanager.h"
 
 #define DY_TEST
 void initLog()
@@ -172,6 +173,8 @@ int main(int argc, char *argv[])
 
     //0.日志输出
     initLog();
+
+    //BlockManager::getInstance()->test();
 
     //1.打开数据库
     try {

@@ -95,7 +95,7 @@ int stringToInt(std::string str)
 {
     std::stringstream out;
     out<<str;
-    int i;
+    int i = 0;
     out>>i;
     return i;
 }

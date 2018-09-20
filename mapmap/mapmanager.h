@@ -61,9 +61,9 @@ public:
     //如果车辆在线路的占领表中，释放出去
     void freeLine(int line, AgvPtr occuAgv);
 
-    //获取最优路径
-    void addBlockOccu(int blockId,int agvId,int spiritId);
-    void freeBlockOccu(int blockId, int agvId, int spiritId);
+
+//    bool tryAddBlockOccu(std::vector<int> blocks,int agvId,int spiritId);
+//    void freeBlockOccu(std::vector<int> blocks, int agvId, int spiritId);
 
     //获取最优路径
     std::vector<int> getBestPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
@@ -89,7 +89,7 @@ public:
     MapGroup *getGroupById(int id) { return g_onemap.getGroupById(id); }
     MapPath *getPathByStartEnd(int start,int end){return g_onemap.getPathByStartEnd(start,end);}
 
-    bool blockPassable(int blockId, int agvIdD);
+    //bool blockPassable(int blockId, int agvIdD);
 
     std::list<int> getOccuSpirit(int agvId);
 
@@ -101,6 +101,8 @@ public:
     void interTrafficControlLine(SessionPtr conn, const Json::Value &request);
     void interTrafficReleaseStation(SessionPtr conn, const Json::Value &request);
     void interTrafficReleaseLine(SessionPtr conn, const Json::Value &request);
+
+    void printGroup();
 private:
     MapManager();
 
@@ -112,7 +114,7 @@ private:
     OneMap g_onemap;//地图节点
 
     std::map<int, std::vector<int> > m_adj;// lineA -- lines{ from line A can reach which lines}
-    std::map<int, int> m_reverseLines;
+    std::map<int, std::vector<int> > m_reverseLines;
 
     std::map<int, std::vector<int> > line_occuagvs;//一条线路 及其上面的agv
     std::map<int, int> station_occuagv;//一个站点，及当前占用改站点的agv
@@ -120,8 +122,8 @@ private:
     std::mutex groupMtx;
     std::map<int,std::pair<int, std::vector<int> > > group_occuagv;//一个区块，及当前区块占用agv
 
-    std::mutex blockMtx;
-    std::map<int,std::pair<int, std::vector<int> > > block_occuagv;//一个区块，及当前区块占用agv
+//    std::mutex blockMtx;
+//    //std::map<int,std::pair<int, std::vector<int> > > block_occuagv;//一个区块，及当前区块占用agv
 
     std::vector<int> getPath(int agv, int lastStation, int startStation, int endStation, int &distance, bool changeDirect);
     std::vector<int> getPath(int from, int to, int &distance, bool changeDirect = CAN_CHANGE_DIRECTION);
@@ -133,7 +135,7 @@ private:
 
     bool pathPassable(MapPath *line, int agvId);
     bool pathPassable(MapPath *line, int agvId, std::vector<int> passable_uturnPoints);
-    void printGroup();
+
     //void init_task_splitinfo();
     std::atomic_bool mapModifying;
     std::map< std::pair<int, int>, std::queue<int> > m_chd_station;

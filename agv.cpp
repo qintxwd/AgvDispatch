@@ -8,6 +8,7 @@
 #include "userlogmanager.h"
 #include "msgprocess.h"
 #include "mapmap/mapmanager.h"
+#include "mapmap/blockmanager.h"
 
 
 Agv::Agv(int _id, std::string _name, std::string _ip, int _port) :
@@ -57,35 +58,22 @@ void Agv::stop()
 void Agv::onArriveStation(int station)
 {
     auto mapmanagerptr = MapManager::getInstance();
+    auto blockmanagerptr = BlockManager::getInstance();
     //set floor
     auto floorid = mapmanagerptr->getFloor(station);
     setFloor(floorid);
 
-    //add block occur station
-    //TODO: how to avoid this situation:
-    //before agv go into  block is free
-    //but block is not free when arrive!!!!
-
-    auto blocks = mapmanagerptr->getBlocks(station);
-    for(auto block:blocks){
-        mapmanagerptr->addBlockOccu(block,getId(),station);
-    }
-    //free block last path and station
+    //add block occu station
     MapPoint *point = mapmanagerptr->getPointById(station);
     if(point == nullptr)return ;
     combined_logger->info("agv id:{0} arrive station:{1}",getId(),point->getName());
 
+
+    auto blocks1 = mapmanagerptr->getBlocks(station);
+    bool addOccuResult = blockmanagerptr->tryAddBlockOccu(blocks1,getId(),station);
+
     x = point->getX();
     y = point->getY();
-
-    //free last station
-    if(lastStation>0){
-        mapmanagerptr->freeStation(lastStation,shared_from_this());
-        auto blocks = mapmanagerptr->getBlocks(lastStation);
-        for(auto block:blocks)
-            mapmanagerptr->addBlockOccu(block,getId(),lastStation);
-
-    }
 
     if(station>0){
         if(nowStation>0){
@@ -132,23 +120,20 @@ void Agv::onArriveStation(int station)
             int lineId = line->getId();
             //free start station
             mapmanagerptr->freeStation(start,shared_from_this());
-            auto blocks = mapmanagerptr->getBlocks(start);
-            for(auto block:blocks)
-                mapmanagerptr->addBlockOccu(block,getId(),start);
+            auto blocks4 = mapmanagerptr->getBlocks(start);
+            blockmanagerptr->freeBlockOccu(blocks4,getId(),start);
 
             //free end station
             if(i!=findIndex){
                 mapmanagerptr->freeStation(end,shared_from_this());
-                blocks = mapmanagerptr->getBlocks(end);
-                for(auto block:blocks)
-                    mapmanagerptr->addBlockOccu(block,getId(),end);
+                auto blocks5 = mapmanagerptr->getBlocks(end);
+                blockmanagerptr->freeBlockOccu(blocks5,getId(),end);
             }
 
             //free last line
             mapmanagerptr->freeLine(lineId,shared_from_this());
-            blocks = mapmanagerptr->getBlocks(lineId);
-            for(auto block:blocks)
-                mapmanagerptr->addBlockOccu(block,getId(),lineId);
+            auto blocks6 = mapmanagerptr->getBlocks(lineId);
+            blockmanagerptr->freeBlockOccu(blocks6,getId(),lineId);
         }
     }
 
@@ -164,48 +149,52 @@ void Agv::onArriveStation(int station)
         combined_logger->error("sqlerr code:{0} ", e.what());
     }
 
-    //判断下一段线路的可行性 [block]
-    //判断下一个线路 是否在block内，block内是否已经有其他车辆。如果有的话，就暂停 一下当前动作
-    stationMtx.lock();
-    auto itr = std::find(excutestations.begin(),excutestations.end(),nowStation);
-    if(itr!=excutestations.end()){
-        ++itr;
+    if(addOccuResult){
+        //判断下一段线路的可行性 [block]
+        //判断下一个线路 是否在block内，block内是否已经有其他车辆。如果有的话，就暂停 一下当前动作
+        stationMtx.lock();
+        auto itr = std::find(excutestations.begin(),excutestations.end(),nowStation);
         if(itr!=excutestations.end()){
-            nextStation = *itr;
-            stationMtx.unlock();
-            //next path is block free
-            auto p = mapmanagerptr->getPathByStartEnd(nowStation,nextStation);
-            if(p!=nullptr){
-                auto bs = mapmanagerptr->getBlocks(p->getId());
-                for(auto b:bs){
-                    if(!mapmanagerptr->blockPassable(b,getId())){
+            ++itr;
+            if(itr!=excutestations.end()){
+                nextStation = *itr;
+                stationMtx.unlock();
+                //next path is block free
+                auto p = mapmanagerptr->getPathByStartEnd(nowStation,nextStation);
+                if(p!=nullptr){
+                    auto bs = mapmanagerptr->getBlocks(p->getId());
+                    if(!blockmanagerptr->blockPassable(bs,getId())){
                         pause();
-                        break;
                     }
+
                 }
+            }else{
+                stationMtx.unlock();
             }
         }else{
             stationMtx.unlock();
         }
     }else{
-        stationMtx.unlock();
+        pause();
     }
+    blockmanagerptr->printBlock();
+    //mapmanagerptr->printGroup();
 }
 
 void Agv::onLeaveStation(int stationid)
 {
     auto mapmanagerptr = MapManager::getInstance();
-    //add block occur station
-    auto blocks = mapmanagerptr->getBlocks(stationid);
-    for(auto block:blocks)
-        mapmanagerptr->freeBlockOccu(block,getId(),stationid);
+    auto blockmanagerptr = BlockManager::getInstance();
+    //free block occur station
+    auto blocks1 = mapmanagerptr->getBlocks(stationid);
+    blockmanagerptr->freeBlockOccu(blocks1,getId(),stationid);
 
-    //free block last path
-    auto lastpath = mapmanagerptr->getPathByStartEnd(stationid,nextStation);
-    if(lastpath!=nullptr){
-        auto blocks = mapmanagerptr->getBlocks(lastpath->getId());
-        for(auto block:blocks)
-            mapmanagerptr->addBlockOccu(block,getId(),lastpath->getId());
+    //add block occur next path
+    auto nextPath = mapmanagerptr->getPathByStartEnd(stationid,nextStation);
+    bool addOccuResult = true;
+    if(nextPath!=nullptr){
+        auto blocks2 = mapmanagerptr->getBlocks(nextPath->getId());
+        addOccuResult = blockmanagerptr->tryAddBlockOccu(blocks2,getId(),nextPath->getId());
     }
 
     nowStation = 0;
@@ -214,13 +203,6 @@ void Agv::onLeaveStation(int stationid)
     auto point = mapmanagerptr->getPointById(stationid);
     if(point!=nullptr){
         combined_logger->info("agv id:{0} leave station:{1}",getId(),point->getName());
-    }
-    //add block occur
-    auto line = mapmanagerptr->getPathByStartEnd(lastStation,nextStation);
-    if(line!=nullptr){
-        auto blocks = mapmanagerptr->getBlocks(line->getId());
-        for(auto block:blocks)
-            mapmanagerptr->addBlockOccu(block,getId(),line->getId());
     }
 
     //释放这个站点的占用
@@ -267,16 +249,20 @@ void Agv::onLeaveStation(int stationid)
 
     //判断下一个站点的可行性 [block]
     //判断下一个站点 是否在block内，block内是否已经有其他车辆。如果有的话，就暂停 一下当前动作
-    auto p = MapManager::getInstance()->getPointById(nextStation);
-    if(p!=nullptr){
-        auto blocks = mapmanagerptr->getBlocks(p->getId());
-        for(auto b:blocks){
-            if(!MapManager::getInstance()->blockPassable(b,getId())){
+    if(addOccuResult){
+        auto p = mapmanagerptr->getPointById(nextStation);
+        if(p!=nullptr){
+            auto blocks4 = mapmanagerptr->getBlocks(p->getId());
+            if(!blockmanagerptr->blockPassable(blocks4,getId())){
                 pause();
-                break;
             }
         }
+    }else{
+        pause();
     }
+
+    blockmanagerptr->printBlock();
+    //mapmanagerptr->printGroup();
 }
 
 void Agv::onError(int code, std::string msg)

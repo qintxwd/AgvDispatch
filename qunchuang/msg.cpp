@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <limits>
 #include <cctype>
+#include "../common.h"
 
 
 namespace lynx {
@@ -242,7 +243,7 @@ struct MsgParser final {
 
         size_t start_pos = i;
         while(std::isdigit(str[i])) i++;
-        int n = std::stoi(str.c_str() + start_pos);
+        int n = stringToInt(str.c_str() + start_pos);
 
         if (get_next_token() != ']')
             return fail("expected L[n]", 0);
@@ -355,13 +356,13 @@ static std::tuple<int, int, int> parseSF(const std::string& msg)
         if (i>=msg.size() || msg[i] != 'S') break;
         i++;
         // parse S
-        S = std::stoi(msg.c_str()+i);
+        S = stringToInt(msg.c_str()+i);
         while(i < msg.size() && std::isdigit(msg[i])) i++;
         // get F
         if (i>=msg.size() || msg[i] != 'F') break;
         i++;
         // parse F
-        F = std::stoi(msg.c_str()+i);
+        F = stringToInt(msg.c_str()+i);
         while(i < msg.size() && std::isdigit(msg[i])) i++;
 
         succ = true;

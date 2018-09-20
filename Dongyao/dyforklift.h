@@ -167,8 +167,9 @@ private:
 
     SessionPtr m_qTcp;
     WarnSt m_warn;
-	bool pausedFlag;//是否暂停了
+    bool pauseFlag;
     bool sendPause;//发送的是暂停的指令，还是继续的指令.true:send pause  false:send resume
+    bool firstConnect;
 };
 
 #endif // DYFORKLIFT_H

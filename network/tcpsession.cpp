@@ -175,7 +175,8 @@ int TcpSession::ProtocolProcess()
         buffer.removeFront(buffer.find('*'));
         return 2;
     }
-    unsigned int FrameLength = std::stoi(FrameData.substr(6,4));
+    if(FrameData.length()<10)return 1;
+    unsigned int FrameLength = stringToInt(FrameData.substr(6,4));
     if(FrameLength == FrameData.length())
     {
         if(GLOBAL_AGV_PROJECT == AGV_PROJECT_ANTING)

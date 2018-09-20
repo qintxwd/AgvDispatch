@@ -68,8 +68,7 @@ void Device::onConnect()
 void Device::onDisconnect()
 {
     connected = false;
-    combined_logger->info("disconnect {0}:{1}", ip, port);
-
+    //combined_logger->info("disconnect {0}:{1}", ip, port);
 }
 
 void Device::reconnect()

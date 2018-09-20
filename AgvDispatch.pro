@@ -138,7 +138,8 @@ HEADERS += \
     Anting/station_pos.h \
     Dongyao/dyforkliftthingcharge.h \
     device/devicemanager.h \
-    device/elevator/elevatorManager.h
+    device/elevator/elevatorManager.h \
+    mapmap/blockmanager.h
 SOURCES += \
     agv.cpp \
     agvmanager.cpp \
@@ -197,4 +198,5 @@ SOURCES += \
     Anting/attaskmaker.cpp \
     Dongyao/dyforkliftthingcharge.cpp \
     device/devicemanager.cpp \
-    device/elevator/elevatorManager.cpp
+    device/elevator/elevatorManager.cpp \
+    mapmap/blockmanager.cpp

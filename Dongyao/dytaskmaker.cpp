@@ -66,11 +66,12 @@ int DyTaskMaker::msgProcess()
         buffer.removeFront(buffer.find('*'));
         return 2;
     }
-
-    unsigned int FrameLength = std::stoi(FrameData.substr(0,4));
-    if(FrameLength == FrameData.length())
-    {
-        receiveTask(FrameData.substr(4));
+    if(FrameData.length()>4){
+        unsigned int FrameLength = stringToInt(FrameData.substr(0,4));
+        if(FrameLength == FrameData.length())
+        {
+            receiveTask(FrameData.substr(4));
+        }
     }
 }
 
@@ -91,7 +92,7 @@ void DyTaskMaker::onDisconnect()
 {
     //TODO
     m_connectState = false;
-    combined_logger->info("wms_disconnected. ip:{0} port:{1}", m_ip, m_port);
+    //combined_logger->info("wms_disconnected. ip:{0} port:{1}", m_ip, m_port);
 }
 
 

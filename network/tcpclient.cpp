@@ -8,10 +8,11 @@ TcpClient::TcpClient(std::string _ip, int _port, ClientReadCallback _readcallbac
     readcallback(_readcallback),
     connectcallback(_connectcallback),
     disconnectcallback(_disconnectcallback),
-    s(io_context),
+    //    s(io_context),
     quit(false)
 {
 }
+
 
 void TcpClient::start()
 {
@@ -34,28 +35,34 @@ void TcpClient::threadProcess()
 
     while(!quit)
     {
-        boost::asio::ip::address add;
-
-        add.from_string(ip);
-
-        tcp::endpoint endpoint = tcp::endpoint(add, port);
-
         if(!need_reconnect){
             std::this_thread::sleep_for(std::chrono::duration<int,std::milli>(50));
             continue;
         }
         try
         {
-            s.connect(endpoint);
+            //客户端重连需要
+            s.reset(new boost::asio::ip::tcp::socket(io_context));
+            boost::asio::ip::address add;
+            add.from_string(ip);
+            boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(ip), port);
+            s->connect(endpoint);
 
             if(connectcallback)connectcallback();
 
-            while(!quit && s.is_open()){
+            while(!quit && s->is_open()){
                 boost::system::error_code ec;
-                size_t recv_length = s.available();
-                if(recv_length<=0)continue;
+                size_t recv_length;
+                try
+                {
+                    recv_length = s->available();
+                }catch(...)
+                {
+                    std::cout<<"read error";
+                }
+                //                if(recv_length<=0)continue;
 
-                recv_length = s.read_some(boost::asio::buffer(recvBuf, QYH_TCP_CLIENT_RECV_BUF_LEN),ec);
+                recv_length = s->read_some(boost::asio::buffer(recvBuf, QYH_TCP_CLIENT_RECV_BUF_LEN),ec);
                 if(ec){
                     std::cout<<"ec = "<<ec.message()<<" code="<<ec.value();
                     break;
@@ -65,11 +72,11 @@ void TcpClient::threadProcess()
                         readcallback(recvBuf,recv_length);
                     }
                 }
-            }            
+            }
             if(disconnectcallback)disconnectcallback();
-        }catch (...)
+        }catch (std::exception &e)
         {
-            //
+            //std::cerr<<"Exception:"<<e.what()<<std::endl;
             if(disconnectcallback)disconnectcallback();
         }
         //re connect duration: 2000ms
@@ -88,7 +95,7 @@ void TcpClient::resetConnect(std::string _ip, int _port)
 bool TcpClient::sendToServer(const char *data,int len)
 {
     try{
-        return len == boost::asio::write(s, boost::asio::buffer(data, len));
+        return len == s->write_some(boost::asio::buffer(data, len));
     }catch(...){
         return false;
     }
@@ -97,13 +104,14 @@ bool TcpClient::sendToServer(const char *data,int len)
 
 void TcpClient::disconnect()
 {
-    need_reconnect = false;
-    s.close();
+    need_reconnect = true;
+    s->shutdown(tcp::socket::shutdown_both);
+    s->close();
 }
 
 void TcpClient::doClose()
 {
-    s.close();
+    s->close();
 }
 
 

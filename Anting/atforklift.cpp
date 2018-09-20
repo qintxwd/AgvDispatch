@@ -1,10 +1,7 @@
 #include "atforklift.h"
 #include "../common.h"
 #include "../mapmap/mappoint.h"
-//#include <QByteArray>
-//#include <QString>
-//#define RESEND
-//#define HEART
+#include "../mapmap/blockmanager.h"
 #define TEST
 //TODO 移动后的laststation更新
 AtForklift::AtForklift(int id, std::string name, std::string ip, int port) :
@@ -154,14 +151,15 @@ int AtForklift::nearestStation(int x, int y, int a, int floor)
 //解析小车上报消息
 void AtForklift::onRead(const char *data, int len)
 {
-    if (data == NULL || len <= 0)return;
+    if (data == NULL || len < 10)return;
     std::string msg(data, len);
-    int length = std::stoi(msg.substr(6, 4));
+    int length = stringToInt(msg.substr(6, 4));
     if (length != len)
     {
         return;
     }
-    int mainMsg = std::stoi(msg.substr(10, 2));
+    if(len<12)return ;
+    int mainMsg = stringToInt(msg.substr(10, 2));
     std::string body = msg.substr(12);
 
     if (ATFORKLIFT_POS != mainMsg)
@@ -177,12 +175,12 @@ void AtForklift::onRead(const char *data, int len)
         std::vector<std::string> all = split(body, "|");
         if (all.size() == 4)
         {
-            //status = std::stoi(all[0]);
+            //status = stringToInt(all[0]);
             //任务线程需要根据此状态判断小车是否在执行任务，不能赋值
             std::vector<std::string> temp = split(all[3], ",");
             if (temp.size() == 4)
             {
-                m_currentPos = Pose4D(std::stof(temp[0]), std::stof(temp[1]), std::stof(temp[2]), std::stoi(temp[3]));
+                m_currentPos = Pose4D(std::stof(temp[0]), std::stof(temp[1]), std::stof(temp[2]), stringToInt(temp[3]));
 
                 x = m_currentPos.m_x * 100;
                 y = -m_currentPos.m_y * 100;
@@ -210,16 +208,17 @@ void AtForklift::onRead(const char *data, int len)
     case ATFORKLIFT_BATTERY:
     {
         //小车上报的电量信息
-        m_power = std::stoi(body);
+        m_power = stringToInt(body);
         break;
     }
     case ATFORKLIFT_FINISH:
     {
         //小车上报运动结束状态或自定义任务状态
-        if (1 <= std::stoi(body.substr(2)))
+        if(body.length()<=2)return ;
+        if (1 <= stringToInt(body.substr(2)))
         {
             //command finish
-            std::map<int, DyMsg>::iterator iter = m_unFinishCmd.find(std::stoi(body.substr(0, 2)));
+            std::map<int, DyMsg>::iterator iter = m_unFinishCmd.find(stringToInt(body.substr(0, 2)));
             if (iter != m_unFinishCmd.end())
             {
                 m_unFinishCmd.erase(iter);
@@ -234,7 +233,7 @@ void AtForklift::onRead(const char *data, int len)
     {
         msgMtx.lock();
         //command response
-        std::map<int, DyMsg>::iterator iter = m_unRecvSend.find(std::stoi(msg.substr(0, 6)));
+        std::map<int, DyMsg>::iterator iter = m_unRecvSend.find(stringToInt(msg.substr(0, 6)));
         if (iter != m_unRecvSend.end())
         {
             m_unRecvSend.erase(iter);
@@ -247,16 +246,16 @@ void AtForklift::onRead(const char *data, int len)
     {
         msgMtx.lock();
         //command response
-        std::map<int, DyMsg>::iterator iter = m_unRecvSend.find(std::stoi(msg.substr(0, 6)));
+        std::map<int, DyMsg>::iterator iter = m_unRecvSend.find(stringToInt(msg.substr(0, 6)));
         if (iter != m_unRecvSend.end())
         {
             m_unRecvSend.erase(iter);
         }
         msgMtx.unlock();
 
-        if (std::stoi(msg.substr(0, 7)) == 0){
+        if (stringToInt(msg.substr(0, 7)) == 0){
             pausedFlag = false;
-        }else  if (std::stoi(msg.substr(0, 7)) == 1){
+        }else  if (stringToInt(msg.substr(0, 7)) == 1){
             pausedFlag = true;
         }
         break;
@@ -520,7 +519,7 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
     MapPoint *end;
 
     MapManagerPtr mapmanagerptr = MapManager::getInstance();
-
+    auto blockmanagerptr = BlockManager::getInstance();
     combined_logger->info("atForklift goStation");
     std::stringstream body;
 
@@ -611,11 +610,9 @@ void AtForklift::goStation(std::vector<int> lines, bool stop)
                 bs = mapmanagerptr->getBlocks(nextStation);
             }
             bool canResume = true;
-            for(auto b:bs){
-                if (!mapmanagerptr->blockPassable(b,getId())) {
-                    canResume = false;
-                    break;
-                }
+            if (!blockmanagerptr->blockPassable(bs,getId())) {
+                canResume = false;
+                break;
             }
             if(canResume)
                 resume();
@@ -650,13 +647,15 @@ bool AtForklift::send(const std::string &data)
     if(!res){
         combined_logger->info("send to agv msg fail!");
     }
+    if(sendContent.length()<13)return res;
     DyMsg msg;
     msg.msg = sendContent;
     msg.waitTime = 0;
     msgMtx.lock();
     m_unRecvSend[stoi(msg.msg.substr(1, 6))] = msg;
     msgMtx.unlock();
-    int msgType = std::stoi(msg.msg.substr(11, 2));
+
+    int msgType = stringToInt(msg.msg.substr(11, 2));
     if (ATFORKLIFT_STARTREPORT != msgType && ATFORKLIFT_HEART != msgType)
     {
         m_unFinishCmd[msgType] = msg;
