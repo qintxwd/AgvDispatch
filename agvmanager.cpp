@@ -92,7 +92,7 @@ bool AgvManager::init()
                     DyForkliftPtr agv(new DyForklift(id, name, ip, port));
                     agv->setType(agvType);
                     agv->status = Agv::AGV_STATUS_UNCONNECT;
-                    agv->setPosition(0,0,0);
+                    agv->setPosition(lastStation, nowStation, nextStation);
                     agvs.push_back(agv);
                 }
             }

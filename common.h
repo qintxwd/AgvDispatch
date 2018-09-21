@@ -58,7 +58,7 @@ std::vector<std::string> split(std::string src,std::string sp = " ");
 std::vector<std::string> splitMultiJson(std::string multiJson);
 bool IsValidIPAddress(const char * str);
 int HexStringToInt(std::string str);
-
+int getRandom(int maxRandom);
 //东药名匠公用
 double func_dis(int x1, int y1, int x2, int y2);
 int func_angle(int a1, int a2);

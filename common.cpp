@@ -5,8 +5,8 @@ ThreadPool g_threadPool(30);
 CppSQLite3DB g_db;
 
 //const int GLOBAL_AGV_PROJECT = AGV_PROJECT_ANTING;
-//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
-const int GLOBAL_AGV_PROJECT = AGV_PROJECT_DONGYAO;
+const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QINGDAO;
+//const int GLOBAL_AGV_PROJECT = AGV_PROJECT_DONGYAO;
 //const int GLOBAL_AGV_PROJECT = AGV_PROJECT_QUNCHUANG;
 
 std::shared_ptr<spdlog::logger> combined_logger;
@@ -278,3 +278,11 @@ std::string transToFullMsg(const std::string &data)
 }
 
 std::atomic<bool> g_quit(false);
+
+int getRandom(int maxRandom)
+{
+    srand(time(0));
+    if(maxRandom>0)
+        return rand()%maxRandom;
+    return rand();
+}

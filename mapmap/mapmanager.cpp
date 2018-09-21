@@ -89,10 +89,11 @@ MapPath *MapManager::getMapPathByStartEnd(int start, int end)
 void MapManager::printGroup()
 {
     UNIQUE_LCK(groupMtx);
+    combined_logger->debug("GROUP===================");
     for(auto p=group_occuagv.begin();p!=group_occuagv.end();++p){
-        combined_logger->debug("groupId:{0} ====================",p->first);
+
         auto pp = p->second;
-        combined_logger->debug("agv:{0}",pp.first);
+        combined_logger->debug("groupId:{0} agv:{0}",p->first);
         std::stringstream ss1;
         ss1<<"stations: ";
         for(auto ppp:pp.second){
@@ -111,8 +112,8 @@ void MapManager::printGroup()
         }
         combined_logger->debug("{0}",ss1.str());
         combined_logger->debug("{0}",ss2.str());
-        combined_logger->debug("===================");
     }
+    combined_logger->debug("GROUP===================");
 }
 
 //一个Agv占领一个站点

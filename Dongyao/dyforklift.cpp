@@ -254,9 +254,9 @@ void DyForklift::onRead(const char *data,int len)
     }
     case FORKLIFT_BATTERY:
     {
-		//小车上报的电量信息
-		if(body.length()>0)    
-    	    m_power = stringToInt(body);
+        //小车上报的电量信息
+        if(body.length()>0)
+            m_power = stringToInt(body);
         break;
     }
     case FORKLIFT_FINISH:
@@ -295,21 +295,15 @@ void DyForklift::onRead(const char *data,int len)
     {
         msgMtx.lock();
         //command response
-		//TODO
         std::map<int, DyMsg>::iterator iter = m_unRecvSend.find(stringToInt(msg.substr(0, 6)));
         if (iter != m_unRecvSend.end())
         {
             m_unRecvSend.erase(iter);
         }
         msgMtx.unlock();
-		//TODO:
-        if (stringToInt(msg.substr(0, 7)) == 1){
-            pauseFlag = sendPause;
-        }
-        else  if (stringToInt(msg.substr(0, 7)) == 1){
-            pauseFlag = false;
-            sendPause = false;
-        }
+
+        //TODO
+        pauseFlag = sendPause;
         break;
     }
     default:
@@ -715,7 +709,6 @@ void DyForklift::goStation(std::vector<int> lines,  bool stop, FORKLIFT_COMM cmd
 
     currentEndStation = endId;
 
-    //TODO:
     while(!g_quit && currentTask!=nullptr && !currentTask->getIsCancel()){
         //can start the path?
         bool canGo = true;
@@ -903,6 +896,7 @@ bool DyForklift::setInitPos(int station)
     setPosition(0, station, 0);
     //占据初始位置
     MapManager::getInstance()->addOccuStation(station, shared_from_this());
+
     std::stringstream body;
     body<<FORKLIFT_INITPOS;
     body<<point->getRealX()/100.0<<","<<-point->getRealY()/100.0<<","<<point->getRealA()/10.0/57.3<<","<<MapManager::getInstance()->getFloor(station);

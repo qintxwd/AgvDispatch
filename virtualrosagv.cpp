@@ -1,6 +1,7 @@
 #include "virtualrosagv.h"
 #include "mapmap/onemap.h"
 #include "mapmap/mapmanager.h"
+#include "mapmap/blockmanager.h"
 #include "agvtask.h"
 #include "bezierarc.h"
 #include <limits>
@@ -130,8 +131,9 @@ void VirtualRosAgv::cancelTask()
 
 void VirtualRosAgv::goStation(int station, bool stop)
 {
+    BlockManagerPtr blockmanagerptr = BlockManager::getInstance();
+    MapManagerPtr mapmanagerptr = MapManager::getInstance();
     //看是否是写特殊点
-    auto mapmanagerptr = MapManager::getInstance();
     MapPoint *endPoint = mapmanagerptr->getPointById(station);
     if(endPoint == nullptr)return ;
 
@@ -156,14 +158,13 @@ void VirtualRosAgv::goStation(int station, bool stop)
     }
 
     //计算线路长度[以图像上的长度为长度]
-
     PointF a(startPoint->getX(),startPoint->getY());
     PointF b(path->getP1x(),path->getP1y());
     PointF c(path->getP2x(),path->getP2y());
     PointF d(endPoint->getX(),endPoint->getY());
 
     double currentT = 0.;
-    double path_length = 0;
+    double path_length = 100;
     if(path->getPathType() == MapPath::Map_Path_Type_Line){
         path_length = sqrt((endPoint->getY()-startPoint->getY())*(endPoint->getY()-startPoint->getY())+(endPoint->getX()-startPoint->getX())*(endPoint->getX()-startPoint->getX()));
         double minDistance = DBL_MAX;
@@ -203,8 +204,30 @@ void VirtualRosAgv::goStation(int station, bool stop)
 
     if(fabs(path_length) < 0.1)
     {
+        path_length = 100;
         combined_logger->info("path_length=0 error");
     }
+
+    while(!g_quit && currentTask!=nullptr && !currentTask->getIsCancel()){
+        //can start the path?
+        bool canGo = true;
+        auto bs = mapmanagerptr->getBlocks(path->getId());
+        if(!blockmanagerptr->tryAddBlockOccu(bs,getId(),path->getId())){
+            canGo = false;
+        }
+
+        if(canGo){
+            auto bs2 = mapmanagerptr->getBlocks(path->getEnd());
+            if(!blockmanagerptr->tryAddBlockOccu(bs2,getId(),path->getEnd()))
+            {
+                canGo = false;
+            }
+        }
+
+        if(canGo)break;
+        usleep(500000);
+    }
+    if(g_quit || currentTask == nullptr || currentTask->getIsCancel())return ;
 
     //进行模拟 移动位置
     bool firstMove = true;
@@ -293,5 +316,22 @@ void VirtualRosAgv::onTaskStart(AgvTaskPtr _task)
     if(_task != nullptr)
     {
         status = Agv::AGV_STATUS_TASKING;
+    }
+}
+
+void VirtualRosAgv::onTaskCanceled(AgvTaskPtr _task){
+    auto mapmanagerptr = MapManager::getInstance();
+    if(currentTask!=nullptr){
+        auto nodes = currentTask->getTaskNodes();
+        auto index = currentTask->getDoingIndex();
+        if(index<nodes.size())
+        {
+            auto node = nodes[index];
+            mapmanagerptr->freeStation(node->getStation(),shared_from_this());
+            auto paths = currentTask->getPath();
+            for(auto p:paths){
+                mapmanagerptr->freeLine(p,shared_from_this());
+            }
+        }
     }
 }

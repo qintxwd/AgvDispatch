@@ -139,7 +139,8 @@ HEADERS += \
     Dongyao/dyforkliftthingcharge.h \
     device/devicemanager.h \
     device/elevator/elevatorManager.h \
-    mapmap/blockmanager.h
+    mapmap/blockmanager.h \
+    qingdao/qingdaonodetingmove.h
 SOURCES += \
     agv.cpp \
     agvmanager.cpp \
@@ -199,4 +200,5 @@ SOURCES += \
     Dongyao/dyforkliftthingcharge.cpp \
     device/devicemanager.cpp \
     device/elevator/elevatorManager.cpp \
-    mapmap/blockmanager.cpp
+    mapmap/blockmanager.cpp \
+    qingdao/qingdaonodetingmove.cpp

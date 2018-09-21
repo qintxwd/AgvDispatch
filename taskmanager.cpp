@@ -668,6 +668,7 @@ void TaskManager::excuteTask(AgvTaskPtr task)
             {
                 //TODO:执行过程中发生异常
                 //TODO:
+                combined_logger->info("task id ={0} excuteagv = {1} excute task throw exception:{2}", task->getId(), task->getAgv(),e.what());
             }
         }
     });

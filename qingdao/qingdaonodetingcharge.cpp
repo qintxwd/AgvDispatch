@@ -19,7 +19,6 @@ void QingdaoNodeTingCharge::beforeDoing(AgvPtr agv)
 
 void QingdaoNodeTingCharge::doing(AgvPtr agv)
 {
-	//≤‚ ‘ =
 	Sleep(1500);
 	bresult = true;
 }

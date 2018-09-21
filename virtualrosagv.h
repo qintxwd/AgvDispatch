@@ -30,6 +30,8 @@ public:
 
     virtual void onTaskStart(AgvTaskPtr _task);
 
+    virtual void onTaskCanceled(AgvTaskPtr _task);
+
     virtual bool pause();
 
     virtual bool resume();

@@ -110,8 +110,7 @@ void BBlock::print()
     for(auto aos:agv_spirits){
         if(!aos.empty())
         {
-            combined_logger->debug("blockid:{0} ",getBlockId());
-            combined_logger->debug("agv:{0} ",aos.getAgvid());
+            combined_logger->debug("blockid:{0} agv:{1} ",getBlockId(),aos.getAgvid());
         }
     }
 }
@@ -187,13 +186,12 @@ void BlockManager::clear()
 
 void BlockManager::printBlock()
 {
-    //TODO
     UNIQUE_LCK(blockMtx);
-    combined_logger->debug("===============================================");
+    combined_logger->debug("BLOCK===============================================");
     for(auto itr = bblocks.begin();itr!=bblocks.end();++itr){
         itr->print();
     }
-    combined_logger->debug("===============================================");
+    combined_logger->debug("BLOCK===============================================");
 }
 
 void BlockManager::test()

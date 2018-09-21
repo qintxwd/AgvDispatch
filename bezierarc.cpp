@@ -54,6 +54,11 @@ double BezierArc::BezierArcLength(PointF p1, PointF p2, PointF p3)
 	double A_2 = sqrt(A);
 	double A_32 = 2*A*A_2;
 	double C_2 = 2*sqrt(C);
+
+    if(A_2 == 0){
+        return sqrt((p1.x()-p3.x())*(p1.x()-p3.x())+(p1.y()-p3.y())*(p1.y()-p3.y()));
+    }
+
 	double BA = B/A_2;
 
     return ( A_32*Sabc +

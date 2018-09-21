@@ -39,9 +39,15 @@ void Agv::setPosition(int _lastStation, int _nowStation, int _nextStation) {
     lastStation = _lastStation;
     nowStation = _nowStation;
     nextStation = _nextStation;
-
+    auto mapmanagerptr = MapManager::getInstance();
     if (nowStation > 0) {
         onArriveStation(nowStation);
+        mapmanagerptr->addOccuStation(nowStation,shared_from_this());
+    }else if(lastStation>0 && nextStation>0){
+        auto line = mapmanagerptr->getPathByStartEnd(lastStation,nextStation);
+        if(line!=nullptr){
+            mapmanagerptr->addOccuLine(line->getId(),shared_from_this());
+        }
     }
 }
 
@@ -67,8 +73,6 @@ void Agv::onArriveStation(int station)
     MapPoint *point = mapmanagerptr->getPointById(station);
     if(point == nullptr)return ;
     combined_logger->info("agv id:{0} arrive station:{1}",getId(),point->getName());
-
-
     auto blocks1 = mapmanagerptr->getBlocks(station);
     bool addOccuResult = blockmanagerptr->tryAddBlockOccu(blocks1,getId(),station);
 
@@ -78,6 +82,10 @@ void Agv::onArriveStation(int station)
     if(station>0){
         if(nowStation>0){
             lastStation = nowStation;
+            //free last station occu
+            mapmanagerptr->freeStation(lastStation,shared_from_this());
+            auto blockss = mapmanagerptr->getBlocks(lastStation);
+            blockmanagerptr->freeBlockOccu(blockss,getId(),lastStation);
         }
         nowStation = station;
         stationMtx.lock();
@@ -178,7 +186,7 @@ void Agv::onArriveStation(int station)
         pause();
     }
     blockmanagerptr->printBlock();
-    //mapmanagerptr->printGroup();
+    mapmanagerptr->printGroup();
 }
 
 void Agv::onLeaveStation(int stationid)

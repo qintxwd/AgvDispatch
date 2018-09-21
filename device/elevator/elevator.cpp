@@ -522,7 +522,7 @@ void Elevator::onConnect()
 
 void Elevator::onDisconnect()
 {
-    combined_logger->warn("[Elevator {0}] Disconnected", name);
+    //combined_logger->warn("[Elevator {0}] Disconnected", name);
     connected_ = false;
 }
 

@@ -22,6 +22,6 @@ public:
 		return std::string("Qingdao Agv PUT_GOOD");
 	}
 private:
-	bool bresult;//Ö´ÐÐ½á¹û
+    bool bresult;
 };
 
